@@ -1,0 +1,204 @@
+{
+  "version": "0.6.6",
+  "description": "职业、武器、饰品、守护神、种族的概念模板层。用于把底层规则抽象成编辑器可组合的模块。",
+  "templateGroups": {
+    "card_effects": [
+      {
+        "key": "direct_damage",
+        "label": "直接伤害",
+        "appliesTo": ["职业卡", "武器卡", "饰品卡", "守护神卡"],
+        "fields": ["damage", "range", "target", "straight", "spell", "apply"]
+      },
+      {
+        "key": "self_buff",
+        "label": "自身增益",
+        "appliesTo": ["职业卡", "武器卡", "饰品卡", "守护神卡"],
+        "fields": ["buffBasic", "bonusDie", "durationTurns", "consumeOn"]
+      },
+      {
+        "key": "dual_mode",
+        "label": "双模式技能",
+        "appliesTo": ["职业卡", "武器卡"],
+        "fields": ["modes"]
+      },
+      {
+        "key": "teleport",
+        "label": "位移/传送",
+        "appliesTo": ["职业卡", "武器卡"],
+        "fields": ["range", "target"]
+      },
+      {
+        "key": "aoe",
+        "label": "范围伤害",
+        "appliesTo": ["职业卡", "守护神卡"],
+        "fields": ["damage", "range", "radius", "apply"]
+      },
+      {
+        "key": "dash_hit",
+        "label": "冲锋并攻击",
+        "appliesTo": ["职业卡", "武器卡"],
+        "fields": ["damage", "range", "gainBlock", "buffBasic"]
+      }
+    ],
+    "passive_logic": [
+      {
+        "key": "threshold_reward_once_per_turn",
+        "label": "每回合首次达到阈值时获得奖励",
+        "description": "例如战士或莉莉丝：每回合首次造成 4 点以上有效伤害时触发。",
+        "fields": ["thresholdType", "thresholdValue", "rewardList", "oncePerTurn"]
+      },
+      {
+        "key": "control_bonus_on_basic_attack",
+        "label": "普攻对受控目标追加伤害",
+        "description": "例如盗贼被动。",
+        "fields": ["requiredTargetState", "bonusDamage", "attackType"]
+      },
+      {
+        "key": "heal_counter_bonus",
+        "label": "累计治疗次数触发额外恢复",
+        "description": "例如牧师第 4 次治疗额外恢复。",
+        "fields": ["counterName", "triggerEvery", "bonusHeal"]
+      },
+      {
+        "key": "weapon_basic_inflicts_status",
+        "label": "普通攻击附带状态",
+        "description": "例如萨满普通攻击附带点燃。",
+        "fields": ["statusType", "statusValue", "durationTurns"]
+      },
+      {
+        "key": "activated_token_scaling_block",
+        "label": "按已激活 token 数量提供格挡",
+        "description": "例如死灵法师：已激活亡灵越多，格挡越高。",
+        "fields": ["tokenType", "ratio", "rounding", "rewardType"]
+      },
+      {
+        "key": "life_for_card_draw_once_per_turn",
+        "label": "支付生命额外抽牌",
+        "description": "例如木士：每回合可支付生命额外抽牌。",
+        "fields": ["lifeCost", "drawCount", "oncePerTurn"]
+      }
+    ],
+    "action_restriction_logic": [
+      {
+        "key": "movement_threshold_restricts_bucket",
+        "label": "移动超过阈值后限制某类技能",
+        "description": "例如法师：超过 3 格后，只限制职业技能，不限制武器和饰品技能。",
+        "fields": ["threshold", "affectedBuckets", "timing", "exceptionBuckets"]
+      },
+      {
+        "key": "skip_basic_attack_then_gain_bonus",
+        "label": "本回合未普攻则获得下一次增益",
+        "description": "例如剑客。",
+        "fields": ["checkAt", "bonusType", "bonusValue", "consumeOn"]
+      },
+      {
+        "key": "replace_movement_with_extra_basic_attack",
+        "label": "放弃移动换额外普攻",
+        "description": "例如野蛮人守护神。",
+        "fields": ["movementCost", "basicAttackCapDelta", "usesPerGame"]
+      },
+      {
+        "key": "allow_move_after_attack_bucket",
+        "label": "允许在攻击或技能后再移动",
+        "description": "例如小机灵。",
+        "fields": ["affectedBuckets", "changesActionOrder"]
+      }
+    ],
+    "draw_and_deck_logic": [
+      {
+        "key": "auto_block_on_draw_once_per_turn",
+        "label": "抽到格挡后自动使用一次",
+        "description": "本回合抽到第一张格挡牌时自动触发，后续格挡牌自动弃置或保留由规则决定。",
+        "fields": ["perTurnLimit", "extraBehavior"]
+      },
+      {
+        "key": "draw_fixed_per_turn_and_reshuffle_discard",
+        "label": "每回合固定抽牌并空牌库重洗",
+        "description": "当前基础抽牌逻辑。",
+        "fields": ["drawPerTurn", "reshuffleDiscardWhenDeckEmpty"]
+      },
+      {
+        "key": "insert_negative_card_into_target_deck",
+        "label": "向目标牌库塞入负面牌",
+        "description": "例如虚空之魂。",
+        "fields": ["insertCardKey", "triggerCondition", "insertCount"]
+      },
+      {
+        "key": "grant_random_cards_on_build",
+        "label": "构筑时额外获得随机牌",
+        "description": "例如人类、侏儒。",
+        "fields": ["sourcePool", "count", "timing"]
+      }
+    ],
+    "buff_persistence_logic": [
+      {
+        "key": "permanent_until_consumed",
+        "label": "未写持续时间则永久直到消耗",
+        "description": "用于所有未写明持续回合的增益。",
+        "fields": ["consumeOn", "stackable"]
+      },
+      {
+        "key": "turn_limited_buff",
+        "label": "按回合数持续的增益",
+        "description": "写明持续 X 回合的效果。",
+        "fields": ["durationTurns", "consumeOnEnd", "stackable"]
+      }
+    ],
+    "map_and_highlight_logic": [
+      {
+        "key": "highlight_all_reachable_tiles",
+        "label": "高亮所有可到达地块",
+        "description": "用于移动与位移类技能。",
+        "fields": ["rangeSource", "requiresEmptyTile", "respectObstacles"]
+      },
+      {
+        "key": "highlight_all_attackable_targets_and_tiles",
+        "label": "高亮所有可攻击目标与作用范围",
+        "description": "用于普通攻击与技能施放。",
+        "fields": ["rangeSource", "targetType", "straight", "showTargetCells", "showAffectedArea"]
+      },
+      {
+        "key": "global_black_hole_pull",
+        "label": "黑洞全图引力",
+        "description": "每回合所有单位向中心移动一格。",
+        "fields": ["scope", "distancePerTurn", "centerDamage"]
+      }
+    ]
+  },
+  "bucketModel": {
+    "skillBuckets": {
+      "class_or_guardian": {
+        "label": "职业/守护神技能",
+        "allowedModules": ["职业", "守护神"],
+        "perTurnLimit": 1
+      },
+      "weapon_or_accessory": {
+        "label": "武器/饰品技能",
+        "allowedModules": ["武器", "饰品"],
+        "perTurnLimit": 1
+      }
+    },
+    "otherBuckets": {
+      "move": { "perTurnLimit": 1 },
+      "block": { "perTurnLimit": 1, "autoOnDraw": true },
+      "basic_attack": { "perTurnLimit": 1 }
+    }
+  },
+  "editorRoadmap": [
+    {
+      "step": 1,
+      "title": "将现有职业卡映射到概念模板",
+      "detail": "先从战士、法师、盗贼开始，把现有硬编码效果标注为 direct_damage / dual_mode / movement_threshold_restricts_bucket 等模板。"
+    },
+    {
+      "step": 2,
+      "title": "编辑器改为“先选模板，再填字段”",
+      "detail": "用户不再直接碰 fx 或 JSON，而是通过模板表单创建卡牌和被动逻辑。"
+    },
+    {
+      "step": 3,
+      "title": "游戏本体读取模板解释器",
+      "detail": "把游戏逻辑从直接读硬编码字段，迁移到读模板和模板字段。"
+    }
+  ]
+}
