@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>无限制角斗场 Demo v0.3</title>
+  <link rel="stylesheet" href="style_v03.css" />
+</head>
+<body>
+  <header>
+    <h1>无限制角斗场 Demo v0.3</h1>
+    <p>更大的六角格地图、更明确的回合操作模式、真正受限制的移动</p>
+  </header>
+
+  <main>
+    <section id="setup-panel" class="panel">
+      <h2>开局构筑</h2>
+      <div class="setup-grid">
+        <div class="build-box">
+          <h3>玩家 1</h3>
+          <label>职业<select id="p1-class"></select></label>
+          <label>武器<select id="p1-weapon"></select></label>
+          <label>饰品<select id="p1-accessory"></select></label>
+          <label>种族<select id="p1-race"></select></label>
+          <label>守护神<select id="p1-guardian"></select></label>
+        </div>
+        <div class="build-box">
+          <h3>玩家 2</h3>
+          <label>职业<select id="p2-class"></select></label>
+          <label>武器<select id="p2-weapon"></select></label>
+          <label>饰品<select id="p2-accessory"></select></label>
+          <label>种族<select id="p2-race"></select></label>
+          <label>守护神<select id="p2-guardian"></select></label>
+        </div>
+      </div>
+      <div class="setup-actions">
+        <button id="start-game">开始对局</button>
+      </div>
+      <p class="note">v0.3 重点修正：地图尺寸扩大，基础移动改为明确的“移动模式”，只会在合法可达格子内生效；法师类职业“移动超过 3 格后不能放技能”的限制也已修正。</p>
+    </section>
+
+    <section id="game-screen" class="hidden">
+      <div class="top-row">
+        <section class="panel info-panel" id="player-info"></section>
+        <section class="panel log-panel">
+          <div class="panel-head">
+            <h2>战斗日志</h2>
+            <div id="mode-indicator" class="mode-indicator">当前模式：待机</div>
+          </div>
+          <div id="log"></div>
+        </section>
+      </div>
+
+      <section class="panel board-panel">
+        <div class="toolbar">
+          <button id="btn-move">移动模式</button>
+          <button id="btn-basic-attack">普通攻击</button>
+          <button id="btn-block">宣告格挡</button>
+          <button id="btn-cancel">取消选择</button>
+          <button id="btn-end-turn">结束回合</button>
+          <button id="btn-restart">重新开局</button>
+        </div>
+        <div class="board-wrap">
+          <svg id="board" viewBox="0 0 1280 920" aria-label="game board"></svg>
+        </div>
+      </section>
+
+      <section class="panel hand-panel">
+        <div class="panel-head">
+          <h2>当前手牌</h2>
+          <div id="turn-indicator" class="mode-indicator">轮到玩家 1</div>
+        </div>
+        <div id="hand"></div>
+        <div id="selection-hint">请选择一个动作，再点击地图或手牌。</div>
+      </section>
+    </section>
+  </main>
+
+  <template id="card-template">
+    <button class="card">
+      <div class="card-name"></div>
+      <div class="card-meta"></div>
+      <div class="card-text"></div>
+    </button>
+  </template>
+
+  <script src="game_v03.js"></script>
+</body>
+</html>
