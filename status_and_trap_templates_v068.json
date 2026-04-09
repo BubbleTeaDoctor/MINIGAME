@@ -1,0 +1,131 @@
+{
+  "version": "0.6.8",
+  "description": "持续伤害、减速、控制、负面插牌/埋炸弹等模板层扩展。用于职业卡补全与编辑器模板化。",
+  "statusTemplates": [
+    {
+      "key": "dot_damage_over_time",
+      "label": "DOT 持续伤害",
+      "description": "在目标回合开始时造成固定或掷骰伤害，持续若干回合。",
+      "fields": [
+        { "key": "damagePerTick", "label": "每次伤害", "type": "dice_or_number", "example": "1d4" },
+        { "key": "tickTiming", "label": "触发时机", "type": "select", "options": ["turn_start", "turn_end"] },
+        { "key": "durationTurns", "label": "持续回合", "type": "number", "example": 2 },
+        { "key": "stackRule", "label": "叠加方式", "type": "select", "options": ["refresh_duration", "stack_damage", "no_stack"] }
+      ],
+      "defaultBehavior": {
+        "tickTiming": "turn_start",
+        "stackRule": "refresh_duration"
+      }
+    },
+    {
+      "key": "slow_status",
+      "label": "减速",
+      "description": "降低基础移动距离，通常持续 1 回合。",
+      "fields": [
+        { "key": "moveMultiplier", "label": "移动倍率", "type": "number", "example": 0.5 },
+        { "key": "rounding", "label": "取整方式", "type": "select", "options": ["ceil", "floor", "round"] },
+        { "key": "durationTurns", "label": "持续回合", "type": "number", "example": 1 }
+      ],
+      "defaultBehavior": {
+        "moveMultiplier": 0.5,
+        "rounding": "ceil",
+        "durationTurns": 1
+      }
+    },
+    {
+      "key": "control_status",
+      "label": "控制",
+      "description": "统一定义控制类效果，便于盗贼、反控制、净化等逻辑复用。",
+      "subtypes": [
+        {
+          "key": "sheep",
+          "label": "变羊",
+          "effect": "跳过下个完整回合。"
+        },
+        {
+          "key": "stun",
+          "label": "眩晕",
+          "effect": "下个回合不能移动、普攻、出牌。"
+        },
+        {
+          "key": "disarm",
+          "label": "缴械",
+          "effect": "不能进行普通攻击。"
+        },
+        {
+          "key": "root",
+          "label": "定身",
+          "effect": "不能进行基础移动。"
+        },
+        {
+          "key": "slow",
+          "label": "减速",
+          "effect": "视为轻度控制，可被盗贼被动识别。"
+        }
+      ],
+      "sharedFields": [
+        { "key": "durationTurns", "label": "持续回合", "type": "number", "example": 1 },
+        { "key": "isControlTag", "label": "是否计入控制标签", "type": "boolean" }
+      ]
+    }
+  ],
+  "negativeDeckTemplates": [
+    {
+      "key": "insert_negative_card_into_target_deck",
+      "label": "向目标牌库加入负面牌",
+      "description": "将一张负面牌洗入目标牌库，被抽到时立即结算。",
+      "fields": [
+        { "key": "insertCardKey", "label": "插入牌 key", "type": "text", "example": "necro_bomb_token" },
+        { "key": "insertCount", "label": "加入数量", "type": "number", "example": 1 },
+        { "key": "triggerCondition", "label": "触发条件", "type": "text", "example": "on_hit" },
+        { "key": "shuffleIntoDeck", "label": "是否洗入牌库", "type": "boolean" }
+      ],
+      "defaultBehavior": {
+        "insertCount": 1,
+        "shuffleIntoDeck": true
+      }
+    },
+    {
+      "key": "negative_card_trigger_on_draw",
+      "label": "负面牌抽到时触发",
+      "description": "负面牌本身的逻辑模板，通常抽到后立即展示并生效。",
+      "fields": [
+        { "key": "onDrawEffect", "label": "抽到时效果", "type": "select", "options": ["explode_damage", "self_stun", "discard_random", "spawn_token"] },
+        { "key": "damage", "label": "伤害骰", "type": "dice_optional", "example": "2d6" },
+        { "key": "apply", "label": "附带状态", "type": "status_list" },
+        { "key": "showInPreview", "label": "抽到后是否展示到展示区", "type": "boolean" }
+      ],
+      "defaultBehavior": {
+        "showInPreview": true
+      }
+    }
+  ],
+  "necroExamples": {
+    "necro_bomb_plan": {
+      "summary": "死灵法师给对手牌库埋炸弹：打中后向对方牌库洗入一张炸弹牌，被抽到时爆炸。",
+      "producerTemplate": {
+        "template": "insert_negative_card_into_target_deck",
+        "config": {
+          "insertCardKey": "necro_bomb_token",
+          "insertCount": 1,
+          "triggerCondition": "on_hit",
+          "shuffleIntoDeck": true
+        }
+      },
+      "tokenTemplate": {
+        "template": "negative_card_trigger_on_draw",
+        "config": {
+          "onDrawEffect": "explode_damage",
+          "damage": "2d6",
+          "apply": { "slow": 1 },
+          "showInPreview": true
+        }
+      }
+    }
+  },
+  "editorIntegrationNotes": [
+    "DOT、减速、控制，不应该继续让用户手填 JSON；应在编辑器里以状态模板形式出现。",
+    "死灵法师的炸弹类效果应拆成两段：生产者模板 + 负面牌模板。",
+    "控制标签应统一由模板层维护，便于盗贼被动、净化、免疫等效果共用。"
+  ]
+}
