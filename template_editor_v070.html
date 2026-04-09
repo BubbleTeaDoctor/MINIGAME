@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>无限制角斗场 模板编辑器 v0.7.0</title>
+  <link rel="stylesheet" href="template_editor_v070.css" />
+</head>
+<body>
+  <header>
+    <h1>无限制角斗场 模板编辑器 v0.7.0</h1>
+    <p>先选职业，再选卡牌或被动，最后用模板表单编辑效果，不从代码字段开始。</p>
+  </header>
+
+  <main>
+    <section class="panel controls">
+      <div class="grid grid-3">
+        <label>
+          编辑对象
+          <select id="edit-scope">
+            <option value="cards">职业卡</option>
+            <option value="passives">职业被动</option>
+          </select>
+        </label>
+        <label>
+          职业
+          <select id="profession-select"></select>
+        </label>
+        <label>
+          条目
+          <select id="entry-select"></select>
+        </label>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <aside class="panel left-panel">
+        <div class="panel-head">
+          <h2>模板信息</h2>
+        </div>
+        <div id="template-summary" class="summary-box"></div>
+      </aside>
+
+      <section class="panel center-panel">
+        <div class="panel-head">
+          <h2 id="form-title">表单编辑区</h2>
+          <button id="btn-reset">恢复原始值</button>
+        </div>
+        <div id="form-host" class="form-host"></div>
+      </section>
+
+      <aside class="panel right-panel">
+        <div class="panel-head">
+          <h2>实时预览</h2>
+        </div>
+        <div id="friendly-preview" class="friendly-preview"></div>
+        <textarea id="json-preview" class="json-preview" spellcheck="false"></textarea>
+      </aside>
+    </section>
+  </main>
+
+  <script src="template_editor_v070.js"></script>
+</body>
+</html>
