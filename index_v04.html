@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>无限制角斗场 Demo v0.4</title>
+  <link rel="stylesheet" href="style_v04.css" />
+</head>
+<body>
+  <header>
+    <h1>无限制角斗场 Demo v0.4</h1>
+    <p>双模式技能、严格位移范围、更清晰的战斗日志</p>
+  </header>
+
+  <main>
+    <section id="setup-panel" class="panel">
+      <h2>开局构筑</h2>
+      <div class="setup-grid">
+        <div class="build-box">
+          <h3>玩家 1</h3>
+          <label>职业<select id="p1-class"></select></label>
+          <label>武器<select id="p1-weapon"></select></label>
+          <label>饰品<select id="p1-accessory"></select></label>
+          <label>种族<select id="p1-race"></select></label>
+          <label>守护神<select id="p1-guardian"></select></label>
+        </div>
+        <div class="build-box">
+          <h3>玩家 2</h3>
+          <label>职业<select id="p2-class"></select></label>
+          <label>武器<select id="p2-weapon"></select></label>
+          <label>饰品<select id="p2-accessory"></select></label>
+          <label>种族<select id="p2-race"></select></label>
+          <label>守护神<select id="p2-guardian"></select></label>
+        </div>
+      </div>
+      <div class="setup-actions">
+        <button id="start-game">开始对局</button>
+      </div>
+      <p class="note">v0.4 修正重点：英勇投掷/二连斩加入双模式选择；地图半径继续扩大，位移牌严格锁定到显示距离内；日志改成带标签的简洁信息块，减少阅读疲劳。</p>
+    </section>
+
+    <section id="game-screen" class="hidden">
+      <div class="top-row">
+        <section class="panel info-panel" id="player-info"></section>
+        <section class="panel log-panel">
+          <div class="panel-head">
+            <h2>战斗日志</h2>
+            <div id="mode-indicator" class="mode-indicator">当前模式：待机</div>
+          </div>
+          <div id="log"></div>
+        </section>
+      </div>
+
+      <section class="panel board-panel">
+        <div class="toolbar">
+          <button id="btn-move">移动模式</button>
+          <button id="btn-basic-attack">普通攻击</button>
+          <button id="btn-block">宣告格挡</button>
+          <button id="btn-cancel">取消选择</button>
+          <button id="btn-end-turn">结束回合</button>
+          <button id="btn-restart">重新开局</button>
+        </div>
+        <div class="board-wrap">
+          <svg id="board" viewBox="0 0 1400 980" aria-label="game board"></svg>
+        </div>
+      </section>
+
+      <section class="panel hand-panel">
+        <div class="panel-head">
+          <h2>当前手牌</h2>
+          <div id="turn-indicator" class="mode-indicator">等待开始</div>
+        </div>
+        <div id="hand"></div>
+        <div id="choice-panel" class="choice-panel"></div>
+        <div id="selection-hint">请选择一个动作，再点击地图或手牌。</div>
+      </section>
+    </section>
+  </main>
+</body>
+<script src="game_v04.js"></script>
+</html>
