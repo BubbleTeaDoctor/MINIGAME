@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>无限制角斗场 编辑器 v0.1</title>
+  <link rel="stylesheet" href="card_editor_v01.css" />
+</head>
+<body>
+  <header>
+    <h1>无限制角斗场 编辑器 v0.1</h1>
+    <p>直接编辑职业、武器、饰品、守护神、种族与卡牌；支持导入/导出 JSON 或 JS。</p>
+  </header>
+
+  <main>
+    <section class="panel topbar">
+      <div class="topbar-actions">
+        <button id="btn-new">新建条目</button>
+        <button id="btn-duplicate">复制当前</button>
+        <button id="btn-delete">删除当前</button>
+        <button id="btn-save">保存当前</button>
+        <button id="btn-export-json">导出 JSON</button>
+        <button id="btn-export-js">导出 JS</button>
+      </div>
+      <div class="topbar-actions">
+        <button id="btn-import-json">导入 JSON</button>
+        <button id="btn-reset">恢复初始数据</button>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <aside class="panel sidebar">
+        <div class="sidebar-head">
+          <label>模块
+            <select id="entity-type">
+              <option value="classes">职业</option>
+              <option value="weapons">武器</option>
+              <option value="accessories">饰品</option>
+              <option value="races">种族</option>
+              <option value="guardians">守护神</option>
+              <option value="cards">卡牌</option>
+            </select>
+          </label>
+          <input id="search-box" type="text" placeholder="搜索 key / 名称" />
+        </div>
+        <div id="entity-list" class="entity-list"></div>
+      </aside>
+
+      <section class="panel editor-panel">
+        <div class="panel-head">
+          <h2 id="editor-title">未选择条目</h2>
+          <div id="editor-badge" class="badge">只在本页内存生效，导出后可保存</div>
+        </div>
+        <div id="editor-form" class="editor-form"></div>
+      </section>
+
+      <aside class="panel preview-panel">
+        <h3>预览与说明</h3>
+        <div id="preview-box" class="preview-box"></div>
+        <div class="rules-note">
+          <h4>底层规则备注</h4>
+          <p>你刚修正的规则已经体现在职业逻辑字段中：</p>
+          <p><strong>法师移动超过 3 格后，只禁用职业技能，不禁用武器和饰品技能。</strong></p>
+          <p>编辑器里可以直接改：</p>
+          <ul>
+            <li>moveLockThreshold：阈值</li>
+            <li>moveLockAppliesTo：限制作用范围</li>
+          </ul>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel io-panel">
+      <div class="panel-head">
+        <h2>导入 / 导出文本区</h2>
+        <div class="badge">可粘贴 JSON 直接导入</div>
+      </div>
+      <textarea id="io-box" spellcheck="false" placeholder="这里会显示导出的 JSON / JS，也可以把 JSON 粘贴进来再点“导入 JSON”。"></textarea>
+    </section>
+  </main>
+
+  <script src="data_v051.js"></script>
+  <script src="data_logic_patch_v052.js"></script>
+  <script src="card_editor_v01.js"></script>
+</body>
+</html>
