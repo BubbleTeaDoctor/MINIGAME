@@ -1,0 +1,286 @@
+{
+  "version": "0.6.7",
+  "description": "战士、法师、盗贼三套职业卡 -> 概念模板映射。用于模板化编辑器与后续模板解释器。",
+  "professions": {
+    "warrior": {
+      "name": "战士",
+      "passiveTemplates": [
+        {
+          "template": "threshold_reward_once_per_turn",
+          "config": {
+            "thresholdType": "effective_damage",
+            "thresholdValue": 4,
+            "rewardList": [
+              { "type": "gain_block", "value": 2 }
+            ],
+            "oncePerTurn": true
+          }
+        }
+      ],
+      "cards": {
+        "warrior_charge": {
+          "name": "冲锋",
+          "template": "dash_hit",
+          "config": {
+            "damage": "1d6",
+            "range": 3,
+            "buffBasic": 2,
+            "target": "enemy"
+          }
+        },
+        "warrior_rage": {
+          "name": "暴怒/强力射击",
+          "template": "dual_mode",
+          "config": {
+            "modes": [
+              {
+                "name": "暴怒",
+                "templateRef": "self_buff",
+                "buffBasic": 3,
+                "consumeOn": "next_basic_attack",
+                "durationTurns": null,
+                "notes": "默认永久存在直到消耗。"
+              },
+              {
+                "name": "强力射击",
+                "templateRef": "self_buff",
+                "buffBasic": 3,
+                "consumeOn": "next_basic_attack",
+                "durationTurns": null,
+                "notes": "远程模式，仍属于战士职业技能桶。"
+              }
+            ]
+          }
+        },
+        "warrior_execute": {
+          "name": "斩杀",
+          "template": "direct_damage",
+          "config": {
+            "damage": "4d4",
+            "range": 1,
+            "target": "enemy"
+          }
+        },
+        "warrior_throw": {
+          "name": "英勇投掷/二连斩",
+          "template": "dual_mode",
+          "config": {
+            "modes": [
+              {
+                "name": "英勇投掷",
+                "templateRef": "direct_damage",
+                "damage": "2d3",
+                "range": 3,
+                "target": "enemy",
+                "buffBasic": 1
+              },
+              {
+                "name": "二连斩",
+                "templateRef": "self_buff",
+                "basicAttackCapDelta": 1,
+                "consumeOn": "end_of_turn",
+                "notes": "本回合普通攻击次数改为 2。"
+              }
+            ]
+          }
+        },
+        "warrior_enrage": {
+          "name": "激怒",
+          "template": "self_buff",
+          "config": {
+            "block": "1d4",
+            "buffBasic": 2,
+            "consumeOn": "next_basic_attack"
+          }
+        },
+        "warrior_hamstring": {
+          "name": "断筋",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d4",
+            "range": 1,
+            "target": "enemy",
+            "apply": { "slow": 1 }
+          }
+        }
+      }
+    },
+    "mage": {
+      "name": "法师",
+      "passiveTemplates": [
+        {
+          "template": "movement_threshold_restricts_bucket",
+          "config": {
+            "threshold": 3,
+            "affectedBuckets": ["class_or_guardian"],
+            "timing": "after_move_before_class_skill",
+            "exceptionBuckets": ["weapon_or_accessory"],
+            "note": "移动超过 3 格后，只禁用职业技能，不禁用武器和饰品技能。"
+          }
+        }
+      ],
+      "cards": {
+        "mage_fireball": {
+          "name": "火球",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d8",
+            "range": 5,
+            "target": "enemy",
+            "spell": true,
+            "apply": { "burn": 2 }
+          }
+        },
+        "mage_nova": {
+          "name": "冰霜新星",
+          "template": "aoe",
+          "config": {
+            "damage": "2d4",
+            "range": 2,
+            "radius": 1,
+            "spell": true,
+            "apply": { "slow": 1 }
+          }
+        },
+        "mage_polymorph": {
+          "name": "变羊",
+          "template": "direct_damage",
+          "config": {
+            "damage": null,
+            "range": 5,
+            "target": "enemy",
+            "spell": true,
+            "apply": { "sheep": 1 },
+            "notes": "纯控制，无直接伤害。"
+          }
+        },
+        "mage_blink": {
+          "name": "闪现",
+          "template": "teleport",
+          "config": {
+            "range": 4,
+            "target": "tile"
+          }
+        },
+        "mage_lightning": {
+          "name": "雷击",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d12+4",
+            "range": 5,
+            "target": "enemy",
+            "spell": true
+          }
+        },
+        "mage_phase": {
+          "name": "相位转移",
+          "template": "dual_mode",
+          "config": {
+            "modes": [
+              {
+                "name": "相位转移",
+                "templateRef": "teleport",
+                "range": 3,
+                "target": "tile"
+              },
+              {
+                "name": "法术无效",
+                "templateRef": "self_buff",
+                "consumeOn": "next_spell_hit",
+                "durationTurns": null,
+                "notes": "默认永久存在直到被法术触发消耗。"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rogue": {
+      "name": "盗贼",
+      "passiveTemplates": [
+        {
+          "template": "control_bonus_on_basic_attack",
+          "config": {
+            "requiredTargetState": ["slow", "disarm", "sheep"],
+            "bonusDamage": "1d4",
+            "attackType": "basic_attack"
+          }
+        }
+      ],
+      "cards": {
+        "rogue_ambush": {
+          "name": "偷袭",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d4",
+            "range": 1,
+            "target": "enemy",
+            "conditionalBonus": {
+              "condition": "moved_this_turn",
+              "bonusDamage": "1d4"
+            }
+          }
+        },
+        "rogue_disarm": {
+          "name": "缴械",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d6",
+            "range": 1,
+            "target": "enemy",
+            "apply": { "disarm": 1 }
+          }
+        },
+        "rogue_assassinate": {
+          "name": "刺杀",
+          "template": "direct_damage",
+          "config": {
+            "damage": "2d8",
+            "range": 1,
+            "target": "enemy",
+            "conditionalBonus": {
+              "condition": "target_controlled",
+              "bonusFlat": 2
+            }
+          }
+        },
+        "rogue_step": {
+          "name": "瞬步",
+          "template": "teleport",
+          "config": {
+            "range": 4,
+            "target": "tile"
+          }
+        },
+        "rogue_bloodmix": {
+          "name": "血腥合剂",
+          "template": "self_buff",
+          "config": {
+            "heal": "1d6",
+            "bonusDie": "1d4",
+            "consumeOn": "next_basic_attack"
+          }
+        },
+        "rogue_feast": {
+          "name": "杀戮盛宴",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d6",
+            "range": 6,
+            "target": "enemy",
+            "conditionalBonus": {
+              "condition": "target_hp_lte",
+              "threshold": 15,
+              "bonusDamage": "1d6"
+            }
+          }
+        }
+      }
+    }
+  },
+  "nextSteps": [
+    "将编辑器的‘新建卡牌’改成先选模板，再填模板字段。",
+    "把战士/法师/盗贼的现有卡牌直接按本文件映射渲染到编辑器。",
+    "让游戏解释器优先读取 template + config，而不是只读 fx 字段。"
+  ]
+}
