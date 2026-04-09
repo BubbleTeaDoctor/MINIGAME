@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>无限制角斗场 Demo v0.5.1</title>
+  <link rel="stylesheet" href="style_v051.css" />
+</head>
+<body>
+  <header>
+    <h1>无限制角斗场 Demo v0.5.1</h1>
+    <p>数据驱动、单技能限制、武器普攻信息可见、掷骰动画、支持电脑对手</p>
+  </header>
+
+  <main>
+    <section id="setup-panel" class="panel">
+      <h2>开局构筑</h2>
+      <div class="setup-grid">
+        <div class="build-box">
+          <h3>玩家 1</h3>
+          <label>类型
+            <select id="p1-type">
+              <option value="human">人类</option>
+            </select>
+          </label>
+          <label>职业<select id="p1-class"></select></label>
+          <label>武器<select id="p1-weapon"></select></label>
+          <label>饰品<select id="p1-accessory"></select></label>
+          <label>种族<select id="p1-race"></select></label>
+          <label>守护神<select id="p1-guardian"></select></label>
+        </div>
+        <div class="build-box">
+          <h3>玩家 2</h3>
+          <label>类型
+            <select id="p2-type">
+              <option value="human">人类</option>
+              <option value="ai">电脑</option>
+            </select>
+          </label>
+          <label>职业<select id="p2-class"></select></label>
+          <label>武器<select id="p2-weapon"></select></label>
+          <label>饰品<select id="p2-accessory"></select></label>
+          <label>种族<select id="p2-race"></select></label>
+          <label>守护神<select id="p2-guardian"></select></label>
+        </div>
+      </div>
+      <div class="setup-actions">
+        <button id="start-game">开始对局</button>
+      </div>
+      <p class="note">本版重点：每回合只能使用 1 张技能牌与 1 张饰品牌；格挡牌抽到后自动结算；黑洞“全图引力”在地图上直接标明；武器普攻伤害与范围会显示在角色面板中；玩家 2 可选电脑。</p>
+    </section>
+
+    <section id="game-screen" class="hidden">
+      <div class="top-row">
+        <section class="panel info-panel" id="player-info"></section>
+        <section class="panel log-panel">
+          <div class="panel-head">
+            <h2>战斗日志</h2>
+            <div id="mode-indicator" class="mode-indicator">当前模式：待机</div>
+          </div>
+          <div id="log"></div>
+        </section>
+      </div>
+
+      <section class="panel board-panel">
+        <div class="toolbar">
+          <button id="btn-move">移动模式</button>
+          <button id="btn-basic-attack">普通攻击</button>
+          <button id="btn-cancel">取消选择</button>
+          <button id="btn-end-turn">结束回合</button>
+          <button id="btn-restart">重新开局</button>
+        </div>
+        <div class="board-wrap">
+          <svg id="board" viewBox="0 0 1450 1020" aria-label="game board"></svg>
+        </div>
+      </section>
+
+      <section class="panel hand-panel">
+        <div class="panel-head">
+          <h2>当前手牌</h2>
+          <div id="turn-indicator" class="mode-indicator">等待开始</div>
+        </div>
+        <div id="hand"></div>
+        <div id="choice-panel" class="choice-panel"></div>
+        <div id="selection-hint">请选择一个动作，再点击地图或手牌。</div>
+      </section>
+    </section>
+  </main>
+
+  <div id="dice-overlay" class="dice-overlay hidden">
+    <div class="dice-box">
+      <div id="dice-title" class="dice-title">掷骰中…</div>
+      <div id="dice-notation" class="dice-notation"></div>
+      <div id="dice-value" class="dice-value">0</div>
+    </div>
+  </div>
+
+  <script src="data_v051.js"></script>
+  <script src="game_v051.js"></script>
+</body>
+</html>
