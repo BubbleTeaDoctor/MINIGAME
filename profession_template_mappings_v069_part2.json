@@ -1,0 +1,369 @@
+{
+  "version": "0.6.9",
+  "description": "剩余 5 个职业 -> 概念模板映射。用于模板化编辑器与后续模板解释器。",
+  "professions": {
+    "swordsman": {
+      "name": "剑客",
+      "passiveTemplates": [
+        {
+          "template": "skip_basic_attack_then_gain_bonus",
+          "config": {
+            "checkAt": "end_of_turn",
+            "bonusType": "flat_damage",
+            "bonusValue": 5,
+            "consumeOn": "next_basic_attack_or_class_skill"
+          }
+        }
+      ],
+      "cards": {
+        "sword_parry": {
+          "name": "见切",
+          "template": "self_buff",
+          "config": {
+            "block": "1d4",
+            "consumeOn": "next_hit_or_manual",
+            "durationTurns": null,
+            "notes": "未写持续时间，默认永久直到被触发或主动消耗。"
+          }
+        },
+        "sword_read": {
+          "name": "看破",
+          "template": "self_buff",
+          "config": {
+            "buffBasic": 2,
+            "consumeOn": "next_basic_attack_or_class_skill",
+            "durationTurns": null
+          }
+        },
+        "sword_flash": {
+          "name": "一闪",
+          "template": "direct_damage",
+          "config": {
+            "damage": "2d6",
+            "range": 1,
+            "target": "enemy",
+            "notes": "若叠有剑客被动，则在解释器层追加 +5。"
+          }
+        },
+        "sword_sheathe": {
+          "name": "纳刀疾驰",
+          "template": "teleport",
+          "config": {
+            "range": 3,
+            "target": "tile"
+          }
+        }
+      }
+    },
+    "priest": {
+      "name": "牧师",
+      "passiveTemplates": [
+        {
+          "template": "heal_counter_bonus",
+          "config": {
+            "counterName": "heal_count",
+            "triggerEvery": 4,
+            "bonusHeal": "1d6"
+          }
+        }
+      ],
+      "cards": {
+        "priest_smite": {
+          "name": "惩戒",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d8",
+            "range": 4,
+            "target": "enemy",
+            "spell": true
+          }
+        },
+        "priest_heal": {
+          "name": "治疗",
+          "template": "self_buff",
+          "config": {
+            "heal": "1d8",
+            "target": "ally_or_self",
+            "consumeOn": "immediate"
+          }
+        },
+        "priest_pain": {
+          "name": "痛苦",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d4",
+            "range": 5,
+            "target": "enemy",
+            "spell": true,
+            "applyTemplate": "dot_damage_over_time",
+            "applyConfig": {
+              "damagePerTick": "1d4",
+              "tickTiming": "turn_start",
+              "durationTurns": 2,
+              "stackRule": "refresh_duration"
+            }
+          }
+        },
+        "priest_stance": {
+          "name": "神圣立场",
+          "template": "self_buff",
+          "config": {
+            "block": "1d6",
+            "durationTurns": 2,
+            "consumeOn": "manual"
+          }
+        },
+        "priest_shield": {
+          "name": "护盾术",
+          "template": "self_buff",
+          "config": {
+            "block": "1d8",
+            "consumeOn": "manual",
+            "durationTurns": null
+          }
+        }
+      }
+    },
+    "shaman": {
+      "name": "萨满",
+      "passiveTemplates": [
+        {
+          "template": "weapon_basic_inflicts_status",
+          "config": {
+            "statusType": "burn",
+            "statusValue": "1d4",
+            "durationTurns": 2
+          }
+        }
+      ],
+      "cards": {
+        "shaman_shock": {
+          "name": "震击",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d6",
+            "range": 4,
+            "target": "enemy",
+            "spell": true,
+            "applyTemplate": "slow_status",
+            "applyConfig": {
+              "moveMultiplier": 0.5,
+              "rounding": "ceil",
+              "durationTurns": 1
+            }
+          }
+        },
+        "shaman_windfury": {
+          "name": "风怒",
+          "template": "self_buff",
+          "config": {
+            "basicAttackCapDelta": 1,
+            "consumeOn": "end_of_turn",
+            "durationTurns": 1
+          }
+        },
+        "shaman_form": {
+          "name": "化身",
+          "template": "self_buff",
+          "config": {
+            "buffBasic": 2,
+            "block": "1d4",
+            "durationTurns": 2,
+            "consumeOn": "manual"
+          }
+        },
+        "shaman_earth": {
+          "name": "大地之盾",
+          "template": "self_buff",
+          "config": {
+            "block": "1d8",
+            "durationTurns": 2,
+            "consumeOn": "manual"
+          }
+        },
+        "shaman_bloodlust": {
+          "name": "嗜血术",
+          "template": "self_buff",
+          "config": {
+            "buffBasic": 2,
+            "durationTurns": 2,
+            "consumeOn": "manual"
+          }
+        }
+      }
+    },
+    "necro": {
+      "name": "死灵法师",
+      "passiveTemplates": [
+        {
+          "template": "activated_token_scaling_block",
+          "config": {
+            "tokenType": "undead_token",
+            "ratio": 0.5,
+            "rounding": "ceil",
+            "rewardType": "gain_block_each_turn"
+          }
+        }
+      ],
+      "cards": {
+        "necro_skeleton": {
+          "name": "召唤骷髅",
+          "template": "insert_negative_card_into_target_deck",
+          "config": {
+            "insertCardKey": "undead_skeleton_token",
+            "insertCount": 1,
+            "triggerCondition": "immediate_self_deck",
+            "shuffleIntoDeck": true,
+            "notes": "当前原型采用插牌式召唤，抽到即视作激活。"
+          }
+        },
+        "necro_bonedragon": {
+          "name": "召唤骨龙",
+          "template": "insert_negative_card_into_target_deck",
+          "config": {
+            "insertCardKey": "undead_bonedragon_token",
+            "insertCount": 1,
+            "triggerCondition": "immediate_self_deck",
+            "shuffleIntoDeck": true
+          }
+        },
+        "necro_burst": {
+          "name": "亡灵爆发",
+          "template": "aoe",
+          "config": {
+            "damage": "2d4",
+            "range": 3,
+            "radius": 1,
+            "spell": true,
+            "notes": "后续解释器可按已激活亡灵数量追加伤害。"
+          }
+        },
+        "necro_shield": {
+          "name": "骨盾",
+          "template": "self_buff",
+          "config": {
+            "block": "1d8",
+            "consumeOn": "manual",
+            "durationTurns": null
+          }
+        },
+        "necro_spear": {
+          "name": "骨矛",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d10",
+            "range": 5,
+            "target": "enemy",
+            "spell": true
+          }
+        },
+        "necro_bomb": {
+          "name": "埋骨炸弹",
+          "template": "insert_negative_card_into_target_deck",
+          "config": {
+            "insertCardKey": "necro_bomb_token",
+            "insertCount": 1,
+            "triggerCondition": "on_hit",
+            "shuffleIntoDeck": true,
+            "notes": "打中后向对方牌库洗入炸弹牌，被抽到时爆炸。"
+          }
+        }
+      },
+      "negativeCards": {
+        "necro_bomb_token": {
+          "template": "negative_card_trigger_on_draw",
+          "config": {
+            "onDrawEffect": "explode_damage",
+            "damage": "2d6",
+            "apply": { "slow": 1 },
+            "showInPreview": true
+          }
+        }
+      }
+    },
+    "warlock": {
+      "name": "木士",
+      "passiveTemplates": [
+        {
+          "template": "life_for_card_draw_once_per_turn",
+          "config": {
+            "lifeCost": 4,
+            "drawCount": 1,
+            "oncePerTurn": true
+          }
+        }
+      ],
+      "cards": {
+        "lock_soulfire": {
+          "name": "灵魂火",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d10",
+            "range": 4,
+            "target": "enemy",
+            "spell": true
+          }
+        },
+        "lock_dash": {
+          "name": "暗夜冲刺",
+          "template": "teleport",
+          "config": {
+            "range": 4,
+            "target": "tile"
+          }
+        },
+        "lock_corrode": {
+          "name": "腐蚀",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d4",
+            "range": 5,
+            "target": "enemy",
+            "spell": true,
+            "applyTemplate": "dot_damage_over_time",
+            "applyConfig": {
+              "damagePerTick": "1d4",
+              "tickTiming": "turn_start",
+              "durationTurns": 3,
+              "stackRule": "refresh_duration"
+            }
+          }
+        },
+        "lock_drain": {
+          "name": "吸血",
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d6",
+            "range": 4,
+            "target": "enemy",
+            "spell": true,
+            "lifesteal": 0.5,
+            "notes": "伤害的一半转化为治疗，向上取整可在解释器中处理。"
+          }
+        },
+        "lock_flame": {
+          "name": "暗影烈焰",
+          "template": "aoe",
+          "config": {
+            "damage": "2d6",
+            "range": 2,
+            "radius": 1,
+            "spell": true,
+            "applyTemplate": "dot_damage_over_time",
+            "applyConfig": {
+              "damagePerTick": "1d4",
+              "tickTiming": "turn_start",
+              "durationTurns": 2,
+              "stackRule": "refresh_duration"
+            }
+          }
+        }
+      }
+    }
+  },
+  "integrationNotes": [
+    "DOT、减速、控制、插牌炸弹等都已经在模板映射里有明确入口。",
+    "死灵法师的‘给对手牌库埋炸弹’已按 producer template + negative card template 两段拆解。",
+    "下一步应让编辑器在选择 template 后自动展示对应 config 字段。"
+  ]
+}
