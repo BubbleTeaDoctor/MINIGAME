@@ -1,0 +1,125 @@
+{
+  "version": "0.6.5",
+  "description": "职业卡与编辑器模板层。用于把当前职业卡效果提取成可视化编辑模板。",
+  "actionEconomy": {
+    "buckets": [
+      {
+        "key": "class_or_guardian",
+        "label": "职业/守护神技能",
+        "allowedModules": ["职业", "守护神"],
+        "perTurnLimit": 1
+      },
+      {
+        "key": "weapon_or_accessory",
+        "label": "武器/饰品技能",
+        "allowedModules": ["武器", "饰品"],
+        "perTurnLimit": 1
+      },
+      {
+        "key": "move",
+        "label": "移动",
+        "perTurnLimit": 1
+      },
+      {
+        "key": "block",
+        "label": "格挡",
+        "perTurnLimit": 1,
+        "autoOnDraw": true
+      },
+      {
+        "key": "basic_attack",
+        "label": "普通攻击",
+        "perTurnLimit": 1
+      }
+    ],
+    "drawPerTurn": 3,
+    "reshuffleDiscardWhenDeckEmpty": true
+  },
+  "editorTemplates": [
+    {
+      "templateKey": "direct_damage",
+      "label": "直接伤害",
+      "description": "对单个目标造成伤害，可附带状态。",
+      "fields": [
+        { "key": "damage", "label": "伤害骰", "type": "dice", "example": "1d8" },
+        { "key": "range", "label": "距离", "type": "number", "example": 5 },
+        { "key": "target", "label": "目标类型", "type": "select", "options": ["enemy"] },
+        { "key": "straight", "label": "是否直线", "type": "boolean" },
+        { "key": "spell", "label": "是否法术", "type": "boolean" },
+        { "key": "apply", "label": "附带状态", "type": "status_list" }
+      ]
+    },
+    {
+      "templateKey": "teleport",
+      "label": "位移/传送",
+      "description": "移动到指定距离内空格。",
+      "fields": [
+        { "key": "range", "label": "位移距离", "type": "number", "example": 4 },
+        { "key": "target", "label": "目标类型", "type": "select", "options": ["tile"] }
+      ]
+    },
+    {
+      "templateKey": "dash_hit",
+      "label": "冲锋并攻击",
+      "description": "贴近目标后结算伤害，并可获得额外效果。",
+      "fields": [
+        { "key": "damage", "label": "伤害骰", "type": "dice", "example": "1d6" },
+        { "key": "range", "label": "冲锋距离", "type": "number", "example": 3 },
+        { "key": "gainBlock", "label": "获得格挡", "type": "dice_optional", "example": "1d8" },
+        { "key": "buffBasic", "label": "下次普攻加值", "type": "number_optional", "example": 2 }
+      ]
+    },
+    {
+      "templateKey": "self_buff",
+      "label": "自身增益",
+      "description": "默认永久存在，直到被消耗；若填写持续回合，则按回合结算。",
+      "fields": [
+        { "key": "buffBasic", "label": "下次普攻加值", "type": "number_optional", "example": 3 },
+        { "key": "bonusDie", "label": "额外骰子", "type": "dice_optional", "example": "1d4" },
+        { "key": "durationTurns", "label": "持续回合", "type": "number_optional", "example": 2 },
+        { "key": "consumeOn", "label": "何时消耗", "type": "select", "options": ["next_basic_attack", "next_skill", "next_damage", "manual"] }
+      ]
+    },
+    {
+      "templateKey": "aoe",
+      "label": "范围伤害",
+      "description": "选择一个地块，以半径结算范围伤害。",
+      "fields": [
+        { "key": "damage", "label": "伤害骰", "type": "dice", "example": "2d4" },
+        { "key": "range", "label": "施法距离", "type": "number", "example": 2 },
+        { "key": "radius", "label": "半径", "type": "number", "example": 1 },
+        { "key": "apply", "label": "附带状态", "type": "status_list" }
+      ]
+    },
+    {
+      "templateKey": "dual_mode",
+      "label": "双模式技能",
+      "description": "一张卡在使用时弹出两个模式供选择，例如战士的英勇投掷/二连斩。",
+      "fields": [
+        { "key": "modes", "label": "模式列表", "type": "mode_list" }
+      ],
+      "modeFields": [
+        { "key": "name", "label": "模式名称", "type": "text" },
+        { "key": "templateRef", "label": "模式模板", "type": "select", "options": ["direct_damage", "self_buff", "dash_hit"] },
+        { "key": "range", "label": "距离", "type": "number_optional" },
+        { "key": "damage", "label": "伤害骰", "type": "dice_optional" },
+        { "key": "buffBasic", "label": "普攻加值", "type": "number_optional" },
+        { "key": "basicAttackCapDelta", "label": "普通攻击次数改变量", "type": "number_optional" }
+      ]
+    }
+  ],
+  "classDefaults": {
+    "meleeMove": 5,
+    "rangedMove": 3,
+    "recommended": {
+      "warrior": 5,
+      "rogue": 5,
+      "swordsman": 5,
+      "mage": 3,
+      "priest": 3,
+      "shaman": 3,
+      "necro": 3,
+      "warlock": 3
+    }
+  }
+}
