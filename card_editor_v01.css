@@ -1,0 +1,47 @@
+:root {
+  --bg: #12151b;
+  --panel: #1c2430;
+  --panel-2: #232c39;
+  --text: #eef1f6;
+  --muted: #b8c2d1;
+  --accent: #8ec5ff;
+  --warn: #ffd27a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, "Noto Sans SC", system-ui, sans-serif;
+  background: linear-gradient(180deg, #12151b, #0c0f13);
+  color: var(--text);
+}
+header { padding: 20px 28px 8px; }
+header h1 { margin: 0 0 6px; font-size: 32px; }
+header p { margin: 0; color: var(--muted); }
+main { padding: 16px 24px 32px; display: grid; gap: 16px; }
+.panel { background: rgba(28, 36, 48, 0.96); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+.topbar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.topbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+button, select, input, textarea { font: inherit; }
+button { cursor: pointer; border: none; border-radius: 12px; background: #2c6edb; color: white; padding: 10px 14px; }
+select, input, textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: #12161c; color: var(--text); }
+.workspace { display: grid; grid-template-columns: 320px 1fr 360px; gap: 16px; align-items: start; }
+.sidebar-head { display: grid; gap: 10px; margin-bottom: 12px; }
+.entity-list { display: grid; gap: 8px; max-height: 720px; overflow: auto; }
+.entity-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 10px 12px; cursor: pointer; }
+.entity-item.active { outline: 2px solid var(--accent); }
+.entity-key { color: var(--warn); font-size: 12px; margin-bottom: 4px; }
+.entity-name { font-weight: 700; }
+.panel-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 12px; }
+.badge { color: var(--warn); font-size: 12px; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.06); }
+.editor-form { display: grid; gap: 16px; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 12px; }
+.form-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(140px, 1fr)); gap: 12px; }
+.field { display: grid; gap: 6px; }
+.field label { color: var(--muted); }
+textarea.large { min-height: 220px; resize: vertical; }
+.preview-box { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px; min-height: 260px; white-space: pre-wrap; line-height: 1.5; }
+.rules-note { margin-top: 14px; color: var(--muted); line-height: 1.6; }
+.rules-note h4 { color: var(--text); margin: 0 0 8px; }
+.io-panel textarea { min-height: 260px; resize: vertical; }
+.help { color: var(--muted); font-size: 13px; }
+@media (max-width: 1200px) { .workspace { grid-template-columns: 1fr; } }
