@@ -1,0 +1,270 @@
+{
+  "version": "0.8.7",
+  "description": "模板面板到编辑器控件的映射层。用于让 Studio 编辑器根据模板自动生成图形化表单。",
+  "fieldWidgets": {
+    "dice": {
+      "widget": "text_with_hint",
+      "placeholder": "例如 1d8 或 2d4+1",
+      "hint": "支持 NdM 和加减常数。"
+    },
+    "dice_optional": {
+      "widget": "text_with_hint",
+      "placeholder": "留空表示不启用该项",
+      "hint": "可选骰值。"
+    },
+    "dice_or_number_optional": {
+      "widget": "text_with_hint",
+      "placeholder": "例如 2 或 1d6",
+      "hint": "支持固定值或骰值。"
+    },
+    "number": {
+      "widget": "number_input"
+    },
+    "number_optional": {
+      "widget": "number_input_optional"
+    },
+    "text": {
+      "widget": "text_input"
+    },
+    "toggle": {
+      "widget": "toggle_switch"
+    },
+    "select": {
+      "widget": "dropdown"
+    },
+    "conditional_bonus": {
+      "widget": "conditional_bonus_builder",
+      "fields": [
+        "condition",
+        "bonusDamage",
+        "replaceDamage",
+        "bonusDraw",
+        "bonusMove",
+        "consumeMark"
+      ]
+    },
+    "mode_list": {
+      "widget": "repeater_cards",
+      "itemLabelKey": "name"
+    },
+    "token_bonus_table": {
+      "widget": "table_editor",
+      "columns": [
+        "tokenType",
+        "bonusDamage"
+      ]
+    },
+    "control_picker": {
+      "widget": "control_builder",
+      "fields": [
+        "type",
+        "durationTurns",
+        "isControlTag"
+      ]
+    },
+    "marked_bonus_picker": {
+      "widget": "marked_bonus_builder",
+      "fields": [
+        "bonusDamage",
+        "bonusDraw",
+        "bonusMove",
+        "consumeMark"
+      ]
+    }
+  },
+  "specialFieldRules": {
+    "direct_damage.conditionalBonus": {
+      "defaultValue": {
+        "condition": "",
+        "bonusDamage": "",
+        "replaceDamage": "",
+        "bonusDraw": 0,
+        "bonusMove": 0,
+        "consumeMark": false
+      }
+    },
+    "dual_mode.modes": {
+      "minItems": 2,
+      "defaultValue": [
+        {
+          "name": "模式 1",
+          "templateRef": "direct_damage",
+          "damage": "",
+          "range": 0,
+          "buffBasic": 0,
+          "basicAttackCapDelta": 0,
+          "consumeOn": "manual"
+        },
+        {
+          "name": "模式 2",
+          "templateRef": "self_buff",
+          "damage": "",
+          "range": 0,
+          "buffBasic": 0,
+          "basicAttackCapDelta": 0,
+          "consumeOn": "manual"
+        }
+      ]
+    },
+    "trap_with_mark_interaction.applyControl": {
+      "defaultValue": {
+        "type": "root",
+        "durationTurns": 1,
+        "isControlTag": true
+      }
+    },
+    "trap_with_mark_interaction.ifTargetMarkedBonus": {
+      "defaultValue": {
+        "bonusDamage": 0,
+        "bonusDraw": 0,
+        "bonusMove": 0,
+        "consumeMark": true
+      }
+    },
+    "consume_all_activated_tokens_for_burst.bonusByTokenType": {
+      "defaultValue": [
+        {
+          "tokenType": "skeleton",
+          "bonusDamage": "1d4"
+        },
+        {
+          "tokenType": "bone_dragon",
+          "bonusDamage": "1d8"
+        }
+      ]
+    }
+  },
+  "templateDefaults": {
+    "direct_damage": {
+      "damage": "1d6",
+      "range": 4,
+      "target": "enemy",
+      "spell": false,
+      "straight": false,
+      "conditionalBonus": null
+    },
+    "aoe": {
+      "damage": "2d4",
+      "range": 2,
+      "radius": 1,
+      "spell": true
+    },
+    "teleport": {
+      "range": 3,
+      "target": "tile",
+      "conditionalBonus": null
+    },
+    "dash_hit": {
+      "damage": "1d6",
+      "range": 3,
+      "gainBlock": "",
+      "buffBasic": 0
+    },
+    "self_buff": {
+      "heal": "",
+      "block": "",
+      "buffBasic": 0,
+      "bonusDie": "",
+      "durationTurns": null,
+      "consumeOn": "manual"
+    },
+    "summon_token_into_self_deck": {
+      "tokenKey": "",
+      "tokenType": "skeleton",
+      "insertCount": 1,
+      "shuffleIntoDeck": true
+    },
+    "consume_all_activated_tokens_for_burst": {
+      "baseDamage": "2d4",
+      "castRange": 3,
+      "radius": 1,
+      "bonusByTokenType": [
+        {
+          "tokenType": "skeleton",
+          "bonusDamage": "1d4"
+        },
+        {
+          "tokenType": "bone_dragon",
+          "bonusDamage": "1d8"
+        }
+      ]
+    },
+    "dot_damage_over_time": {
+      "damagePerTick": "1d4",
+      "tickTiming": "turn_start",
+      "durationTurns": 2,
+      "stackRule": "refresh_duration"
+    },
+    "slow_status": {
+      "moveMultiplier": 0.5,
+      "rounding": "ceil",
+      "durationTurns": 1
+    },
+    "control_status": {
+      "controlType": "root",
+      "durationTurns": 1,
+      "isControlTag": true
+    },
+    "insert_negative_card_into_target_deck": {
+      "insertCardKey": "",
+      "insertCount": 1,
+      "triggerCondition": "on_hit",
+      "shuffleIntoDeck": true
+    },
+    "negative_card_trigger_on_draw": {
+      "onDrawEffect": "explode_damage",
+      "damage": "2d6",
+      "showInPreview": true
+    },
+    "mark_target_for_bonus": {
+      "markType": "normal",
+      "durationMode": "until_consumed",
+      "durationTurns": null,
+      "consumeOn": "first_hit_by_owner"
+    },
+    "bonus_if_target_marked": {
+      "baseDamage": "1d8",
+      "bonusDamage": 2,
+      "bonusDraw": 0,
+      "bonusMove": 0,
+      "consumeMark": true
+    },
+    "trap_with_mark_interaction": {
+      "placementRange": 3,
+      "damage": "1d4",
+      "applyControl": {
+        "type": "root",
+        "durationTurns": 1,
+        "isControlTag": true
+      },
+      "ifTargetMarkedBonus": {
+        "bonusDamage": 2,
+        "bonusDraw": 0,
+        "bonusMove": 0,
+        "consumeMark": true
+      }
+    },
+    "silence_bucket_lock": {
+      "damage": "1d4",
+      "range": 4,
+      "lockedBucket": "class_or_guardian",
+      "durationTurns": 1
+    }
+  },
+  "uiBehavior": {
+    "switchTemplateResetsConfig": true,
+    "switchTemplateUsesDefaults": true,
+    "showFriendlySummary": true,
+    "showJsonPreview": true,
+    "groupFieldsBySection": true,
+    "showSourceLabelSelector": true,
+    "allowCopyCurrentEntry": true,
+    "allowCreateNewEntry": true,
+    "allowDeleteEntry": true
+  },
+  "recommendedNextUse": [
+    "将此文件接入 editor.js，让模板切换自动取 templateDefaults 初始化 config。",
+    "让 conditional_bonus_builder、control_builder、marked_bonus_builder 替代手写 JSON。",
+    "让 dual_mode 的模式编辑器基于 defaultValue 自动生成两张模式卡。"
+  ]
+}
