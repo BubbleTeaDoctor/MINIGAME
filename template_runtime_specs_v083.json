@@ -1,0 +1,225 @@
+{
+  "version": "0.8.3",
+  "description": "模板解释器运行时规格。重点覆盖死灵法师与猎人的新模板，并给出事件触发、状态字段和结算顺序。",
+  "runtimeEvents": [
+    {
+      "key": "turn_start",
+      "description": "单位回合开始时触发。可用于 DOT、自动亡灵伤害、回合开始抽牌前的被动。"
+    },
+    {
+      "key": "turn_end",
+      "description": "单位回合结束时触发。可用于回合结束清理、到回合末消失的 buff。"
+    },
+    {
+      "key": "card_drawn",
+      "description": "抽到牌后触发。可用于格挡自动结算、炸弹牌爆炸、召唤 token 激活。"
+    },
+    {
+      "key": "before_damage_apply",
+      "description": "即将造成伤害时触发。可用于标记加成、暴击、额外伤害修正。"
+    },
+    {
+      "key": "after_damage_apply",
+      "description": "伤害结算后触发。可用于吸血、命中后插牌、Faith 或 Soul Shard 获得。"
+    },
+    {
+      "key": "basic_attack_hit",
+      "description": "普通攻击命中时触发。可用于盗贼、萨满、猎人标记兑现。"
+    },
+    {
+      "key": "class_skill_cast",
+      "description": "职业技能使用时触发。可用于 Faith、Soul Shard 消耗、职业限制校验。"
+    },
+    {
+      "key": "trap_triggered",
+      "description": "陷阱被踩中时触发。可用于猎人陷阱与标记联动。"
+    }
+  ],
+  "runtimeState": {
+    "player": {
+      "activeSummons": {
+        "skeleton": 0,
+        "bone_dragon": 0
+      },
+      "marksApplied": 0,
+      "resources": {
+        "faith": 0,
+        "soul_shard": 0
+      },
+      "buffs": {
+        "weaponImbues": [],
+        "persistentUntilConsumed": []
+      },
+      "turnFlags": {
+        "markPassiveTriggered": false,
+        "resourcePaidForDraw": false,
+        "autoBlockUsed": false
+      }
+    },
+    "target": {
+      "marks": {
+        "normal": false,
+        "empowered": false
+      },
+      "controlTags": {
+        "slow": 0,
+        "disarm": 0,
+        "sheep": 0,
+        "root": 0,
+        "stun": 0,
+        "silence_bucket_lock": 0
+      }
+    }
+  },
+  "templateInterpreter": {
+    "summon_token_into_self_deck": {
+      "entryEvent": "class_skill_cast",
+      "steps": [
+        "Create token card by tokenKey",
+        "Insert into owner deck or discard according to config",
+        "Shuffle if shuffleIntoDeck is true"
+      ],
+      "drawResolution": {
+        "event": "card_drawn",
+        "ifCardBehavior": "draw_to_showcase",
+        "steps": [
+          "Move card to showcase zone",
+          "Increase player.activeSummons[tokenType] by insertCount",
+          "Do not keep this token in hand"
+        ]
+      }
+    },
+    "activated_token_auto_damage_each_turn": {
+      "entryEvent": "turn_start",
+      "steps": [
+        "For each configured token type, read player.activeSummons[tokenType]",
+        "Repeat damagePerToken that many times against the enemy",
+        "Each packet is a separate damage event"
+      ],
+      "notes": [
+        "This lets skeleton and bone_dragon feel different.",
+        "Separate packets allow shields and passives to interact more naturally."
+      ]
+    },
+    "consume_all_activated_tokens_for_burst": {
+      "entryEvent": "class_skill_cast",
+      "steps": [
+        "Start with baseDamage",
+        "Read current counts for each token type in consumeTokenTypes",
+        "Add bonusByTokenType[tokenType] for each token consumed",
+        "Apply final damage as AOE or targeted burst according to range and radius",
+        "Set all consumed token type counts to 0"
+      ],
+      "notes": [
+        "Explosion should consume active summons after calculating bonus.",
+        "This is the primary conversion from setup to burst."
+      ]
+    },
+    "mark_target_for_bonus": {
+      "entryEvent": "class_skill_cast",
+      "steps": [
+        "Set target.marks[markType] to true",
+        "If durationMode is turn_limited, also attach expiry counter",
+        "If mark already exists, refresh rather than stack unless config says otherwise"
+      ]
+    },
+    "bonus_if_target_marked": {
+      "entryEvent": "before_damage_apply",
+      "steps": [
+        "Check whether target has required mark",
+        "If yes, add configured bonusDamage or replace damage if needed",
+        "Queue bonusDraw and bonusMove for post-hit resolution",
+        "If consumeMark is true, clear the mark after successful hit"
+      ]
+    },
+    "trap_with_mark_interaction": {
+      "entryEvent": "trap_triggered",
+      "steps": [
+        "Apply base trap damage and control",
+        "If target has mark, add configured marked bonus",
+        "If consumeMark is true, remove mark"
+      ]
+    },
+    "negative_card_trigger_on_draw": {
+      "entryEvent": "card_drawn",
+      "steps": [
+        "Reveal the negative card",
+        "Resolve onDrawEffect immediately",
+        "Apply damage and statuses",
+        "Move resolved negative card to discard or showcase according to config"
+      ]
+    },
+    "silence_bucket_lock": {
+      "entryEvent": "after_damage_apply",
+      "steps": [
+        "Attach target.controlTags.silence_bucket_lock for configured turns",
+        "While active, block use of class_or_guardian bucket"
+      ],
+      "notes": [
+        "Useful for Priest silence and future anti-caster tools."
+      ]
+    }
+  },
+  "concreteExamples": {
+    "necroSkeleton": {
+      "template": "summon_token_into_self_deck",
+      "config": {
+        "tokenKey": "skeleton_token",
+        "tokenType": "skeleton",
+        "insertCount": 1,
+        "shuffleIntoDeck": true
+      }
+    },
+    "necroTurnStartPassive": {
+      "template": "activated_token_auto_damage_each_turn",
+      "config": {
+        "entries": [
+          {
+            "tokenType": "skeleton",
+            "damagePerToken": "1d4"
+          },
+          {
+            "tokenType": "bone_dragon",
+            "damagePerToken": "1d8"
+          }
+        ]
+      }
+    },
+    "necroBurst": {
+      "template": "consume_all_activated_tokens_for_burst",
+      "config": {
+        "baseDamage": "2d4",
+        "castRange": 3,
+        "radius": 1,
+        "consumeTokenTypes": ["skeleton", "bone_dragon"],
+        "bonusByTokenType": {
+          "skeleton": "1d4",
+          "bone_dragon": "1d8"
+        }
+      }
+    },
+    "hunterMark": {
+      "template": "mark_target_for_bonus",
+      "config": {
+        "markType": "normal",
+        "durationMode": "until_consumed",
+        "consumeOn": "first_hit_by_owner"
+      }
+    },
+    "hunterKillCommand": {
+      "template": "bonus_if_target_marked",
+      "config": {
+        "baseDamage": "2d8",
+        "range": 5,
+        "bonusDamage": 2,
+        "bonusDraw": 1,
+        "consumeMark": true
+      }
+    }
+  },
+  "recommendedNextFiles": [
+    "editor_template_palette_v084.json",
+    "game_interpreter_hooks_v084.md",
+    "studio_data_v084_necro_hunter.json"
+  ]
+}
