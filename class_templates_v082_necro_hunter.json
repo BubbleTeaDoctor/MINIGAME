@@ -1,0 +1,339 @@
+{
+  "version": "0.8.2",
+  "description": "死灵法师修订版与猎人新职业的模板化规格。用于后续编辑器与游戏解释器接入。",
+  "runtimeStateAdditions": {
+    "activeSummons": {
+      "skeleton": 0,
+      "bone_dragon": 0
+    },
+    "marks": {
+      "normal": false,
+      "empowered": false
+    },
+    "resources": {
+      "faith": 0,
+      "soul_shard": 0
+    }
+  },
+  "newTemplates": {
+    "summon_token_into_self_deck": {
+      "label": "向自己牌库插入召唤 token",
+      "fields": [
+        "tokenKey",
+        "tokenType",
+        "insertCount",
+        "shuffleIntoDeck"
+      ]
+    },
+    "activated_token_auto_damage_each_turn": {
+      "label": "展示区 token 每回合自动伤害",
+      "fields": [
+        "tokenType",
+        "damagePerToken",
+        "triggerTiming",
+        "targetRule"
+      ]
+    },
+    "consume_all_activated_tokens_for_burst": {
+      "label": "摧毁全部已激活 token 换取爆发",
+      "fields": [
+        "baseDamage",
+        "castRange",
+        "radius",
+        "consumeTokenTypes",
+        "bonusByTokenType"
+      ]
+    },
+    "mark_target_for_bonus": {
+      "label": "标记目标等待后续兑现",
+      "fields": [
+        "markType",
+        "durationMode",
+        "durationTurns",
+        "consumeOn"
+      ]
+    },
+    "bonus_if_target_marked": {
+      "label": "目标被标记时获得额外收益",
+      "fields": [
+        "bonusDamage",
+        "bonusDraw",
+        "bonusMove",
+        "consumeMark"
+      ]
+    },
+    "trap_with_mark_interaction": {
+      "label": "陷阱与标记联动",
+      "fields": [
+        "damage",
+        "applyControl",
+        "ifTargetMarkedBonus"
+      ]
+    }
+  },
+  "professions": {
+    "necro": {
+      "name": "死灵法师",
+      "coreLoop": [
+        "向自己的牌库埋入骷髅或骨龙 token",
+        "抽到 token 后在展示区激活亡灵",
+        "回合开始自动由激活亡灵造成伤害",
+        "使用亡灵爆发摧毁场上亡灵换取大爆发",
+        "同时用埋骨炸弹污染对手牌库"
+      ],
+      "base": {
+        "hp": 60,
+        "move": 3,
+        "blockCards": {
+          "count": 4,
+          "die": "1d4"
+        }
+      },
+      "passive": {
+        "template": "activated_token_auto_damage_each_turn",
+        "config": {
+          "entries": [
+            {
+              "tokenType": "skeleton",
+              "damagePerToken": "1d4",
+              "triggerTiming": "turn_start",
+              "targetRule": "enemy_single"
+            },
+            {
+              "tokenType": "bone_dragon",
+              "damagePerToken": "1d8",
+              "triggerTiming": "turn_start",
+              "targetRule": "enemy_single"
+            }
+          ]
+        }
+      },
+      "cards": {
+        "necro_skeleton": {
+          "name": "召唤骷髅",
+          "count": 2,
+          "template": "summon_token_into_self_deck",
+          "config": {
+            "tokenKey": "skeleton_token",
+            "tokenType": "skeleton",
+            "insertCount": 1,
+            "shuffleIntoDeck": true
+          }
+        },
+        "necro_bonedragon": {
+          "name": "召唤骨龙",
+          "count": 1,
+          "template": "summon_token_into_self_deck",
+          "config": {
+            "tokenKey": "bone_dragon_token",
+            "tokenType": "bone_dragon",
+            "insertCount": 1,
+            "shuffleIntoDeck": true
+          }
+        },
+        "necro_spear": {
+          "name": "骨矛",
+          "count": 2,
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d10",
+            "range": 5,
+            "target": "enemy",
+            "spell": true
+          }
+        },
+        "necro_burst": {
+          "name": "亡灵爆发",
+          "count": 2,
+          "template": "consume_all_activated_tokens_for_burst",
+          "config": {
+            "baseDamage": "2d4",
+            "castRange": 3,
+            "radius": 1,
+            "consumeTokenTypes": [
+              "skeleton",
+              "bone_dragon"
+            ],
+            "bonusByTokenType": {
+              "skeleton": "1d4",
+              "bone_dragon": "1d8"
+            }
+          }
+        },
+        "necro_shield": {
+          "name": "骨盾",
+          "count": 2,
+          "template": "self_buff",
+          "config": {
+            "block": "1d8",
+            "consumeOn": "manual",
+            "durationTurns": null
+          }
+        },
+        "necro_bomb": {
+          "name": "埋骨炸弹",
+          "count": 2,
+          "template": "insert_negative_card_into_target_deck",
+          "config": {
+            "insertCardKey": "necro_bomb_token",
+            "insertCount": 1,
+            "triggerCondition": "on_hit",
+            "shuffleIntoDeck": true
+          }
+        }
+      },
+      "negativeCards": {
+        "skeleton_token": {
+          "name": "骷髅 token",
+          "behavior": "draw_to_showcase",
+          "result": {
+            "addActiveSummon": {
+              "skeleton": 1
+            }
+          }
+        },
+        "bone_dragon_token": {
+          "name": "骨龙 token",
+          "behavior": "draw_to_showcase",
+          "result": {
+            "addActiveSummon": {
+              "bone_dragon": 1
+            }
+          }
+        },
+        "necro_bomb_token": {
+          "name": "埋骨炸弹",
+          "template": "negative_card_trigger_on_draw",
+          "config": {
+            "onDrawEffect": "explode_damage",
+            "damage": "2d6",
+            "apply": {
+              "slow": 1
+            },
+            "showInPreview": true
+          }
+        }
+      }
+    },
+    "hunter": {
+      "name": "猎人",
+      "coreLoop": [
+        "先给目标挂猎印",
+        "再用射击或陷阱兑现标记收益",
+        "通过位移维持安全距离",
+        "依靠标记连动完成收割"
+      ],
+      "base": {
+        "hp": 52,
+        "move": 3,
+        "blockCards": {
+          "count": 4,
+          "die": "1d4"
+        }
+      },
+      "passive": {
+        "template": "bonus_if_target_marked",
+        "config": {
+          "triggerLimit": "once_per_turn",
+          "bonusDamage": 2,
+          "bonusDraw": 1,
+          "bonusMove": 0,
+          "consumeMark": true,
+          "note": "每回合第一次命中被标记目标时触发。"
+        }
+      },
+      "cards": {
+        "hunter_mark": {
+          "name": "猎人印记",
+          "count": 2,
+          "template": "mark_target_for_bonus",
+          "config": {
+            "markType": "normal_mark",
+            "durationMode": "until_consumed",
+            "durationTurns": null,
+            "consumeOn": "first_hit_by_owner"
+          }
+        },
+        "hunter_aimed": {
+          "name": "瞄准射击",
+          "count": 2,
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d8",
+            "range": 6,
+            "target": "enemy",
+            "conditionalBonus": {
+              "condition": "target_marked",
+              "bonusDamage": "1d6",
+              "consumeMark": false
+            }
+          }
+        },
+        "hunter_arcane": {
+          "name": "奥术射击",
+          "count": 2,
+          "template": "direct_damage",
+          "config": {
+            "damage": "1d6+1",
+            "range": 5,
+            "target": "enemy",
+            "conditionalBonus": {
+              "condition": "target_marked",
+              "replaceDamage": "1d10+1",
+              "consumeMark": false
+            }
+          }
+        },
+        "hunter_disengage": {
+          "name": "逃脱",
+          "count": 2,
+          "template": "teleport",
+          "config": {
+            "range": 3,
+            "target": "tile",
+            "conditionalBonus": {
+              "condition": "adjacent_enemy_exists",
+              "bonusMove": 1
+            }
+          }
+        },
+        "hunter_snare_trap": {
+          "name": "束缚陷阱",
+          "count": 2,
+          "template": "trap_with_mark_interaction",
+          "config": {
+            "placementRange": 3,
+            "damage": "1d4",
+            "applyControl": {
+              "type": "root",
+              "durationTurns": 1
+            },
+            "ifTargetMarkedBonus": {
+              "bonusDamage": 2,
+              "consumeMark": true
+            }
+          }
+        },
+        "hunter_kill_command": {
+          "name": "杀戮命令",
+          "count": 1,
+          "template": "bonus_if_target_marked",
+          "config": {
+            "baseDamage": "2d8",
+            "range": 5,
+            "bonusDamage": 2,
+            "bonusDraw": 1,
+            "bonusMove": 0,
+            "consumeMark": true
+          }
+        }
+      }
+    }
+  },
+  "implementationPriority": [
+    "先把死灵法师的展示区 token 与回合开始自动伤害接进解释器",
+    "再补亡灵爆发的 consume_all_activated_tokens_for_burst",
+    "之后实现猎印系统的运行时字段与触发消费",
+    "最后把猎人职业卡接入编辑器模板选择"
+  ]
+}
