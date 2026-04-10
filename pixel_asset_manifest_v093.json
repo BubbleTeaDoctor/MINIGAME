@@ -1,0 +1,291 @@
+{
+  "version": "0.9.3",
+  "description": "2D 像素风首批素材清单。用于后续自己绘制、外包制作或生成式辅助制作时统一对表。",
+  "productionPriority": [
+    {
+      "stage": 1,
+      "label": "核心可玩视觉",
+      "assets": [
+        "board_tiles_basic",
+        "board_tile_black_hole",
+        "board_tile_spike",
+        "unit_placeholders_9_professions",
+        "status_icons_core",
+        "showcase_icons_core",
+        "card_frame_set",
+        "selection_overlay_set"
+      ]
+    },
+    {
+      "stage": 2,
+      "label": "职业辨识与基础动画",
+      "assets": [
+        "profession_idle_sprites",
+        "profession_attack_sprites",
+        "profession_cast_sprites",
+        "common_hit_fx",
+        "common_projectiles",
+        "summon_tokens_visuals"
+      ]
+    },
+    {
+      "stage": 3,
+      "label": "完整 polish",
+      "assets": [
+        "full_skill_fx_set",
+        "weapon_variants_visual",
+        "accessory_icons_complete",
+        "map_theme_variants",
+        "ui_polish_and_fonts"
+      ]
+    }
+  ],
+  "assetGroups": {
+    "board": [
+      {
+        "key": "board_tiles_basic",
+        "label": "普通六角地格",
+        "spec": {
+          "count": 3,
+          "frameSize": "64x64",
+          "style": "暗石板 / 古战场",
+          "notes": "至少做 3 张轻微变化，避免地图平铺太重复。"
+        }
+      },
+      {
+        "key": "board_tile_black_hole",
+        "label": "黑洞中心格",
+        "spec": {
+          "count": 1,
+          "frameSize": "64x64",
+          "style": "深紫黑旋涡",
+          "notes": "需要一眼看出中心危险与全图引力。"
+        }
+      },
+      {
+        "key": "board_tile_spike",
+        "label": "尖刺地格",
+        "spec": {
+          "count": 2,
+          "frameSize": "64x64",
+          "style": "骨刺/黑曜石刺",
+          "notes": "危险感要明显，高于普通地格。"
+        }
+      },
+      {
+        "key": "selection_overlay_set",
+        "label": "高亮与覆盖层",
+        "spec": {
+          "items": [
+            "move_overlay",
+            "attack_overlay",
+            "cast_overlay",
+            "aoe_preview_overlay",
+            "dash_landing_overlay",
+            "black_hole_pull_indicator"
+          ],
+          "frameSize": "64x64",
+          "notes": "全部需要透明背景，可叠在地格之上。"
+        }
+      }
+    ],
+    "units": [
+      {
+        "key": "unit_placeholders_9_professions",
+        "label": "九职业占位 sprite",
+        "spec": {
+          "professions": [
+            "warrior",
+            "mage",
+            "rogue",
+            "swordsman",
+            "priest",
+            "shaman",
+            "necro",
+            "warlock",
+            "hunter"
+          ],
+          "frameSize": "48x48",
+          "minAnimations": ["idle"],
+          "notes": "第一批先做静态职业辨识图，确保 silhouette 清晰。"
+        }
+      },
+      {
+        "key": "profession_idle_sprites",
+        "label": "职业 idle 动画",
+        "spec": {
+          "frameCount": 2,
+          "frameSize": "48x48"
+        }
+      },
+      {
+        "key": "profession_attack_sprites",
+        "label": "职业攻击动画",
+        "spec": {
+          "frameCount": 4,
+          "frameSize": "48x48"
+        }
+      },
+      {
+        "key": "profession_cast_sprites",
+        "label": "职业施法动画",
+        "spec": {
+          "frameCount": 4,
+          "frameSize": "48x48"
+        }
+      }
+    ],
+    "summons_and_tokens": [
+      {
+        "key": "summon_tokens_visuals",
+        "label": "召唤物与 token 图标",
+        "spec": {
+          "items": [
+            "skeleton_token",
+            "bone_dragon_token",
+            "necro_bomb_token",
+            "mark_normal",
+            "mark_empowered"
+          ],
+          "frameSize": "24x24",
+          "notes": "需要同时适配展示区与状态图标。"
+        }
+      }
+    ],
+    "status_and_fx": [
+      {
+        "key": "status_icons_core",
+        "label": "核心状态图标",
+        "spec": {
+          "items": [
+            "burn",
+            "slow",
+            "disarm",
+            "sheep",
+            "root",
+            "stun",
+            "silence_bucket_lock",
+            "shield",
+            "heal",
+            "dot"
+          ],
+          "frameSize": "16x16",
+          "notes": "优先高辨识，不追求复杂。"
+        }
+      },
+      {
+        "key": "common_hit_fx",
+        "label": "通用命中特效",
+        "spec": {
+          "items": [
+            "slash_hit",
+            "impact_burst",
+            "magic_hit",
+            "crit_flash"
+          ],
+          "frameCount": 4,
+          "frameSize": "32x32"
+        }
+      },
+      {
+        "key": "common_projectiles",
+        "label": "通用投射物",
+        "spec": {
+          "items": [
+            "arrow",
+            "arcane_bolt",
+            "bone_spear",
+            "holy_bolt",
+            "shadow_fire"
+          ],
+          "frameCount": 2,
+          "frameSize": "16x16"
+        }
+      },
+      {
+        "key": "full_skill_fx_set",
+        "label": "完整技能特效",
+        "spec": {
+          "items": [
+            "black_hole_pulse",
+            "teleport_smoke",
+            "burn_ticks",
+            "holy_circle",
+            "trap_trigger",
+            "summon_activate",
+            "mark_apply",
+            "mark_consume"
+          ]
+        }
+      }
+    ],
+    "ui": [
+      {
+        "key": "card_frame_set",
+        "label": "卡牌边框与来源标签",
+        "spec": {
+          "items": [
+            "card_frame_common",
+            "source_profession",
+            "source_weapon",
+            "source_accessory",
+            "source_guardian",
+            "source_negative",
+            "template_dual_mode_badge"
+          ],
+          "notes": "来源标签必须一眼看清。"
+        }
+      },
+      {
+        "key": "showcase_icons_core",
+        "label": "展示区图标",
+        "spec": {
+          "items": [
+            "showcase_skeleton",
+            "showcase_bone_dragon",
+            "showcase_bomb",
+            "showcase_mark"
+          ],
+          "frameSize": "24x24"
+        }
+      },
+      {
+        "key": "ui_polish_and_fonts",
+        "label": "UI 字体与像素按钮",
+        "spec": {
+          "items": [
+            "pixel_font_main",
+            "pixel_button_primary",
+            "pixel_button_secondary",
+            "panel_frame_dark",
+            "damage_number_set"
+          ]
+        }
+      }
+    }
+  },
+  "professionVisualAnchors": {
+    "warrior": ["大肩甲", "双手武器", "红金铁灰"],
+    "mage": ["法杖", "长袍", "蓝紫光效"],
+    "rogue": ["兜帽", "匕首", "轻甲深色"],
+    "swordsman": ["细长刀", "收刀姿态", "黑白红"],
+    "priest": ["圣徽", "白金蓝", "神圣光环"],
+    "shaman": ["图腾", "元素挂件", "青橙棕"],
+    "necro": ["骨饰", "亡灵绿", "骨白暗紫"],
+    "warlock": ["邪能火焰", "契约纹样", "紫绿黑"],
+    "hunter": ["弓", "皮革绿褐", "标记/陷阱件"]
+  },
+  "readyForGeneration": {
+    "bestFirstBatch": [
+      "board_tiles_basic",
+      "board_tile_black_hole",
+      "board_tile_spike",
+      "unit_placeholders_9_professions",
+      "status_icons_core",
+      "summon_tokens_visuals",
+      "card_frame_set",
+      "selection_overlay_set"
+    ],
+    "why": "这批素材最先影响整体观感与可读性，也最不依赖完整动画系统。"
+  }
+}
