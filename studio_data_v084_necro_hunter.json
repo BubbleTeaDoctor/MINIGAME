@@ -1,0 +1,296 @@
+{
+  "version": "0.8.4",
+  "description": "Studio 数据层样例：把死灵法师与猎人正式并入职业、模板与运行时建议结构。",
+  "studioData": {
+    "professions": {
+      "necro": {
+        "name": "死灵法师",
+        "role": "ranged",
+        "base": {
+          "hp": 60,
+          "move": 3,
+          "blockCards": {
+            "count": 4,
+            "die": "1d4"
+          }
+        },
+        "runtime": {
+          "activeSummons": {
+            "skeleton": 0,
+            "bone_dragon": 0
+          }
+        },
+        "passive": {
+          "template": "activated_token_auto_damage_each_turn",
+          "config": {
+            "entries": [
+              {
+                "tokenType": "skeleton",
+                "damagePerToken": "1d4",
+                "triggerTiming": "turn_start",
+                "targetRule": "enemy_single"
+              },
+              {
+                "tokenType": "bone_dragon",
+                "damagePerToken": "1d8",
+                "triggerTiming": "turn_start",
+                "targetRule": "enemy_single"
+              }
+            ]
+          }
+        },
+        "deck": [
+          { "cardKey": "necro_skeleton", "count": 2 },
+          { "cardKey": "necro_bonedragon", "count": 1 },
+          { "cardKey": "necro_spear", "count": 2 },
+          { "cardKey": "necro_burst", "count": 2 },
+          { "cardKey": "necro_shield", "count": 2 },
+          { "cardKey": "necro_bomb", "count": 2 },
+          { "cardKey": "block_d4", "count": 4 }
+        ]
+      },
+      "hunter": {
+        "name": "猎人",
+        "role": "ranged",
+        "base": {
+          "hp": 52,
+          "move": 3,
+          "blockCards": {
+            "count": 4,
+            "die": "1d4"
+          }
+        },
+        "runtime": {
+          "marks": {
+            "normal": false,
+            "empowered": false
+          }
+        },
+        "passive": {
+          "template": "bonus_if_target_marked",
+          "config": {
+            "triggerLimit": "once_per_turn",
+            "bonusDamage": 2,
+            "bonusDraw": 1,
+            "bonusMove": 0,
+            "consumeMark": true,
+            "note": "每回合第一次命中被标记目标时触发。"
+          }
+        },
+        "deck": [
+          { "cardKey": "hunter_mark", "count": 2 },
+          { "cardKey": "hunter_aimed", "count": 2 },
+          { "cardKey": "hunter_arcane", "count": 2 },
+          { "cardKey": "hunter_disengage", "count": 2 },
+          { "cardKey": "hunter_snare_trap", "count": 2 },
+          { "cardKey": "hunter_kill_command", "count": 1 },
+          { "cardKey": "block_d4", "count": 4 }
+        ]
+      }
+    },
+    "cards": {
+      "necro_skeleton": {
+        "name": "召唤骷髅",
+        "source": "职业技能",
+        "template": "summon_token_into_self_deck",
+        "config": {
+          "tokenKey": "skeleton_token",
+          "tokenType": "skeleton",
+          "insertCount": 1,
+          "shuffleIntoDeck": true
+        }
+      },
+      "necro_bonedragon": {
+        "name": "召唤骨龙",
+        "source": "职业技能",
+        "template": "summon_token_into_self_deck",
+        "config": {
+          "tokenKey": "bone_dragon_token",
+          "tokenType": "bone_dragon",
+          "insertCount": 1,
+          "shuffleIntoDeck": true
+        }
+      },
+      "necro_spear": {
+        "name": "骨矛",
+        "source": "职业技能",
+        "template": "direct_damage",
+        "config": {
+          "damage": "1d10",
+          "range": 5,
+          "target": "enemy",
+          "spell": true
+        }
+      },
+      "necro_burst": {
+        "name": "亡灵爆发",
+        "source": "职业技能",
+        "template": "consume_all_activated_tokens_for_burst",
+        "config": {
+          "baseDamage": "2d4",
+          "castRange": 3,
+          "radius": 1,
+          "consumeTokenTypes": ["skeleton", "bone_dragon"],
+          "bonusByTokenType": {
+            "skeleton": "1d4",
+            "bone_dragon": "1d8"
+          }
+        }
+      },
+      "necro_shield": {
+        "name": "骨盾",
+        "source": "职业技能",
+        "template": "self_buff",
+        "config": {
+          "block": "1d8",
+          "consumeOn": "manual",
+          "durationTurns": null
+        }
+      },
+      "necro_bomb": {
+        "name": "埋骨炸弹",
+        "source": "职业技能",
+        "template": "insert_negative_card_into_target_deck",
+        "config": {
+          "insertCardKey": "necro_bomb_token",
+          "insertCount": 1,
+          "triggerCondition": "on_hit",
+          "shuffleIntoDeck": true
+        }
+      },
+      "skeleton_token": {
+        "name": "骷髅 token",
+        "source": "负面牌/召唤物",
+        "template": "summon_token_into_self_deck",
+        "behavior": "draw_to_showcase",
+        "result": {
+          "addActiveSummon": {
+            "skeleton": 1
+          }
+        }
+      },
+      "bone_dragon_token": {
+        "name": "骨龙 token",
+        "source": "负面牌/召唤物",
+        "template": "summon_token_into_self_deck",
+        "behavior": "draw_to_showcase",
+        "result": {
+          "addActiveSummon": {
+            "bone_dragon": 1
+          }
+        }
+      },
+      "necro_bomb_token": {
+        "name": "埋骨炸弹",
+        "source": "负面牌",
+        "template": "negative_card_trigger_on_draw",
+        "config": {
+          "onDrawEffect": "explode_damage",
+          "damage": "2d6",
+          "apply": {
+            "slow": 1
+          },
+          "showInPreview": true
+        }
+      },
+      "hunter_mark": {
+        "name": "猎人印记",
+        "source": "职业技能",
+        "template": "mark_target_for_bonus",
+        "config": {
+          "markType": "normal",
+          "durationMode": "until_consumed",
+          "durationTurns": null,
+          "consumeOn": "first_hit_by_owner"
+        }
+      },
+      "hunter_aimed": {
+        "name": "瞄准射击",
+        "source": "职业技能",
+        "template": "direct_damage",
+        "config": {
+          "damage": "1d8",
+          "range": 6,
+          "target": "enemy",
+          "conditionalBonus": {
+            "condition": "target_marked",
+            "bonusDamage": "1d6",
+            "consumeMark": false
+          }
+        }
+      },
+      "hunter_arcane": {
+        "name": "奥术射击",
+        "source": "职业技能",
+        "template": "direct_damage",
+        "config": {
+          "damage": "1d6+1",
+          "range": 5,
+          "target": "enemy",
+          "conditionalBonus": {
+            "condition": "target_marked",
+            "replaceDamage": "1d10+1",
+            "consumeMark": false
+          }
+        }
+      },
+      "hunter_disengage": {
+        "name": "逃脱",
+        "source": "职业技能",
+        "template": "teleport",
+        "config": {
+          "range": 3,
+          "target": "tile",
+          "conditionalBonus": {
+            "condition": "adjacent_enemy_exists",
+            "bonusMove": 1
+          }
+        }
+      },
+      "hunter_snare_trap": {
+        "name": "束缚陷阱",
+        "source": "职业技能",
+        "template": "trap_with_mark_interaction",
+        "config": {
+          "placementRange": 3,
+          "damage": "1d4",
+          "applyControl": {
+            "type": "root",
+            "durationTurns": 1
+          },
+          "ifTargetMarkedBonus": {
+            "bonusDamage": 2,
+            "consumeMark": true
+          }
+        }
+      },
+      "hunter_kill_command": {
+        "name": "杀戮命令",
+        "source": "职业技能",
+        "template": "bonus_if_target_marked",
+        "config": {
+          "baseDamage": "2d8",
+          "range": 5,
+          "bonusDamage": 2,
+          "bonusDraw": 1,
+          "bonusMove": 0,
+          "consumeMark": true
+        }
+      },
+      "block_d4": {
+        "name": "1D4 格挡",
+        "source": "格挡牌",
+        "template": "block_auto_on_draw",
+        "config": {
+          "block": "1d4"
+        }
+      }
+    }
+  },
+  "integrationTargets": [
+    "Template editor should expose necro and hunter in profession picker",
+    "Game interpreter should read activeSummons and marks from runtime state",
+    "Showcase panel should render skeleton and bone_dragon counts",
+    "Unit status chips should render normal and empowered marks"
+  ]
+}
