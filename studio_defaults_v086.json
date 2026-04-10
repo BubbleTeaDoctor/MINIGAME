@@ -1,0 +1,162 @@
+{
+  "version": "0.8.6",
+  "description": "Studio 主包默认配置。整合地图半径、职业启用、UI 面板、解释器接入优先级。",
+  "boardDefaults": {
+    "hexRadius": 6,
+    "hexDiameter": 13,
+    "tileSize": 48,
+    "spawnTiles": [
+      { "q": -6, "r": 0 },
+      { "q": 6, "r": 0 }
+    ],
+    "centerBlackHole": {
+      "q": 0,
+      "r": 0,
+      "globalPull": true,
+      "pullDistancePerTurn": 1,
+      "centerDamage": "2d8",
+      "label": "黑洞 / 全图引力"
+    },
+    "spikeLayout": {
+      "count": 8,
+      "damage": "2d8",
+      "suggestedTiles": [
+        { "q": -3, "r": 1 },
+        { "q": -2, "r": -2 },
+        { "q": -1, "r": 3 },
+        { "q": 2, "r": -3 },
+        { "q": 3, "r": -1 },
+        { "q": 1, "r": 2 },
+        { "q": -4, "r": 3 },
+        { "q": 4, "r": -3 }
+      ]
+    }
+  },
+  "enabledProfessions": [
+    "warrior",
+    "mage",
+    "rogue",
+    "swordsman",
+    "priest",
+    "shaman",
+    "necro",
+    "warlock",
+    "hunter"
+  ],
+  "professionDefaults": {
+    "warrior": { "move": 5, "role": "melee" },
+    "rogue": { "move": 5, "role": "melee" },
+    "swordsman": { "move": 5, "role": "melee" },
+    "mage": { "move": 3, "role": "ranged" },
+    "priest": { "move": 3, "role": "ranged" },
+    "shaman": { "move": 3, "role": "ranged" },
+    "necro": { "move": 3, "role": "ranged" },
+    "warlock": { "move": 3, "role": "ranged" },
+    "hunter": { "move": 3, "role": "ranged" }
+  },
+  "gameUiPanels": {
+    "leftStatusPanel": {
+      "showPlayerBaseStats": true,
+      "showActionBuckets": true,
+      "showWeaponInfo": true,
+      "showAccessoryInfo": true
+    },
+    "showcasePanel": {
+      "enabled": true,
+      "sections": [
+        {
+          "key": "activeSummons",
+          "label": "展示区 / 召唤物",
+          "entries": [
+            { "key": "skeleton", "label": "骷髅" },
+            { "key": "bone_dragon", "label": "骨龙" }
+          ]
+        },
+        {
+          "key": "negativeCards",
+          "label": "展示区 / 负面牌",
+          "entries": [
+            { "key": "necro_bomb_token", "label": "埋骨炸弹" }
+          ]
+        }
+      ]
+    },
+    "unitStatusChips": {
+      "enabled": true,
+      "statuses": [
+        "burn",
+        "slow",
+        "disarm",
+        "sheep",
+        "root",
+        "stun",
+        "silence_bucket_lock",
+        "mark_normal",
+        "mark_empowered"
+      ]
+    },
+    "handCards": {
+      "showSourceLabel": true,
+      "showTemplateLabel": true,
+      "showModeButtonForDualMode": true
+    }
+  },
+  "interpreterPriority": [
+    {
+      "step": 1,
+      "target": "board_radius_6_and_unified_highlight",
+      "reason": "地图太小时位移和远程体验失真，优先级最高。"
+    },
+    {
+      "step": 2,
+      "target": "runtime_state_fields",
+      "reason": "必须先把 activeSummons、marks、resources 接进 player/unit state。"
+    },
+    {
+      "step": 3,
+      "target": "turn_start_runner",
+      "reason": "用于 DOT、亡灵自动伤害、回合开始触发。"
+    },
+    {
+      "step": 4,
+      "target": "card_drawn_runner",
+      "reason": "用于格挡自动结算、召唤 token 进入展示区、负面牌爆炸。"
+    },
+    {
+      "step": 5,
+      "target": "dual_mode_flow",
+      "reason": "双模式卡必须先选模式，再高亮。"
+    },
+    {
+      "step": 6,
+      "target": "necro_and_hunter_template_handlers",
+      "reason": "把死灵法师和猎人真正接回游戏解释器。"
+    }
+  ],
+  "editorIntegration": {
+    "paletteFile": "editor_template_palette_v084.json",
+    "runtimeSpecFile": "template_runtime_specs_v083.json",
+    "boardSpecFile": "board_and_mobility_specs_v085.json",
+    "dataLayerFile": "studio_data_v084_necro_hunter.json",
+    "shouldExposeBoardPanel": true,
+    "boardPanelFields": [
+      "hexRadius",
+      "spawnTiles",
+      "centerBlackHole.pullDistancePerTurn",
+      "spikeLayout.count"
+    ]
+  },
+  "nextBuildGoal": {
+    "title": "v0.8.x 第一可玩整合版",
+    "mustHave": [
+      "地图半径 6",
+      "统一高亮逻辑",
+      "展示区召唤物面板",
+      "死灵法师亡灵自动伤害",
+      "亡灵爆发消耗召唤物",
+      "猎人标记显示与兑现",
+      "双模式按钮式交互",
+      "武器/饰品/职业来源标签"
+    ]
+  }
+}
