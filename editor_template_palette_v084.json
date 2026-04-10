@@ -1,0 +1,241 @@
+{
+  "version": "0.8.4",
+  "description": "模板优先编辑器的模板面板定义。用于把解释器模板转成图形化表单。",
+  "groups": [
+    {
+      "key": "card_damage",
+      "label": "伤害与控制",
+      "templates": [
+        {
+          "key": "direct_damage",
+          "label": "直接伤害",
+          "summary": "对单体造成一次伤害，可附带状态或条件加成。",
+          "uiFields": [
+            { "key": "damage", "label": "伤害骰", "type": "dice" },
+            { "key": "range", "label": "距离", "type": "number" },
+            { "key": "target", "label": "目标类型", "type": "select", "options": ["enemy"] },
+            { "key": "spell", "label": "是否法术", "type": "toggle" },
+            { "key": "straight", "label": "是否直线", "type": "toggle" },
+            { "key": "conditionalBonus", "label": "条件加成", "type": "conditional_bonus" }
+          ]
+        },
+        {
+          "key": "aoe",
+          "label": "范围伤害",
+          "summary": "选择目标地块后，以半径结算范围伤害。",
+          "uiFields": [
+            { "key": "damage", "label": "基础伤害骰", "type": "dice" },
+            { "key": "range", "label": "施法距离", "type": "number" },
+            { "key": "radius", "label": "范围半径", "type": "number" },
+            { "key": "spell", "label": "是否法术", "type": "toggle" }
+          ]
+        },
+        {
+          "key": "silence_bucket_lock",
+          "label": "沉默/技能桶封锁",
+          "summary": "限制目标某一类行动桶，例如禁止职业/守护神技能。",
+          "uiFields": [
+            { "key": "damage", "label": "附带伤害骰", "type": "dice_optional" },
+            { "key": "range", "label": "距离", "type": "number" },
+            { "key": "lockedBucket", "label": "封锁行动桶", "type": "select", "options": ["class_or_guardian", "weapon_or_accessory", "basic_attack"] },
+            { "key": "durationTurns", "label": "持续回合", "type": "number" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "card_mobility",
+      "label": "位移与爆发",
+      "templates": [
+        {
+          "key": "teleport",
+          "label": "位移/传送",
+          "summary": "移动到指定距离内空位。",
+          "uiFields": [
+            { "key": "range", "label": "位移距离", "type": "number" },
+            { "key": "target", "label": "目标类型", "type": "select", "options": ["tile"] },
+            { "key": "conditionalBonus", "label": "附带条件加成", "type": "conditional_bonus" }
+          ]
+        },
+        {
+          "key": "dash_hit",
+          "label": "冲锋并攻击",
+          "summary": "靠近目标后结算攻击。",
+          "uiFields": [
+            { "key": "damage", "label": "伤害骰", "type": "dice" },
+            { "key": "range", "label": "冲锋距离", "type": "number" },
+            { "key": "gainBlock", "label": "额外格挡", "type": "dice_optional" },
+            { "key": "buffBasic", "label": "下次普攻加值", "type": "number_optional" }
+          ]
+        },
+        {
+          "key": "dual_mode",
+          "label": "双模式技能",
+          "summary": "使用时弹出两个或多个模式供玩家选择。",
+          "uiFields": [
+            { "key": "modes", "label": "模式列表", "type": "mode_list" }
+          ],
+          "modeUiFields": [
+            { "key": "name", "label": "模式名称", "type": "text" },
+            { "key": "templateRef", "label": "模式模板", "type": "select", "options": ["direct_damage", "self_buff", "teleport", "dash_hit"] },
+            { "key": "damage", "label": "伤害骰", "type": "dice_optional" },
+            { "key": "range", "label": "距离", "type": "number_optional" },
+            { "key": "buffBasic", "label": "普攻加值", "type": "number_optional" },
+            { "key": "basicAttackCapDelta", "label": "普攻次数增量", "type": "number_optional" },
+            { "key": "consumeOn", "label": "消耗条件", "type": "select", "options": ["next_basic_attack", "next_spell_hit", "end_of_turn", "manual"] }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "card_resources",
+      "label": "资源与召唤",
+      "templates": [
+        {
+          "key": "self_buff",
+          "label": "自身增益",
+          "summary": "默认永久直到消耗，可用来做治疗、护盾、武器附魔、加伤。",
+          "uiFields": [
+            { "key": "heal", "label": "治疗", "type": "dice_optional" },
+            { "key": "block", "label": "格挡", "type": "dice_optional" },
+            { "key": "buffBasic", "label": "普攻加值", "type": "number_optional" },
+            { "key": "bonusDie", "label": "额外骰子", "type": "dice_optional" },
+            { "key": "durationTurns", "label": "持续回合", "type": "number_optional" },
+            { "key": "consumeOn", "label": "消耗条件", "type": "select", "options": ["next_basic_attack", "next_skill", "next_damage", "next_spell_hit", "end_of_turn", "manual", "immediate"] }
+          ]
+        },
+        {
+          "key": "summon_token_into_self_deck",
+          "label": "召唤 token 洗入自己牌库",
+          "summary": "抽到后不进入手牌，而是进入展示区并激活召唤物。",
+          "uiFields": [
+            { "key": "tokenKey", "label": "token key", "type": "text" },
+            { "key": "tokenType", "label": "召唤类型", "type": "select", "options": ["skeleton", "bone_dragon", "custom"] },
+            { "key": "insertCount", "label": "加入数量", "type": "number" },
+            { "key": "shuffleIntoDeck", "label": "是否洗入牌库", "type": "toggle" }
+          ]
+        },
+        {
+          "key": "consume_all_activated_tokens_for_burst",
+          "label": "摧毁展示区召唤物换爆发",
+          "summary": "读取当前展示区 token，计算额外伤害后清空。",
+          "uiFields": [
+            { "key": "baseDamage", "label": "基础伤害骰", "type": "dice" },
+            { "key": "castRange", "label": "施法距离", "type": "number" },
+            { "key": "radius", "label": "半径", "type": "number" },
+            { "key": "bonusByTokenType", "label": "不同召唤物的加成", "type": "token_bonus_table" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "status_and_negative_cards",
+      "label": "状态与负面牌",
+      "templates": [
+        {
+          "key": "dot_damage_over_time",
+          "label": "DOT 持续伤害",
+          "summary": "每回合开始或结束自动造成伤害。",
+          "uiFields": [
+            { "key": "damagePerTick", "label": "每跳伤害", "type": "dice" },
+            { "key": "tickTiming", "label": "触发时机", "type": "select", "options": ["turn_start", "turn_end"] },
+            { "key": "durationTurns", "label": "持续回合", "type": "number" },
+            { "key": "stackRule", "label": "叠加规则", "type": "select", "options": ["refresh_duration", "stack_damage", "no_stack"] }
+          ]
+        },
+        {
+          "key": "slow_status",
+          "label": "减速",
+          "summary": "压低移动速度。",
+          "uiFields": [
+            { "key": "moveMultiplier", "label": "移动倍率", "type": "number" },
+            { "key": "rounding", "label": "取整方式", "type": "select", "options": ["ceil", "floor", "round"] },
+            { "key": "durationTurns", "label": "持续回合", "type": "number" }
+          ]
+        },
+        {
+          "key": "control_status",
+          "label": "控制状态",
+          "summary": "统一定义变羊、缴械、定身、眩晕等控制。",
+          "uiFields": [
+            { "key": "controlType", "label": "控制类型", "type": "select", "options": ["sheep", "disarm", "root", "stun", "slow"] },
+            { "key": "durationTurns", "label": "持续回合", "type": "number" },
+            { "key": "isControlTag", "label": "是否计入控制标签", "type": "toggle" }
+          ]
+        },
+        {
+          "key": "insert_negative_card_into_target_deck",
+          "label": "向目标牌库埋炸弹/负面牌",
+          "summary": "把负面牌洗入对手牌库，抽到时立刻触发。",
+          "uiFields": [
+            { "key": "insertCardKey", "label": "插入牌 key", "type": "text" },
+            { "key": "insertCount", "label": "数量", "type": "number" },
+            { "key": "triggerCondition", "label": "触发条件", "type": "select", "options": ["on_hit", "on_cast", "manual"] },
+            { "key": "shuffleIntoDeck", "label": "是否洗入牌库", "type": "toggle" }
+          ]
+        },
+        {
+          "key": "negative_card_trigger_on_draw",
+          "label": "负面牌抽到时触发",
+          "summary": "被抽到后立即爆炸或施加状态。",
+          "uiFields": [
+            { "key": "onDrawEffect", "label": "抽到时效果", "type": "select", "options": ["explode_damage", "self_stun", "discard_random", "spawn_token"] },
+            { "key": "damage", "label": "伤害骰", "type": "dice_optional" },
+            { "key": "showInPreview", "label": "是否展示到预览区", "type": "toggle" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "mark_and_hunter",
+      "label": "标记与猎人机制",
+      "templates": [
+        {
+          "key": "mark_target_for_bonus",
+          "label": "标记目标",
+          "summary": "给目标挂普通或强化标记，等待后续兑现。",
+          "uiFields": [
+            { "key": "markType", "label": "标记类型", "type": "select", "options": ["normal", "empowered"] },
+            { "key": "durationMode", "label": "持续模式", "type": "select", "options": ["until_consumed", "turn_limited"] },
+            { "key": "durationTurns", "label": "持续回合", "type": "number_optional" },
+            { "key": "consumeOn", "label": "何时消耗", "type": "select", "options": ["first_hit_by_owner", "trap_trigger", "manual"] }
+          ]
+        },
+        {
+          "key": "bonus_if_target_marked",
+          "label": "目标被标记时获得加成",
+          "summary": "猎人的远程收割核心模板。",
+          "uiFields": [
+            { "key": "baseDamage", "label": "基础伤害骰", "type": "dice_optional" },
+            { "key": "bonusDamage", "label": "额外伤害", "type": "dice_or_number_optional" },
+            { "key": "bonusDraw", "label": "额外抽牌", "type": "number_optional" },
+            { "key": "bonusMove", "label": "额外位移", "type": "number_optional" },
+            { "key": "consumeMark", "label": "是否消耗标记", "type": "toggle" }
+          ]
+        },
+        {
+          "key": "trap_with_mark_interaction",
+          "label": "陷阱与标记联动",
+          "summary": "用于猎人陷阱和后续饰品陷阱扩展。",
+          "uiFields": [
+            { "key": "placementRange", "label": "放置距离", "type": "number" },
+            { "key": "damage", "label": "基础伤害骰", "type": "dice" },
+            { "key": "applyControl", "label": "附带控制", "type": "control_picker" },
+            { "key": "ifTargetMarkedBonus", "label": "标记联动奖励", "type": "marked_bonus_picker" }
+          ]
+        }
+      ]
+    }
+  ],
+  "professionDefaults": {
+    "warrior": { "recommendedMove": 5, "role": "melee" },
+    "rogue": { "recommendedMove": 5, "role": "melee" },
+    "swordsman": { "recommendedMove": 5, "role": "melee" },
+    "mage": { "recommendedMove": 3, "role": "ranged" },
+    "priest": { "recommendedMove": 3, "role": "ranged" },
+    "shaman": { "recommendedMove": 3, "role": "ranged" },
+    "necro": { "recommendedMove": 3, "role": "ranged" },
+    "warlock": { "recommendedMove": 3, "role": "ranged" },
+    "hunter": { "recommendedMove": 3, "role": "ranged" }
+  }
+}
