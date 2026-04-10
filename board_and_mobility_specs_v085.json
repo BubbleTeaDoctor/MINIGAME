@@ -1,0 +1,116 @@
+{
+  "version": "0.8.5",
+  "description": "地图尺寸、位移、高亮与黑洞引力的统一规格。吸收最新反馈：当前地图太小，位移技能溢出，推荐最小直径为 13。",
+  "board": {
+    "recommendedHexDiameter": 13,
+    "recommendedRadius": 6,
+    "why": [
+      "当前 3 到 5 格的位移技能在小地图上会明显溢出，导致职业差异被抹平。",
+      "直径 13 的六角图能让远程、陷阱、引力、位移和召唤展示区更有战术空间。",
+      "这也是当前职业移动值（近战 5，远程 3）更合理的最小地图规格。"
+    ],
+    "spawnRules": {
+      "defaultSpawnDistanceFromCenter": 6,
+      "defaultSpawnTiles": [
+        { "q": -6, "r": 0 },
+        { "q": 6, "r": 0 }
+      ],
+      "note": "双方默认出生于直径两端，保证远程职业不会在第一回合直接被位移贴脸。"
+    },
+    "terrain": {
+      "centerBlackHole": {
+        "tile": { "q": 0, "r": 0 },
+        "globalPull": true,
+        "pullDistancePerTurn": 1,
+        "centerDamage": "2d8",
+        "displayLabel": "黑洞 / 全图引力"
+      },
+      "spikeTiles": {
+        "recommendedCount": 8,
+        "damage": "2d8",
+        "placementRule": "放在中环和外环交界，避免出生点直接吃刺。"
+      },
+      "trapSystem": {
+        "allowTileTraps": true,
+        "trapPreviewOnHover": true,
+        "showTrapIcon": true
+      }
+    }
+  },
+  "movementBalance": {
+    "defaults": {
+      "meleeMove": 5,
+      "rangedMove": 3
+    },
+    "rationale": [
+      "在直径 13 的地图上，近战 5 格能形成压迫，但仍需要规划路线。",
+      "远程 3 格更利于风筝、陷阱和射程优势，不会因为地图太小而失去意义。"
+    ],
+    "teleportAndDash": {
+      "recommendedRanges": {
+        "shortReposition": 2,
+        "standardTeleport": 3,
+        "longTeleport": 4,
+        "longDash": 3
+      },
+      "note": "在直径 13 下，4 格传送属于强位移但不再是全图位移。"
+    }
+  },
+  "highlightingRules": {
+    "principle": "所有可交互范围都应该沿用移动高亮的思路：先计算合法格，再统一高亮。",
+    "movement": {
+      "showAllReachableTiles": true,
+      "respectOccupiedTiles": true,
+      "respectBoardBounds": true
+    },
+    "basicAttack": {
+      "showAllAttackableTargets": true,
+      "showReachOverlay": true,
+      "respectWeaponRange": true,
+      "respectStraightRequirement": true
+    },
+    "cardSkills": {
+      "directDamage": {
+        "showAllAttackableTargets": true,
+        "showReachOverlay": true
+      },
+      "teleport": {
+        "showAllReachableTiles": true,
+        "showReachOverlay": true
+      },
+      "aoe": {
+        "showAllCastableTiles": true,
+        "showAffectedAreaPreview": true
+      },
+      "dashHit": {
+        "showAllAttackableTargets": true,
+        "showProjectedLandingTile": true
+      },
+      "dualMode": {
+        "afterModeChosenThenHighlight": true,
+        "note": "双模式牌必须先选择模式，再按所选子模板高亮。"
+      }
+    }
+  },
+  "interpreterImplications": {
+    "requiredHelpers": [
+      "buildHexBoard(radius)",
+      "getReachableTiles(start, move)",
+      "getAttackableTargets(source, range, straight)",
+      "getCastableTiles(source, range)",
+      "getTilesInRadius(tile, radius)",
+      "projectDashLandingTile(attacker, target)",
+      "highlightOverlay(cells, mode)"
+    ],
+    "notes": [
+      "所有位移技能不应再单独写判断，而应复用 movement overlay 逻辑。",
+      "所有伤害技能不应只高亮目标单位所在格，而应高亮整个可作用范围。",
+      "地图半径切换到 6 后，位移技能和远程职业会重新回到健康平衡区间。"
+    ]
+  },
+  "recommendedNextStep": {
+    "priority": 1,
+    "title": "把游戏本体的地图半径改到 6，并统一高亮与位移判定",
+    "reason": "这是当前所有职业和模板体验失真的最大来源，比继续加新卡更优先。"
+  }
+}
