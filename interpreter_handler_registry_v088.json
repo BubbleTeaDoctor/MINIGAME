@@ -1,0 +1,276 @@
+{
+  "version": "0.8.8",
+  "description": "模板解释器处理器注册表。用于把 template key 映射到 game.js 中的统一 handler，并明确高亮、目标选择、运行时依赖。",
+  "boardRuntime": {
+    "requiredRadius": 6,
+    "requiredDiameter": 13,
+    "helpers": {
+      "buildHexBoard": "buildHexBoard(radius)",
+      "getReachableTiles": "getReachableTiles(unit, distance)",
+      "getAttackableTargets": "getAttackableTargets(unit, range, straight)",
+      "getCastableTiles": "getCastableTiles(unit, range)",
+      "getTilesInRadius": "getTilesInRadius(tile, radius)",
+      "projectDashLandingTile": "projectDashLandingTile(attacker, target)",
+      "highlightOverlay": "highlightOverlay(cells, mode)",
+      "clearHighlightOverlay": "clearHighlightOverlay()"
+    }
+  },
+  "handlerRegistry": [
+    {
+      "template": "direct_damage",
+      "handler": "handleDirectDamage",
+      "selectionMode": "target_enemy",
+      "highlightMode": "attack_targets",
+      "requires": [
+        "before_damage_apply",
+        "after_damage_apply",
+        "conditional_bonus_support"
+      ]
+    },
+    {
+      "template": "aoe",
+      "handler": "handleAoe",
+      "selectionMode": "select_tile",
+      "highlightMode": "castable_tiles_with_radius_preview",
+      "requires": [
+        "getTilesInRadius",
+        "before_damage_apply",
+        "after_damage_apply"
+      ]
+    },
+    {
+      "template": "teleport",
+      "handler": "handleTeleport",
+      "selectionMode": "select_tile",
+      "highlightMode": "reachable_tiles",
+      "requires": [
+        "getReachableTiles",
+        "moveUnitTo",
+        "resolveOnEnterTile"
+      ]
+    },
+    {
+      "template": "dash_hit",
+      "handler": "handleDashHit",
+      "selectionMode": "target_enemy",
+      "highlightMode": "attack_targets_with_landing_preview",
+      "requires": [
+        "projectDashLandingTile",
+        "moveUnitTo",
+        "before_damage_apply",
+        "after_damage_apply"
+      ]
+    },
+    {
+      "template": "self_buff",
+      "handler": "handleSelfBuff",
+      "selectionMode": "none_or_self",
+      "highlightMode": "none",
+      "requires": [
+        "addPersistentBuff",
+        "consumeMatchingBuffs"
+      ]
+    },
+    {
+      "template": "dual_mode",
+      "handler": "handleDualMode",
+      "selectionMode": "mode_picker_then_delegate",
+      "highlightMode": "after_mode_chosen",
+      "requires": [
+        "openModePicker",
+        "setPendingMode",
+        "delegateToSubTemplateHandler"
+      ]
+    },
+    {
+      "template": "summon_token_into_self_deck",
+      "handler": "handleSummonTokenIntoSelfDeck",
+      "selectionMode": "none",
+      "highlightMode": "none",
+      "requires": [
+        "insertCardIntoDeck",
+        "resolveSummonTokenOnDraw",
+        "moveTokenToShowcase",
+        "incrementActiveSummon"
+      ]
+    },
+    {
+      "template": "activated_token_auto_damage_each_turn",
+      "handler": "handleActivatedTokenAutoDamageEachTurn",
+      "selectionMode": "turn_start_only",
+      "highlightMode": "none",
+      "requires": [
+        "iterateSummons",
+        "applyPacketDamage"
+      ]
+    },
+    {
+      "template": "consume_all_activated_tokens_for_burst",
+      "handler": "handleConsumeAllActivatedTokensForBurst",
+      "selectionMode": "select_tile_or_enemy",
+      "highlightMode": "castable_tiles_with_radius_preview",
+      "requires": [
+        "readSummonCounts",
+        "buildBurstDamageFromSummons",
+        "clearSummonCounts"
+      ]
+    },
+    {
+      "template": "insert_negative_card_into_target_deck",
+      "handler": "handleInsertNegativeCardIntoTargetDeck",
+      "selectionMode": "target_enemy",
+      "highlightMode": "attack_targets",
+      "requires": [
+        "insertCardIntoEnemyDeck",
+        "after_damage_apply"
+      ]
+    },
+    {
+      "template": "negative_card_trigger_on_draw",
+      "handler": "handleNegativeCardTriggerOnDraw",
+      "selectionMode": "draw_event_only",
+      "highlightMode": "none",
+      "requires": [
+        "revealNegativeCard",
+        "resolveNegativeCardEffect"
+      ]
+    },
+    {
+      "template": "mark_target_for_bonus",
+      "handler": "handleMarkTargetForBonus",
+      "selectionMode": "target_enemy",
+      "highlightMode": "attack_targets",
+      "requires": [
+        "setTargetMark",
+        "refreshOrReplaceMark",
+        "renderUnitStatusChips"
+      ]
+    },
+    {
+      "template": "bonus_if_target_marked",
+      "handler": "handleBonusIfTargetMarked",
+      "selectionMode": "target_enemy",
+      "highlightMode": "attack_targets",
+      "requires": [
+        "hasRelevantMark",
+        "queueBonusDraw",
+        "queueBonusMove",
+        "consumeMarkIfNeeded"
+      ]
+    },
+    {
+      "template": "trap_with_mark_interaction",
+      "handler": "handleTrapWithMarkInteraction",
+      "selectionMode": "select_tile",
+      "highlightMode": "castable_tiles",
+      "requires": [
+        "placeTrapOnTile",
+        "resolveTrapBaseEffect",
+        "resolveMarkedTrapBonus"
+      ]
+    },
+    {
+      "template": "dot_damage_over_time",
+      "handler": "handleDotDamageOverTime",
+      "selectionMode": "status_attachment_only",
+      "highlightMode": "none",
+      "requires": [
+        "attachStatus",
+        "runTurnStartStatuses",
+        "runTurnEndStatuses"
+      ]
+    },
+    {
+      "template": "slow_status",
+      "handler": "handleSlowStatus",
+      "selectionMode": "status_attachment_only",
+      "highlightMode": "none",
+      "requires": [
+        "attachStatus",
+        "recomputeMoveBudget"
+      ]
+    },
+    {
+      "template": "control_status",
+      "handler": "handleControlStatus",
+      "selectionMode": "status_attachment_only",
+      "highlightMode": "none",
+      "requires": [
+        "attachStatus",
+        "renderUnitStatusChips",
+        "checkControlRestrictions"
+      ]
+    },
+    {
+      "template": "silence_bucket_lock",
+      "handler": "handleSilenceBucketLock",
+      "selectionMode": "target_enemy",
+      "highlightMode": "attack_targets",
+      "requires": [
+        "attachStatus",
+        "checkBucketPermission"
+      ]
+    }
+  ],
+  "gamePhases": {
+    "clickCard": [
+      "read card.template",
+      "lookup handler in registry",
+      "set pendingAction",
+      "compute highlight overlay according to selectionMode and highlightMode"
+    ],
+    "chooseMode": [
+      "only for dual_mode",
+      "set pending sub-template",
+      "recompute highlight overlay"
+    ],
+    "clickTargetOrTile": [
+      "dispatch to resolved handler",
+      "run before_damage_apply if needed",
+      "apply effect",
+      "run after_damage_apply if needed",
+      "clear highlight and pending state"
+    ],
+    "turnStart": [
+      "run runtime bootstrap reset",
+      "resolve dot_damage_over_time",
+      "resolve activated_token_auto_damage_each_turn",
+      "draw cards and resolve card_drawn hooks"
+    ]
+  },
+  "recommendedCodeRefactor": {
+    "gameJsSections": [
+      {
+        "target": "card click handling",
+        "replaceWith": "template-based dispatch via handlerRegistry"
+      },
+      {
+        "target": "highlight logic",
+        "replaceWith": "selectionMode/highlightMode-driven overlay builder"
+      },
+      {
+        "target": "dual mode prompt flow",
+        "replaceWith": "button-based mode picker delegated by registry"
+      },
+      {
+        "target": "turn start logic",
+        "replaceWith": "ordered event runner using runtime_state_bootstrap_v087 and template_runtime_specs_v083"
+      }
+    ]
+  },
+  "nextPracticalStep": {
+    "title": "把 handlerRegistry 的最小子集接进主包",
+    "subset": [
+      "direct_damage",
+      "teleport",
+      "aoe",
+      "dual_mode",
+      "summon_token_into_self_deck",
+      "activated_token_auto_damage_each_turn",
+      "consume_all_activated_tokens_for_burst",
+      "mark_target_for_bonus",
+      "bonus_if_target_marked"
+    ],
+    "reason": "这组模板足够让战士/法师/死灵法师/猎人的核心玩法首次真正跑起来。"
+  }
+}
