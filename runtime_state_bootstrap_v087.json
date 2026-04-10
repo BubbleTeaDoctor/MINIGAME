@@ -1,0 +1,159 @@
+{
+  "version": "0.8.7",
+  "description": "游戏运行时状态初始化规格。用于在创建玩家、单位和回合状态时统一补齐新职业需要的字段。",
+  "playerBootstrap": {
+    "base": {
+      "resources": {
+        "faith": 0,
+        "soul_shard": 0
+      },
+      "activeSummons": {
+        "skeleton": 0,
+        "bone_dragon": 0
+      },
+      "persistentBuffs": [],
+      "weaponImbues": [],
+      "turnFlags": {
+        "autoBlockUsed": false,
+        "markPassiveTriggered": false,
+        "resourcePaidForDraw": false,
+        "warriorThresholdTriggered": false,
+        "lilithThresholdTriggered": false,
+        "basicAttackSpent": false,
+        "moveSpent": false,
+        "classGuardianBucketSpent": false,
+        "weaponAccessoryBucketSpent": false
+      },
+      "showcase": {
+        "summons": [],
+        "negativeCards": []
+      }
+    },
+    "professionOverrides": {
+      "priest": {
+        "resources": {
+          "faith": 0
+        }
+      },
+      "warlock": {
+        "resources": {
+          "soul_shard": 0
+        }
+      },
+      "necro": {
+        "activeSummons": {
+          "skeleton": 0,
+          "bone_dragon": 0
+        },
+        "showcase": {
+          "summons": [],
+          "negativeCards": []
+        }
+      },
+      "hunter": {
+        "turnFlags": {
+          "markPassiveTriggered": false
+        }
+      }
+    }
+  },
+  "unitBootstrap": {
+    "base": {
+      "marks": {
+        "normal": false,
+        "empowered": false,
+        "expiry": null
+      },
+      "controlTags": {
+        "burn": 0,
+        "slow": 0,
+        "disarm": 0,
+        "sheep": 0,
+        "root": 0,
+        "stun": 0,
+        "silence_bucket_lock": 0
+      },
+      "statusChips": []
+    }
+  },
+  "turnResetRules": {
+    "atTurnStart": [
+      "player.turnFlags.autoBlockUsed = false",
+      "player.turnFlags.markPassiveTriggered = false",
+      "player.turnFlags.resourcePaidForDraw = false",
+      "player.turnFlags.warriorThresholdTriggered = false",
+      "player.turnFlags.lilithThresholdTriggered = false",
+      "player.turnFlags.basicAttackSpent = false",
+      "player.turnFlags.moveSpent = false",
+      "player.turnFlags.classGuardianBucketSpent = false",
+      "player.turnFlags.weaponAccessoryBucketSpent = false"
+    ],
+    "atTurnEnd": [
+      "decrement turn-limited control tags",
+      "remove buffs with consumeOn = end_of_turn",
+      "clear expired marks"
+    ]
+  },
+  "drawResolutionRules": {
+    "priorityOrder": [
+      "auto block cards",
+      "summon tokens drawn to showcase",
+      "negative cards drawn and triggered",
+      "normal cards into hand"
+    ],
+    "notes": [
+      "召唤 token 抽到后不应停留在手牌区。",
+      "负面牌抽到时要先展示再立即结算。",
+      "本回合第一张格挡牌自动触发，后续格挡牌按当前规则弃置或保留。"
+    ]
+  },
+  "statusRenderRules": {
+    "showChipsFor": [
+      "burn",
+      "slow",
+      "disarm",
+      "sheep",
+      "root",
+      "stun",
+      "silence_bucket_lock",
+      "marks.normal",
+      "marks.empowered"
+    ],
+    "showcasePanels": [
+      {
+        "key": "summons",
+        "entries": ["skeleton", "bone_dragon"]
+      },
+      {
+        "key": "negativeCards",
+        "entries": ["necro_bomb_token"]
+      }
+    ]
+  },
+  "recommendedCodeHooks": [
+    {
+      "hook": "createPlayerState",
+      "job": "merge playerBootstrap.base with professionOverrides"
+    },
+    {
+      "hook": "createUnitState",
+      "job": "attach unitBootstrap.base to each unit"
+    },
+    {
+      "hook": "startTurn",
+      "job": "apply turnResetRules.atTurnStart then run turn_start template handlers"
+    },
+    {
+      "hook": "endTurn",
+      "job": "apply turnResetRules.atTurnEnd"
+    },
+    {
+      "hook": "drawCards",
+      "job": "resolve drawResolutionRules.priorityOrder"
+    }
+  ],
+  "immediateNextStep": {
+    "title": "把 runtime_state_bootstrap_v087 接到 game.js 的玩家创建与回合开始流程",
+    "reason": "没有统一 bootstrap，死灵法师与猎人的状态字段会继续散落在临时补丁里。"
+  }
+}
