@@ -1,27 +1,40 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Template Editor v0.8.4</title>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Template Editor v0.9.0</title>
   <link rel="stylesheet" href="shared.css" />
 </head>
 <body>
 <header>
   <div class="lang-bar"><button data-lang-btn="zh">中文</button><button data-lang-btn="en">English</button></div>
-  <h1 data-i18n="editor_title">模板优先编辑器 v0.8.4</h1>
-  <p data-i18n="editor_sub">读取统一规则副本，按模板编辑职业、武器、饰品、守护神与状态模板。</p>
+  <h1 data-i18n="editor_title">模板编辑器 v0.9.0</h1>
+  <p>继续沿用稳定编辑器框架，并修正规则副本保存、删除、重命名和新建条目逻辑。</p>
+  <div class="flex" style="margin-top:10px">
+    <button class="secondary" onclick="location.href='index.html'" data-i18n="back_home">返回首页</button>
+  </div>
 </header>
 <main>
-  <section class="panel">
-    <div class="grid grid-3">
+  <section class="panel controls">
+    <div class="grid grid-4">
       <label><span data-i18n="ruleset">规则副本</span><select id="ruleset-select"></select></label>
-      <label><span data-i18n="source_type">来源类型</span><select id="source-select"></select></label>
+      <label><span>规则副本名称 / Ruleset Name</span><input id="ruleset-name" /></label>
+      <label><span data-i18n="edit_scope">编辑对象</span><select id="edit-scope"><option value="cards" data-i18n="class_cards">职业卡</option><option value="passives" data-i18n="class_passives">职业被动</option><option value="weapon_cards">武器卡</option><option value="accessory_cards">饰品卡</option><option value="negative_cards">负面牌 / Negative Card</option></select></label>
+      <label><span id="entity-label" data-i18n="profession">职业</span><select id="profession-select"></select></label>
       <label><span data-i18n="entry">条目</span><select id="entry-select"></select></label>
+      <label><span>条目 Key / Entry Key</span><input id="entry-key" /></label>
+      <label><span>规则副本存储位置 / Storage</span><div id="storage-info" class="summary-box" style="min-height:88px"></div></label>
+      <label><span>当前副本说明 / Notes（文件夹模式会自动保存 rulesets.json 和 active.json）</span><div id="ruleset-meta" class="summary-box" style="min-height:88px"></div></label>
+      <label><span>存储命名空间 / Storage Namespace</span><input id="storage-namespace" placeholder="例如 my_ruleset_slot" /></label>
+
     </div>
     <div class="flex" style="margin-top:12px">
+      <button id="btn-new-profession">新建职业 / New Profession</button>
+      <button id="btn-new-weapon">新建武器 / New Weapon</button>
+      <button id="btn-new-accessory">新建饰品 / New Accessory</button>
       <button id="btn-new" data-i18n="new_entry">新建条目</button>
-      <button id="btn-duplicate" class="secondary" data-i18n="duplicate_entry">复制当前条目</button>
+      <button id="btn-rename-entry">重命名条目 / Rename Entry</button>
+      <button id="btn-duplicate" data-i18n="duplicate_entry">复制当前条目</button>
       <button id="btn-delete" class="danger" data-i18n="delete_entry">删除当前条目</button>
       <button id="btn-save-entry" data-i18n="save_entry">保存当前条目</button>
       <button id="btn-save-ruleset" class="secondary" data-i18n="save_ruleset">保存整个规则副本</button>
@@ -85,3 +98,4 @@
 <script src="editor.js"></script>
 </body>
 </html>
+

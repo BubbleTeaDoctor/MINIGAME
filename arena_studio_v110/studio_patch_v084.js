@@ -1,3 +1,4 @@
+
 (() => {
   const data = window.DEFAULT_STUDIO_DATA;
   if (!data) return;
