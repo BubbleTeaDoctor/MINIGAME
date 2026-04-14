@@ -3,77 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>无限制角斗场 Demo</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Redirecting...</title>
+  <meta http-equiv="refresh" content="0; url=./arena_studio_v110/" />
+  <script>
+    window.location.replace('./arena_studio_v110/');
+  </script>
 </head>
 <body>
-  <header>
-    <h1>无限制角斗场 Demo</h1>
-    <p>2D 六角格、模块化构筑、单机 1v1 原型</p>
-  </header>
-
-  <main>
-    <section id="setup-panel" class="panel">
-      <h2>开局构筑</h2>
-      <div class="setup-grid">
-        <div class="build-box">
-          <h3>玩家 1</h3>
-          <label>职业<select id="p1-class"></select></label>
-          <label>武器<select id="p1-weapon"></select></label>
-          <label>饰品<select id="p1-accessory"></select></label>
-          <label>种族<select id="p1-race"></select></label>
-          <label>守护神<select id="p1-guardian"></select></label>
-        </div>
-        <div class="build-box">
-          <h3>玩家 2</h3>
-          <label>职业<select id="p2-class"></select></label>
-          <label>武器<select id="p2-weapon"></select></label>
-          <label>饰品<select id="p2-accessory"></select></label>
-          <label>种族<select id="p2-race"></select></label>
-          <label>守护神<select id="p2-guardian"></select></label>
-        </div>
-      </div>
-      <div class="setup-actions">
-        <button id="start-game">开始对局</button>
-      </div>
-      <p class="note">本 Demo 目前实现的是“核心循环验证版”：支持 1v1、抽牌、移动、技能、普攻、饰品、格挡、黑洞中心与尖刺地形，采用数据驱动结构，方便后续继续扩展职业、武器、饰品与守护神。</p>
-    </section>
-
-    <section id="game-screen" class="hidden">
-      <div class="top-row">
-        <section class="panel info-panel" id="player-info"></section>
-        <section class="panel log-panel">
-          <h2>战斗日志</h2>
-          <div id="log"></div>
-        </section>
-      </div>
-
-      <section class="panel board-panel">
-        <div class="toolbar">
-          <button id="btn-basic-attack">普通攻击</button>
-          <button id="btn-block">宣告格挡</button>
-          <button id="btn-end-turn">结束回合</button>
-          <button id="btn-restart">重新开局</button>
-        </div>
-        <svg id="board" viewBox="0 0 900 680" aria-label="game board"></svg>
-      </section>
-
-      <section class="panel hand-panel">
-        <h2>当前手牌</h2>
-        <div id="hand"></div>
-        <div id="selection-hint">请选择一个动作或点击结束回合。</div>
-      </section>
-    </section>
-  </main>
-
-  <template id="card-template">
-    <button class="card">
-      <div class="card-name"></div>
-      <div class="card-meta"></div>
-      <div class="card-text"></div>
-    </button>
-  </template>
-
-  <script src="game.js"></script>
+  <p>正在跳转到 Arena Studio v110…</p>
 </body>
 </html>
