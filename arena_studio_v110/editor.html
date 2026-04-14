@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Template Editor v0.8.4</title>
+  <link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+<header>
+  <div class="lang-bar"><button data-lang-btn="zh">中文</button><button data-lang-btn="en">English</button></div>
+  <h1 data-i18n="editor_title">模板优先编辑器 v0.8.4</h1>
+  <p data-i18n="editor_sub">读取统一规则副本，按模板编辑职业、武器、饰品、守护神与状态模板。</p>
+</header>
+<main>
+  <section class="panel">
+    <div class="grid grid-3">
+      <label><span data-i18n="ruleset">规则副本</span><select id="ruleset-select"></select></label>
+      <label><span data-i18n="source_type">来源类型</span><select id="source-select"></select></label>
+      <label><span data-i18n="entry">条目</span><select id="entry-select"></select></label>
+    </div>
+    <div class="flex" style="margin-top:12px">
+      <button id="btn-new" data-i18n="new_entry">新建条目</button>
+      <button id="btn-duplicate" class="secondary" data-i18n="duplicate_entry">复制当前条目</button>
+      <button id="btn-delete" class="danger" data-i18n="delete_entry">删除当前条目</button>
+      <button id="btn-save-entry" data-i18n="save_entry">保存当前条目</button>
+      <button id="btn-save-ruleset" class="secondary" data-i18n="save_ruleset">保存整个规则副本</button>
+      <button id="btn-delete-ruleset" class="danger">删除规则副本 / Delete Ruleset</button>
+      <button id="btn-export-ruleset" class="secondary">导出 JSON / Export JSON</button>
+      <button id="btn-import-ruleset" class="secondary">导入 JSON / Import JSON</button>
+      <button id="btn-storage-apply" class="secondary">切换命名空间 / Switch Namespace</button>
+      <button id="btn-storage-folder" class="secondary">选择本地文件夹 / Pick Folder</button>
+      <button id="btn-storage-reset" class="secondary">恢复默认存储 / Reset Storage</button>
+    </div>
+  </section>
+  <section class="workspace">
+    <aside class="panel">
+      <div class="panel-head"><h2 data-i18n="template_info">模板信息</h2></div>
+      <div id="template-summary" class="summary-box"></div>
+      <div class="chip" data-i18n="attached_status">附带状态模板</div>
+      <label style="margin-top:8px"><select id="status-template-select"></select></label>
+      <div id="status-fields" class="form-host" style="margin-top:10px"></div>
+    </aside>
+    <section class="panel">
+      <div class="panel-head"><h2 id="form-title" data-i18n="form_area">表单编辑区</h2><button id="btn-reset" class="secondary" data-i18n="reset_original">恢复原始值</button></div>
+      <div class="field-grid">
+        <div class="field"><label>Name</label><input id="entry-name" /></div>
+        <div class="field"><label>Template</label><select id="template-select"></select></div>
+      </div>
+      <div id="form-host" class="form-host"></div>
+    </section>
+    <aside class="panel">
+      <div class="panel-head"><h2 data-i18n="live_preview">实时预览</h2></div>
+      <div id="friendly-preview" class="friendly-preview"></div>
+      <textarea id="json-preview" rows="16"></textarea>
+    </aside>
+  </section>
+</main>
+<script src="studio_data.js"></script>
+<script src="studio_patch_v080.js"></script>
+<script src="studio_patch_v081.js"></script>
+<script src="studio_patch_v083.js"></script>
+<script src="studio_patch_v084.js"></script>
+<script src="studio_patch_v085.js"></script>
+<script src="studio_patch_v091.js"></script>
+<script src="studio_patch_v092.js"></script>
+<script src="studio_patch_v093.js"></script>
+<script src="studio_patch_v094.js"></script>
+<script src="studio_patch_v095.js"></script>
+<script src="studio_patch_v096.js"></script>
+<script src="studio_patch_v097.js"></script>
+<script src="studio_patch_v099.js"></script>
+<script src="studio_patch_v100.js"></script>
+<script src="studio_patch_v101.js"></script>
+<script src="studio_patch_v102.js"></script>
+
+<script src="studio_patch_v104.js"></script>
+<script src="studio_patch_v105.js"></script>
+<script src="studio_patch_v106.js"></script>
+<script src="studio_patch_v107.js"></script>
+<script src="studio_patch_v108.js"></script>
+<script src="studio_patch_v109.js"></script>
+<script src="runtime.js"></script>
+<script src="i18n_v081.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>
