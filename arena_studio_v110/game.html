@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game v0.8.5</title>
+  <link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+<header>
+  <div class="lang-bar"><button data-lang-btn="zh">中文</button><button data-lang-btn="en">English</button></div>
+  <h1 data-i18n="game_title">游戏本体 v0.8.5</h1>
+  <p data-i18n="game_sub">读取当前规则副本，保留稳定行动经济，并补回新职业、新饰品和双语切换。</p>
+</header>
+<main>
+  <section id="setup-panel" class="panel">
+    <div class="grid grid-4">
+      <label><span data-i18n="ruleset">规则副本</span><select id="ruleset-select"></select></label>
+      <label><span data-i18n="p1_prof">玩家 1 职业</span><select id="p1-profession"></select></label>
+      <label><span data-i18n="p1_weapon">玩家 1 武器</span><select id="p1-weapon"></select></label>
+      <label><span data-i18n="p1_accessory">玩家 1 饰品</span><select id="p1-accessory"></select></label>
+      <label><span data-i18n="p2_type">玩家 2 类型</span><select id="p2-type"><option value="human" data-i18n="human">人类</option><option value="ai" data-i18n="ai">电脑</option></select></label>
+      <label><span data-i18n="p2_prof">玩家 2 职业</span><select id="p2-profession"></select></label>
+      <label><span data-i18n="p2_weapon">玩家 2 武器</span><select id="p2-weapon"></select></label>
+      <label><span data-i18n="p2_accessory">玩家 2 饰品</span><select id="p2-accessory"></select></label>
+    </div>
+    <div class="flex" style="margin-top:12px"><button id="start-game" data-i18n="start_game">开始游戏</button><button class="secondary" onclick="location.href='index.html'" data-i18n="back_home">返回首页</button></div>
+  </section>
+  <section id="game-screen" class="hidden">
+    <div class="top-row">
+      <section class="panel" id="player-info"></section>
+      <section class="panel">
+        <div class="panel-head"><h2 data-i18n="battle_log">战斗日志</h2><div id="mode-indicator" class="badge" data-i18n="current_mode">当前模式：待机</div></div>
+        <div id="log" class="log"></div>
+      </section>
+    </div>
+    <section class="panel">
+      <div class="toolbar">
+        <button id="btn-move" data-i18n="move_mode">移动模式</button>
+        <button id="btn-basic-attack" data-i18n="basic_attack">普通攻击</button>
+        <button id="btn-passive">职业被动</button>
+        <button id="btn-cancel" class="secondary" data-i18n="cancel">取消选择</button>
+        <button id="btn-end-turn" data-i18n="end_turn">结束回合</button>
+        <button id="btn-restart" class="secondary" data-i18n="restart">重新开局</button>
+        <button id="btn-export-battle-log" class="secondary">导出战斗日志</button>
+        <button id="btn-export-debug-log" class="secondary">导出运行诊断</button>
+        <button class="secondary" onclick="location.href='index.html'" data-i18n="back_home">返回首页</button>
+      </div>
+      <div class="board-wrap"><svg id="board" viewBox="0 0 2100 1750"></svg></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2 data-i18n="current_hand">当前手牌</h2><div id="turn-indicator" class="badge" data-i18n="waiting">等待开始</div></div>
+      <div id="hand" class="hand"></div>
+      <div id="choice-panel" class="choice-panel"></div>
+      <div id="selection-hint" class="muted" data-i18n="select_action">请选择一个动作。</div>
+    </section>
+  </section>
+</main>
+<div id="dice-overlay" class="dice-overlay hidden"><div class="dice-box"><div class="dice-title" id="dice-title">Rolling…</div><div class="dice-notation" id="dice-notation"></div><div class="dice-value" id="dice-value">0</div></div></div>
+<script src="studio_data.js"></script>
+<script src="studio_patch_v080.js"></script>
+<script src="studio_patch_v081.js"></script>
+<script src="studio_patch_v083.js"></script>
+<script src="studio_patch_v084.js"></script>
+<script src="studio_patch_v085.js"></script>
+<script src="studio_patch_v091.js"></script>
+<script src="studio_patch_v092.js"></script>
+<script src="studio_patch_v093.js"></script>
+<script src="studio_patch_v094.js"></script>
+<script src="studio_patch_v095.js"></script>
+<script src="studio_patch_v096.js"></script>
+<script src="studio_patch_v097.js"></script>
+<script src="studio_patch_v099.js"></script>
+<script src="studio_patch_v100.js"></script>
+<script src="studio_patch_v101.js"></script>
+<script src="studio_patch_v102.js"></script>
+
+<script src="studio_patch_v104.js"></script>
+<script src="studio_patch_v105.js"></script>
+<script src="studio_patch_v106.js"></script>
+<script src="studio_patch_v107.js"></script>
+<script src="studio_patch_v108.js"></script>
+<script src="studio_patch_v109.js"></script>
+<script src="runtime.js"></script>
+<script src="i18n_v081.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
