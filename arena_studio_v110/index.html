@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arena Studio v0.9.0</title>
+  <link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+<header>
+  <div class="lang-bar"><button data-lang-btn="zh">中文</button><button data-lang-btn="en">English</button></div>
+  <h1 data-i18n="index_title">无限制角斗场 Studio v0.9.0</h1>
+  <p data-i18n="index_sub">以 v0.7.9 稳定框架为基线，补回后续职业、饰品、地图与双语切换。</p>
+</header>
+<main>
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="rulesets">规则副本</h2>
+      <div class="flex">
+        <button id="btn-duplicate" data-i18n="duplicate_current">复制当前副本</button>
+        <button id="btn-rename" class="secondary" data-i18n="rename">重命名</button>
+        <button id="btn-delete" class="danger" data-i18n="delete_current">删除当前副本</button>
+      </div>
+    </div>
+    <div id="ruleset-list" class="ruleset-list"></div>
+  </section>
+  
+  <section class="panel">
+    <div class="panel-head"><h2>Storage</h2></div>
+    <div class="grid grid-3">
+      <label><span>当前存储位置 / Current Storage</span><div id="storage-info" class="summary-box" style="min-height:88px"></div></label>
+      <label><span>存储命名空间 / Storage Namespace</span><input id="storage-namespace" placeholder="例如 my_ruleset_slot" /></label>
+      <div class="flex" style="align-items:end">
+        <button id="btn-storage-apply" class="secondary">切换命名空间</button>
+        <button id="btn-storage-folder" class="secondary">选择本地文件夹</button>
+        <button id="btn-storage-reset" class="secondary">恢复默认存储</button>
+      </div>
+    </div>
+    <p class="muted">说明：浏览器版使用 LocalStorage，当前支持两种模式：浏览器 LocalStorage 命名空间，或本地文件夹工作区。文件夹模式推荐使用 Chrome/Edge 并通过 localhost 打开。</p>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Start</h2></div>
+    <div class="flex">
+      <button id="go-editor" type="button" onclick="location.href='editor.html'" data-i18n="open_editor">打开模板编辑器</button>
+      <button id="go-deck-editor" type="button" class="secondary" onclick="location.href='deck_editor.html'">打开卡组编辑器</button>
+      <button id="go-game" type="button" onclick="location.href='game.html'" data-i18n="enter_game">进入游戏</button>
+    </div>
+    <p class="muted" data-i18n="index_hint">当前重点：保留 v0.7.9 的行动经济和地图框架，在其上追加新职业、新武器、新饰品与双语切换。</p>
+  </section>
+</main>
+<script src="studio_data.js"></script>
+<script src="studio_patch_v080.js"></script>
+<script src="studio_patch_v081.js"></script>
+<script src="studio_patch_v083.js"></script>
+<script src="studio_patch_v084.js"></script>
+<script src="studio_patch_v085.js"></script>
+<script src="studio_patch_v091.js"></script>
+<script src="studio_patch_v092.js"></script>
+<script src="studio_patch_v093.js"></script>
+<script src="studio_patch_v094.js"></script>
+<script src="studio_patch_v095.js"></script>
+<script src="studio_patch_v096.js"></script>
+<script src="studio_patch_v097.js"></script>
+<script src="studio_patch_v099.js"></script>
+<script src="studio_patch_v100.js"></script>
+<script src="studio_patch_v101.js"></script>
+<script src="studio_patch_v102.js"></script>
+
+<script src="studio_patch_v104.js"></script>
+<script src="studio_patch_v105.js"></script>
+<script src="studio_patch_v106.js"></script>
+<script src="studio_patch_v107.js"></script>
+<script src="studio_patch_v108.js"></script>
+<script src="studio_patch_v109.js"></script>
+<script src="runtime.js"></script>
+<script src="i18n_v081.js"></script>
+<script>
+const list=document.getElementById('ruleset-list');
+function render(){
+  const active=STUDIO_RUNTIME.getActiveRulesetId();
+  const data=STUDIO_RUNTIME.loadRulesets();
+  list.innerHTML='';
+  data.forEach(rs=>{
+    const div=document.createElement('div');
+    div.className='ruleset-item'+(rs.id===active?' active':'');
+    const kind = rs.id===STUDIO_RUNTIME.DEFAULT_ID ? (window.STUDIO_I18N?.getLang()==='en' ? 'System Default' : '系统默认') : (window.STUDIO_I18N?.getLang()==='en' ? 'Custom Ruleset' : '自定义规则副本');
+    div.innerHTML=`<div><div><strong>${rs.name}</strong></div><div class="muted">${kind}</div></div>`;
+    const right=document.createElement('div');
+    right.className='flex';
+    const use=document.createElement('button');
+    use.textContent = window.STUDIO_I18N?.getLang()==='en' ? 'Use' : '设为当前';
+    use.className='secondary';
+    use.onclick=()=>{STUDIO_RUNTIME.setActiveRulesetId(rs.id);render();};
+    right.appendChild(use);
+    div.appendChild(right);
+    list.appendChild(div);
+  });
+}
+document.getElementById('btn-duplicate').onclick=()=>{
+  const name = prompt(window.STUDIO_I18N?.getLang()==='en' ? 'Duplicate name' : '副本名称', '');
+  if(name!==null){ STUDIO_RUNTIME.duplicateRuleset(STUDIO_RUNTIME.getActiveRulesetId(), name || undefined); render(); }
+};
+document.getElementById('btn-rename').onclick=()=>{
+  const id=STUDIO_RUNTIME.getActiveRulesetId();
+  const rs=STUDIO_RUNTIME.findRuleset(id);
+  if(!rs.editable) return alert(window.STUDIO_I18N?.getLang()==='en' ? 'Default ruleset cannot be renamed.' : '默认规则不可重命名。');
+  const name=prompt(window.STUDIO_I18N?.getLang()==='en' ? 'New name' : '新名称', rs.name);
+  if(name) STUDIO_RUNTIME.renameRuleset(id,name), render();
+};
+document.getElementById('btn-delete').onclick=()=>{
+  const id=STUDIO_RUNTIME.getActiveRulesetId();
+  if(id===STUDIO_RUNTIME.DEFAULT_ID) return alert(window.STUDIO_I18N?.getLang()==='en' ? 'Default ruleset cannot be deleted.' : '默认规则不可删除。');
+  if(confirm(window.STUDIO_I18N?.getLang()==='en' ? 'Delete current ruleset?' : '确认删除当前副本？')) STUDIO_RUNTIME.deleteRuleset(id), render();
+};
+
+document.getElementById('go-editor').onclick=()=>location.href='editor.html';
+document.getElementById('go-game').onclick=()=>location.href='game.html';
+function renderStorage(){ 
+  const info=STUDIO_RUNTIME.getStorageInfo(); 
+  const host=document.getElementById('storage-info'); 
+  if(host){ 
+    host.textContent=`Mode: ${info.mode}
+Namespace: ${info.namespace}
+Folder: ${info.folderName || '-'}
+rulesets key: ${info.rulesetsKey}
+active key: ${info.activeKey}`; 
+  } 
+  const input=document.getElementById('storage-namespace'); 
+  if(input) input.value = info.isLegacy ? '' : (info.mode==='localStorage' ? info.namespace : ''); 
+}
+document.getElementById('btn-storage-apply').onclick=()=>{ 
+  const ns=(document.getElementById('storage-namespace').value||'').trim(); 
+  if(!ns) return alert(window.STUDIO_I18N?.getLang()==='en' ? 'Please enter a namespace.' : '请输入存储命名空间。'); 
+  STUDIO_RUNTIME.switchStorageNamespace(ns,{copyCurrent:true}); 
+  render(); renderStorage(); 
+};
+document.getElementById('btn-storage-folder').onclick=async()=>{
+  try{
+    await STUDIO_RUNTIME.chooseWorkspaceFolder({copyCurrent:true});
+    render(); renderStorage();
+    alert(window.STUDIO_I18N?.getLang()==='en' ? 'Folder workspace selected.' : '已切换到本地文件夹工作区。');
+  }catch(e){
+    const code = String(e && e.message || e);
+    if(code.includes('unsupported')) alert(window.STUDIO_I18N?.getLang()==='en' ? 'This browser does not support folder picker.' : '当前浏览器不支持本地文件夹选择。');
+    else if(code.includes('denied')) alert(window.STUDIO_I18N?.getLang()==='en' ? 'Folder permission denied.' : '未获得文件夹访问权限。');
+  }
+};
+document.getElementById('btn-storage-reset').onclick=async()=>{ 
+  if(confirm(window.STUDIO_I18N?.getLang()==='en' ? 'Reset to legacy default storage and copy current data?' : '恢复到默认存储，并复制当前数据？')){
+    await STUDIO_RUNTIME.resetStorageToLegacy({copyCurrent:true}); 
+    render(); renderStorage(); 
+  } 
+};
+window.addEventListener('studio-language-changed', ()=>{ render(); renderStorage(); });
+(async()=>{ await STUDIO_RUNTIME.init(); render(); renderStorage(); })(); };
+document.getElementById('btn-storage-reset').onclick=()=>{ if(confirm(window.STUDIO_I18N?.getLang()==='en' ? 'Reset to legacy default storage and copy current data?' : '恢复到默认存储，并复制当前数据？')){ STUDIO_RUNTIME.resetStorageToLegacy({copyCurrent:true}); render(); renderStorage(); } };
+window.addEventListener('studio-language-changed', ()=>{ render(); renderStorage(); });
+render(); renderStorage();
+</script>
+</body>
+</html>
