@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arena Studio Deck Editor v1.1.0</title>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    .deck-layout{display:grid;grid-template-columns:280px 1fr 340px;gap:16px;align-items:start}
+    .deck-table{display:grid;gap:8px}
+    .deck-row{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(130px,.8fr) 90px;gap:10px;align-items:center;padding:10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+    .deck-row.header{font-weight:700;background:rgba(255,255,255,.06)}
+    .deck-name{display:grid;gap:4px}
+    .deck-meta{font-size:12px;color:var(--muted)}
+    .stat-grid{display:grid;grid-template-columns:repeat(2,minmax(160px,1fr));gap:12px}
+    .top-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .qty-input{max-width:90px}
+    .summary-list{display:grid;gap:8px}
+    .summary-item{display:flex;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04)}
+    @media (max-width: 1200px){.deck-layout{grid-template-columns:1fr}.stat-grid{grid-template-columns:1fr}.deck-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header>
+  <h1>卡组编辑器 / Deck Editor</h1>
+  <p>平行于卡牌编辑器和游戏，只负责编辑职业、武器、饰品卡组，以及职业基础状态。</p>
+</header>
+<main>
+  <div class="top-actions">
+    <button type="button" onclick="location.href='index.html'">返回主页</button>
+    <button type="button" class="secondary" onclick="location.href='editor.html'">打开卡牌编辑器</button>
+    <button type="button" class="secondary" onclick="location.href='game.html'">进入游戏</button>
+    <button id="btn-save" type="button">保存当前规则副本</button>
+  </div>
+
+  <div class="deck-layout">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>规则副本</h2>
+        <div class="flex">
+          <button id="btn-duplicate">复制当前副本</button>
+          <button id="btn-rename" class="secondary">重命名</button>
+          <button id="btn-delete" class="danger">删除</button>
+        </div>
+      </div>
+      <div id="ruleset-list" class="ruleset-list"></div>
+      <div class="summary-box" id="storage-info" style="min-height:96px;margin-top:12px"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>卡组与基础状态</h2>
+        <span class="chip" id="editing-chip">职业</span>
+      </div>
+      <div class="grid grid-2">
+        <label><span>编辑对象类型</span>
+          <select id="entity-type">
+            <option value="profession">职业</option>
+            <option value="weapon">武器</option>
+            <option value="accessory">饰品</option>
+          </select>
+        </label>
+        <label><span>当前对象</span>
+          <select id="entity-select"></select>
+        </label>
+      </div>
+
+      <div id="profession-stats-panel" style="margin-top:16px">
+        <div class="panel-head"><h3>职业基础状态</h3></div>
+        <div class="stat-grid">
+          <label><span>显示名称</span><input id="prof-name" /></label>
+          <label><span>职业 key</span><input id="prof-key" disabled /></label>
+          <label><span>生命值</span><input id="prof-hp" type="number" min="1" /></label>
+          <label><span>移动距离</span><input id="prof-move" type="number" min="1" /></label>
+          <label><span>移动预设</span>
+            <select id="prof-move-preset">
+              <option value="melee">近战 / melee</option>
+              <option value="ranged">远程 / ranged</option>
+              <option value="custom">自定义 / custom</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div id="weapon-panel" class="hidden" style="margin-top:16px">
+        <div class="panel-head"><h3>武器信息</h3></div>
+        <div class="stat-grid">
+          <label><span>显示名称</span><input id="weapon-name" /></label>
+          <label><span>武器 key</span><input id="weapon-key" disabled /></label>
+          <label><span>普攻名称</span><input id="weapon-basic-name" /></label>
+          <label><span>普攻伤害</span><input id="weapon-basic-damage" /></label>
+          <label><span>普攻射程</span><input id="weapon-basic-range" type="number" min="0" /></label>
+          <label><span>攻击类型</span><input id="weapon-basic-type" /></label>
+          <label><span>是否直线</span>
+            <select id="weapon-basic-straight">
+              <option value="false">否</option>
+              <option value="true">是</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div id="accessory-panel" class="hidden" style="margin-top:16px">
+        <div class="panel-head"><h3>饰品信息</h3></div>
+        <div class="stat-grid">
+          <label><span>显示名称</span><input id="acc-name" /></label>
+          <label><span>饰品 key</span><input id="acc-key" disabled /></label>
+        </div>
+      </div>
+
+      <div style="margin-top:18px">
+        <div class="panel-head"><h3>卡组数量</h3><span class="muted">0 表示不加入卡组</span></div>
+        <div class="deck-table" id="deck-table"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>预览</h2></div>
+      <div id="summary" class="friendly-preview"></div>
+    </section>
+  </div>
+</main>
+
+<script src="studio_data.js"></script>
+<script src="studio_patch_v080.js"></script>
+<script src="studio_patch_v081.js"></script>
+<script src="studio_patch_v083.js"></script>
+<script src="studio_patch_v084.js"></script>
+<script src="studio_patch_v085.js"></script>
+<script src="studio_patch_v091.js"></script>
+<script src="studio_patch_v092.js"></script>
+<script src="studio_patch_v093.js"></script>
+<script src="studio_patch_v094.js"></script>
+<script src="studio_patch_v095.js"></script>
+<script src="studio_patch_v096.js"></script>
+<script src="studio_patch_v097.js"></script>
+<script src="studio_patch_v099.js"></script>
+<script src="studio_patch_v100.js"></script>
+<script src="studio_patch_v101.js"></script>
+<script src="studio_patch_v102.js"></script>
+<script src="studio_patch_v104.js"></script>
+<script src="studio_patch_v105.js"></script>
+<script src="studio_patch_v106.js"></script>
+<script src="studio_patch_v107.js"></script>
+<script src="studio_patch_v108.js"></script>
+<script src="studio_patch_v109.js"></script>
+<script src="runtime.js"></script>
+<script src="i18n_v081.js"></script>
+<script src="deck_editor.js"></script>
+</body>
+</html>
