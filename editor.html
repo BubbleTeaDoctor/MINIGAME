@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Template Editor v0.9.0</title>
+  <link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+<header>
+  <div class="lang-bar"><button data-lang-btn="zh">中文</button><button data-lang-btn="en">English</button></div>
+  <h1 data-i18n="editor_title">模板编辑器 v0.9.0</h1>
+  <p>继续沿用稳定编辑器框架，并修正规则副本保存、删除、重命名和新建条目逻辑。</p>
+  <div class="flex" style="margin-top:10px">
+    <button class="secondary" onclick="location.href='index.html'" data-i18n="back_home">返回首页</button>
+  </div>
+</header>
+<main>
+  <section class="panel controls">
+    <div class="grid grid-4">
+      <label><span data-i18n="ruleset">规则副本</span><select id="ruleset-select"></select></label>
+      <label><span>规则副本名称 / Ruleset Name</span><input id="ruleset-name" /></label>
+      <label><span data-i18n="edit_scope">编辑对象</span><select id="edit-scope"><option value="cards" data-i18n="class_cards">职业卡</option><option value="passives" data-i18n="class_passives">职业被动</option><option value="weapon_cards">武器卡</option><option value="accessory_cards">饰品卡</option><option value="negative_cards">负面牌 / Negative Card</option></select></label>
+      <label><span id="entity-label" data-i18n="profession">职业</span><select id="profession-select"></select></label>
+      <label><span data-i18n="entry">条目</span><select id="entry-select"></select></label>
+      <label><span>条目 Key / Entry Key</span><input id="entry-key" /></label>
+      <label><span>规则副本存储位置 / Storage</span><div id="storage-info" class="summary-box" style="min-height:88px"></div></label>
+      <label><span>当前副本说明 / Notes（文件夹模式会自动保存 rulesets.json 和 active.json）</span><div id="ruleset-meta" class="summary-box" style="min-height:88px"></div></label>
+      <label><span>存储命名空间 / Storage Namespace</span><input id="storage-namespace" placeholder="例如 my_ruleset_slot" /></label>
+
+    </div>
+    <div class="flex" style="margin-top:12px">
+      <button id="btn-new-profession">新建职业 / New Profession</button>
+      <button id="btn-new-weapon">新建武器 / New Weapon</button>
+      <button id="btn-new-accessory">新建饰品 / New Accessory</button>
+      <button id="btn-new" data-i18n="new_entry">新建条目</button>
+      <button id="btn-rename-entry">重命名条目 / Rename Entry</button>
+      <button id="btn-duplicate" data-i18n="duplicate_entry">复制当前条目</button>
+      <button id="btn-delete" class="danger" data-i18n="delete_entry">删除当前条目</button>
+      <button id="btn-save-entry" data-i18n="save_entry">保存当前条目</button>
+      <button id="btn-save-ruleset" class="secondary" data-i18n="save_ruleset">保存整个规则副本</button>
+      <button id="btn-delete-ruleset" class="danger">删除规则副本 / Delete Ruleset</button>
+      <button id="btn-export-ruleset" class="secondary">导出 JSON / Export JSON</button>
+      <button id="btn-import-ruleset" class="secondary">导入 JSON / Import JSON</button>
+      <button id="btn-storage-apply" class="secondary">切换命名空间 / Switch Namespace</button>
+      <button id="btn-storage-folder" class="secondary">选择本地文件夹 / Pick Folder</button>
+      <button id="btn-storage-reset" class="secondary">恢复默认存储 / Reset Storage</button>
+    </div>
+  </section>
+  <section class="workspace">
+    <aside class="panel">
+      <div class="panel-head"><h2 data-i18n="template_info">模板信息</h2></div>
+      <div id="template-summary" class="summary-box"></div>
+      <div class="chip" data-i18n="attached_status">附带状态模板</div>
+      <label style="margin-top:8px"><select id="status-template-select"></select></label>
+      <div id="status-fields" class="form-host" style="margin-top:10px"></div>
+    </aside>
+    <section class="panel">
+      <div class="panel-head"><h2 id="form-title" data-i18n="form_area">表单编辑区</h2><button id="btn-reset" class="secondary" data-i18n="reset_original">恢复原始值</button></div>
+      <div class="field-grid">
+        <div class="field"><label>Name</label><input id="entry-name" /></div>
+        <div class="field"><label>Template</label><select id="template-select"></select></div>
+      </div>
+      <div id="form-host" class="form-host"></div>
+    </section>
+    <aside class="panel">
+      <div class="panel-head"><h2 data-i18n="live_preview">实时预览</h2></div>
+      <div id="friendly-preview" class="friendly-preview"></div>
+      <textarea id="json-preview" rows="16"></textarea>
+    </aside>
+  </section>
+</main>
+<script src="studio_data.js"></script>
+<script src="studio_patch_v080.js"></script>
+<script src="studio_patch_v081.js"></script>
+<script src="studio_patch_v083.js"></script>
+<script src="studio_patch_v084.js"></script>
+<script src="studio_patch_v085.js"></script>
+<script src="studio_patch_v091.js"></script>
+<script src="studio_patch_v092.js"></script>
+<script src="studio_patch_v093.js"></script>
+<script src="studio_patch_v094.js"></script>
+<script src="studio_patch_v095.js"></script>
+<script src="studio_patch_v096.js"></script>
+<script src="studio_patch_v097.js"></script>
+<script src="studio_patch_v099.js"></script>
+<script src="studio_patch_v100.js"></script>
+<script src="studio_patch_v101.js"></script>
+<script src="studio_patch_v102.js"></script>
+
+<script src="studio_patch_v104.js"></script>
+<script src="studio_patch_v105.js"></script>
+<script src="studio_patch_v106.js"></script>
+<script src="studio_patch_v107.js"></script>
+<script src="studio_patch_v108.js"></script>
+<script src="studio_patch_v109.js"></script>
+<script src="studio_patch_v111_default_ruleset.js"></script>
+<script src="runtime.js"></script>
+<script src="i18n_v081.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

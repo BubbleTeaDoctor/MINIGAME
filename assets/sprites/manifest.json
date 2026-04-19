@@ -1,0 +1,99 @@
+{
+  "profiles": {
+    "knight-blue": {
+      "source": "FREE_Knight 2D Pixel Art / Colour1 / Outline",
+      "frameWidth": 120,
+      "frameHeight": 80,
+      "scale": 1.65,
+      "animations": {
+        "idle": { "file": "assets/sprites/knight-blue/idle.png", "frames": 10, "duration": 950, "loop": true },
+        "run": { "file": "assets/sprites/knight-blue/run.png", "frames": 10, "duration": 720, "loop": true },
+        "attack": { "file": "assets/sprites/knight-blue/attack.png", "frames": 4, "duration": 420 },
+        "attackHeavy": { "file": "assets/sprites/knight-blue/attack-heavy.png", "frames": 6, "duration": 560 },
+        "attackCombo": { "file": "assets/sprites/knight-blue/attack-combo.png", "frames": 10, "duration": 760 },
+        "cast": { "file": "assets/sprites/knight-blue/cast.png", "frames": 6, "duration": 620 },
+        "hurt": { "file": "assets/sprites/knight-blue/hurt.png", "frames": 1, "duration": 360 },
+        "death": { "file": "assets/sprites/knight-blue/death.png", "frames": 10, "duration": 900 }
+      }
+    },
+    "knight-rose": {
+      "source": "FREE_Knight 2D Pixel Art / Colour2 / Outline",
+      "frameWidth": 120,
+      "frameHeight": 80,
+      "scale": 1.65,
+      "animations": {
+        "idle": { "file": "assets/sprites/knight-rose/idle.png", "frames": 10, "duration": 950, "loop": true },
+        "run": { "file": "assets/sprites/knight-rose/run.png", "frames": 10, "duration": 720, "loop": true },
+        "attack": { "file": "assets/sprites/knight-rose/attack.png", "frames": 4, "duration": 420 },
+        "attackHeavy": { "file": "assets/sprites/knight-rose/attack-heavy.png", "frames": 6, "duration": 560 },
+        "attackCombo": { "file": "assets/sprites/knight-rose/attack-combo.png", "frames": 10, "duration": 760 },
+        "cast": { "file": "assets/sprites/knight-rose/cast.png", "frames": 6, "duration": 620 },
+        "hurt": { "file": "assets/sprites/knight-rose/hurt.png", "frames": 1, "duration": 360 },
+        "death": { "file": "assets/sprites/knight-rose/death.png", "frames": 10, "duration": 900 }
+      }
+    },
+    "samurai": {
+      "source": "FREE_Samurai 2D Pixel Art v1.2",
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "scale": 1.4,
+      "animations": {
+        "idle": { "file": "assets/sprites/samurai/idle.png", "frames": 10, "duration": 950, "loop": true },
+        "run": { "file": "assets/sprites/samurai/run.png", "frames": 16, "duration": 780, "loop": true },
+        "attack": { "file": "assets/sprites/samurai/attack.png", "frames": 7, "duration": 560 },
+        "attackHeavy": { "file": "assets/sprites/samurai/attack.png", "frames": 7, "duration": 640 },
+        "attackCombo": { "file": "assets/sprites/samurai/attack.png", "frames": 7, "duration": 620 },
+        "cast": { "file": "assets/sprites/samurai/attack.png", "frames": 7, "duration": 620 },
+        "hurt": { "file": "assets/sprites/samurai/hurt.png", "frames": 4, "duration": 360 },
+        "death": { "file": "assets/sprites/samurai/hurt.png", "frames": 4, "duration": 800 }
+      }
+    },
+    "severed-fang": {
+      "source": "E:/minigame/素材/FallenOrder-SeveredFang",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "scale": 1.05
+    },
+    "evil-wizard": {
+      "source": "E:/minigame/素材/Evil Wizard 3",
+      "frameWidth": 140,
+      "frameHeight": 140,
+      "scale": 0.95
+    },
+    "blind-huntress": {
+      "source": "E:/minigame/素材/SHADOW Series - The Blind Huntress",
+      "frameWidth": 120,
+      "frameHeight": 128,
+      "scale": 1.055
+    },
+    "duskborne-elf": {
+      "source": "E:/minigame/素材/DuskBorne-Elf",
+      "frameWidth": 160,
+      "frameHeight": 144,
+      "scale": 0.955
+    },
+    "duskborne-demonkin": {
+      "source": "E:/minigame/素材/DuskBorne-DemonKin",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "scale": 1.05
+    },
+    "battle-maid": {
+      "source": "E:/minigame/素材/Battle_maid",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "scale": 1.05
+    }
+  },
+  "professionMapping": {
+    "warrior": "severed-fang",
+    "mage": "evil-wizard",
+    "rogue": "blind-huntress",
+    "priest": "battle-maid",
+    "shaman": "duskborne-elf",
+    "necro": "duskborne-demonkin",
+    "warlock": "duskborne-demonkin",
+    "swordsman": "samurai",
+    "hunter": "duskborne-elf"
+  }
+}

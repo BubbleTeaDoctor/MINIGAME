@@ -1,0 +1,359 @@
+/* Retro Pixel Skinning (Assets Only) */
+@font-face {
+    font-family: 'RetroPixel';
+    src: local('Courier New'), local('monospace');
+}
+
+body.pixel-ui {
+    font-family: 'RetroPixel', monospace;
+    image-rendering: pixelated;
+}
+
+/* Pixel Skinning: Buttons */
+body.pixel-ui button, 
+body.pixel-ui .bg-picker-control {
+    background-image: linear-gradient(180deg,rgba(123,86,56,.92),rgba(77,48,33,.95)), url("assets/ui/freebuttons2.png");
+    background-size: auto, 128px 64px;
+    border: 2px solid #efc46e !important;
+    color: #f6ead6 !important;
+    border-radius: 6px !important;
+    image-rendering: pixelated;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 3px 0 rgba(0,0,0,0.5) !important;
+    text-shadow: 0 1px 1px #000;
+}
+body.pixel-ui button:active,
+body.pixel-ui .bg-picker-control:active {
+    transform: translateY(2px) !important;
+    box-shadow: none !important;
+}
+body.pixel-ui button.secondary {
+    background-image: linear-gradient(180deg,#5a4a3f,#32251f), url("assets/ui/freebuttons2.png") !important;
+    border-color: #8e6a3c !important;
+}
+
+/* Pixel Skinning: Status Panels — no background frame, content only */
+body.pixel-ui #player-info,
+body.pixel-ui #player-info-rival {
+    width: auto !important;
+    min-width: 200px !important;
+    max-width: 400px !important;
+    padding: 8px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: #f6ead6 !important;
+    z-index: 60 !important;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7);
+}
+
+body.pixel-ui .player-side-panel p,
+body.pixel-ui .player-side-panel div {
+    white-space: normal !important; /* Allow long text to wrap */
+    word-break: break-all !important;
+}
+
+/* Pixel Skinning: HP & Block Bars */
+body.pixel-ui .game-theme .hp-bar {
+    background: #0b0e0a !important;
+    border: 2px solid #8e6a3c !important;
+    background-image: url("assets/ui/dragon-hpbar.png") !important;
+    background-size: auto 100% !important;
+    image-rendering: pixelated;
+    height: 14px !important;
+}
+body.pixel-ui .game-theme .hp-fill {
+    background: linear-gradient(90deg, #b93f45, #e8aa57) !important;
+}
+body.pixel-ui .game-theme .block-bar {
+    background: #0b0e0a !important;
+    border: 2px solid #4f8da4 !important;
+}
+body.pixel-ui .game-theme .block-fill {
+    background: linear-gradient(90deg, #4f8da4, #c8e0dc) !important;
+}
+
+/* Pixel Skinning: Cards */
+body.pixel-ui .game-theme .card {
+    background: linear-gradient(180deg, #312719, #19120c) !important;
+    border: 3px solid #efc46e !important;
+    border-radius: 4px !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.1) !important;
+}
+body.pixel-ui .game-theme .card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url("assets/ui/freebuttons2.png");
+    background-size: 128px 64px;
+    opacity: 0.1;
+    pointer-events: none;
+}
+body.pixel-ui .game-theme .card-name {
+    color: #f7efcc !important;
+    text-shadow: 1px 1px 0 #000;
+}
+body.pixel-ui .game-theme .card-meta {
+    color: #efc46e !important;
+}
+body.pixel-ui .game-theme .card-text {
+    color: #cbb99b !important;
+}
+
+/* Floating UI positioning */
+.floating-ui {
+    position: fixed;
+    z-index: 1000;
+}
+
+#menu-btn-container {
+    top: 15px;
+    right: 15px;
+}
+
+#action-panel {
+    bottom: 180px;
+    left: 15px;
+    min-width: 100px; /* Minimum width; resizable in edit mode */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(18, 12, 8, 0.8);
+    padding: 12px;
+    border: 2px solid #efc46e;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.8);
+}
+
+#action-panel button {
+    width: 100%; /* Make buttons fill the panel width */
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#btn-menu-toggle {
+    background-image: linear-gradient(180deg,#5a4a3f,#32251f), url("assets/ui/freebuttons2.png") !important;
+    border-color: #efc46e !important;
+    padding: 8px 16px !important;
+    font-weight: bold;
+}
+
+#game-menu-panel {
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100vh;
+    height: 100dvh;
+    background: rgba(18, 12, 8, 0.95);
+    display: flex;
+    flex-direction: column;
+    box-shadow: -5px 0 20px rgba(0,0,0,0.8);
+    border-left: 2px solid #8e6a3c;
+    transition: transform 0.3s ease;
+}
+
+#game-menu-panel.hidden {
+    display: none;
+    transform: translateX(100%);
+}
+
+.menu-content {
+    padding: 15px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.menu-content h2 {
+    color: #efc46e;
+    margin: 0;
+    font-size: 18px;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.menu-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(142, 106, 60, 0.3);
+}
+
+.menu-section label {
+    display: block;
+    margin-bottom: 8px;
+    color: #efc46e;
+    font-size: 12px;
+}
+
+/* Battle Log Control */
+#battle-log-panel {
+    display: none !important; /* Hidden by default */
+}
+
+#battle-log-panel.visible {
+    display: block !important;
+    position: fixed !important;
+    left: 15px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 260px !important;
+    max-height: 300px !important;
+    z-index: 900 !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    border: 2px solid #8e6a3c !important;
+}
+
+/* Hide original toolbar buttons that were moved */
+.battle-toolbar { display: none !important; }
+
+/* Board zoom in menu */
+.menu-section .board-zoom-controls {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+/* Touch pass-through */
+.board-wrap { touch-action: none; }
+#board { touch-action: none; }
+
+/* ── Edit Mode ─────────────────────────────────────────────────────────── */
+
+/* Draggable panels get a dashed highlight border and grab cursor */
+body.ui-edit-mode #action-panel,
+body.ui-edit-mode #menu-btn-container,
+body.ui-edit-mode #player-info,
+body.ui-edit-mode #player-info-rival,
+body.ui-edit-mode #battle-log-panel,
+body.ui-edit-mode #hand-panel-head,
+body.ui-edit-mode #selection-hint {
+    outline: 2px dashed #efc46e !important;
+    outline-offset: 4px !important;
+    cursor: grab !important;
+    user-select: none !important;
+    pointer-events: auto !important;
+    position: fixed !important; /* Ensure all are fixed-positioned for dragging */
+    overflow: visible !important; /* So resize handle is visible */
+}
+
+body.ui-edit-mode #action-panel:active,
+body.ui-edit-mode #menu-btn-container:active,
+body.ui-edit-mode #player-info:active,
+body.ui-edit-mode #player-info-rival:active,
+body.ui-edit-mode #battle-log-panel:active,
+body.ui-edit-mode #hand-panel-head:active,
+body.ui-edit-mode #selection-hint:active {
+    cursor: grabbing !important;
+    outline-color: #fff !important;
+}
+
+/* Force battle-log visible so it can be repositioned even when toggled off */
+body.ui-edit-mode #battle-log-panel,
+#battle-log-panel.edit-mode-visible {
+    display: block !important;
+    position: fixed !important;
+}
+
+/* Resize handle — bottom-right corner of each draggable panel */
+.ui-resize-handle {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    width: 16px;
+    height: 16px;
+    background: #efc46e;
+    border: 2px solid #8e6a3c;
+    border-radius: 2px;
+    cursor: nwse-resize;
+    z-index: 10001;
+    opacity: 0.9;
+    pointer-events: auto !important;
+}
+.ui-resize-handle::after {
+    content: '';
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 6px;
+    height: 6px;
+    border-right: 2px solid #312719;
+    border-bottom: 2px solid #312719;
+}
+
+/* Scale percentage label shown while resizing */
+.ui-scale-label {
+    position: absolute;
+    top: -24px;
+    right: 0;
+    background: rgba(0,0,0,0.85);
+    color: #efc46e;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #8e6a3c;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 10002;
+}
+
+/* Dim the rest of the screen subtly to signal edit mode */
+body.ui-edit-mode::after {
+    content: '✏️ EDIT MODE — 拖动面板 / 拖角缩放';
+    position: fixed;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(239,196,110,0.18);
+    border: 1px solid rgba(239,196,110,0.5);
+    color: #efc46e;
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 5px 16px;
+    border-radius: 20px;
+    z-index: 9999;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* Confirm Layout button — centered overlay */
+#btn-confirm-layout {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9998;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+#btn-confirm-layout p {
+    color: rgba(239,196,110,0.7);
+    font-size: 12px;
+    margin: 0;
+    text-align: center;
+    pointer-events: none;
+}
+
+#btn-confirm-layout-inner {
+    font-size: 18px !important;
+    padding: 14px 32px !important;
+    background-image: linear-gradient(180deg, #3d7a3d, #1f4a1f),
+                      url("assets/ui/freebuttons2.png") !important;
+    border-color: #6bdd6b !important;
+    box-shadow: 0 0 30px rgba(100,220,100,0.3), 0 6px 0 rgba(0,0,0,0.5) !important;
+    letter-spacing: 1px;
+}
+
+#btn-confirm-layout-inner:hover {
+    box-shadow: 0 0 40px rgba(100,220,100,0.5), 0 6px 0 rgba(0,0,0,0.5) !important;
+}
+

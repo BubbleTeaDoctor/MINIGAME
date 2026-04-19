@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Arena Studio Game v0.8.5</title>
+  <link rel="stylesheet" href="shared.css" />
+  <link rel="stylesheet" href="pixel_style.css" />
+</head>
+<body class="game-theme pixel-ui">
+<header>
+  <div class="lang-bar"><button data-lang-btn="zh">中文</button><button data-lang-btn="en">English</button></div>
+  <h1 data-i18n="game_title">游戏本体 v0.8.5</h1>
+</header>
+  <p data-i18n="game_sub">读取当前规则副本，保留稳定行动经济，并补回新职业、新饰品和双语切换。</p>
+</header>
+<main>
+  <section id="setup-panel" class="panel">
+    <div class="grid grid-4">
+      <label><span data-i18n="ruleset">规则副本</span><select id="ruleset-select"></select></label>
+      <label><span data-i18n="p1_prof">玩家 1 职业</span><select id="p1-profession"></select></label>
+      <label><span data-i18n="p1_weapon">玩家 1 武器</span><select id="p1-weapon"></select></label>
+      <label><span data-i18n="p1_accessory">玩家 1 饰品</span><select id="p1-accessory"></select></label>
+      <label><span data-i18n="p2_type">玩家 2 类型</span><select id="p2-type"><option value="human" data-i18n="human">人类</option><option value="ai" data-i18n="ai">电脑</option></select></label>
+      <label><span data-i18n="p2_prof">玩家 2 职业</span><select id="p2-profession"></select></label>
+      <label><span data-i18n="p2_weapon">玩家 2 武器</span><select id="p2-weapon"></select></label>
+      <label><span data-i18n="p2_accessory">玩家 2 饰品</span><select id="p2-accessory"></select></label>
+      <label><span>黑洞</span><select id="black-hole-enabled"><option value="true">开启</option><option value="false">关闭</option></select></label>
+      <label><span>开局抽牌数</span><input id="draw-opening" type="number" min="0" max="99" step="1" value="6" /></label>
+      <label><span>每回合抽牌数</span><input id="draw-per-turn" type="number" min="0" max="99" step="1" value="2" /></label>
+    </div>
+    <div class="flex" style="margin-top:12px"><button id="start-game" data-i18n="start_game">开始游戏</button><button class="secondary" onclick="location.href='index.html'" data-i18n="back_home">返回首页</button></div>
+    <div id="deck-tooltip" class="deck-tooltip hidden" role="tooltip"></div>
+  </section>
+  <section id="game-screen" class="hidden">
+    <div class="top-row">
+      <section class="panel player-side-panel" id="player-info"></section>
+      <section class="panel player-side-panel" id="player-info-rival"></section>
+      <section class="panel" id="battle-log-panel">
+        <div class="panel-head"><h2 data-i18n="battle_log">战斗日志</h2><div id="mode-indicator" class="badge" data-i18n="current_mode">当前模式：待机</div></div>
+        <div id="log" class="log"></div>
+      </section>
+    </div>
+    <section class="panel" id="board-panel">
+      <div class="toolbar battle-toolbar" style="display:none">
+        <!-- Original toolbar hidden, logic kept by ID -->
+      </div>
+      
+      <!-- Top-Right Menu Toggle -->
+      <div id="menu-btn-container" class="floating-ui">
+        <button id="btn-menu-toggle" class="pixel-btn">菜单 MENU</button>
+      </div>
+
+      <!-- Top-Right Menu Panel -->
+      <div id="game-menu-panel" class="hidden floating-ui">
+        <div class="menu-content panel">
+          <div class="panel-head"><h2>游戏设置</h2><button id="btn-menu-close" class="secondary">关闭</button></div>
+          <div class="menu-grid">
+            <button id="btn-restart" class="secondary" data-i18n="restart">重新开局</button>
+            <button id="btn-toggle-log" class="secondary">显示/隐藏战斗日志</button>
+            <button id="btn-edit-layout" class="secondary">✏️ 编辑模式</button>
+            <label class="bg-picker-control"><span>替换背景</span><input id="arena-bg-input" type="file" accept="image/*" /></label>
+            <button id="arena-bg-clear" class="secondary" type="button">默认背景</button>
+            <button id="btn-mute" class="secondary" type="button" aria-pressed="false">静音选项</button>
+            <button id="btn-export-battle-log" class="secondary">导出战斗日志</button>
+            <button id="btn-export-debug-log" class="secondary">导出运行诊断</button>
+            <button class="secondary" onclick="location.href='index.html'" data-i18n="back_home">返回首页</button>
+          </div>
+          <div class="menu-section">
+            <label>画面大小</label>
+            <div class="board-zoom-controls">
+              <button id="board-zoom-out" class="secondary" type="button">-</button>
+              <span id="board-zoom-label" class="badge">70%</span>
+              <button id="board-zoom-in" class="secondary" type="button">+</button>
+              <button id="board-zoom-fit" class="secondary" type="button">适配</button>
+            </div>
+          </div>
+          <div id="menu-lang-container" class="menu-section">
+            <!-- Language buttons will be moved here by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom-Left Action Panel -->
+      <div id="action-panel" class="floating-ui">
+        <button id="btn-move" data-i18n="move_mode">移动模式</button>
+        <button id="btn-basic-attack" data-i18n="basic_attack">普通攻击</button>
+        <button id="btn-cancel" class="secondary" data-i18n="cancel" style="display:none">取消选择</button>
+        <button id="btn-end-turn" data-i18n="end_turn">结束回合</button>
+        <button id="btn-confirm-move" class="secondary" type="button" style="display:none">确认移动</button>
+        <button id="btn-passive" style="display:none">职业被动</button>
+      </div>
+      <div class="board-wrap" id="board-wrap"><svg id="board" viewBox="-136 0 2100 1750"></svg></div>
+    </section>
+    <section class="panel" id="hand-panel">
+      <div class="panel-head" id="hand-panel-head"><h2 data-i18n="current_hand">当前手牌</h2><div class="flex hand-status"><div id="active-deck-count" class="badge deck-count-badge">牌库剩余 0</div><div id="turn-indicator" class="badge" data-i18n="waiting">等待开始</div></div></div>
+      <div id="hand" class="hand"></div>
+      <div id="choice-panel" class="choice-panel"></div>
+      <div id="selection-hint" class="muted" data-i18n="select_action">请选择一个动作。</div>
+    </section>
+  </section>
+  <!-- Edit Mode: Confirm Layout overlay -->
+  <div id="btn-confirm-layout" class="hidden">
+    <button id="btn-confirm-layout-inner">✅ 确定布局</button>
+    <p>拖动各面板到合适位置后点击保存</p>
+  </div>
+</main>
+<div id="dice-overlay" class="dice-overlay hidden"><div class="dice-box"><div class="dice-title" id="dice-title">Rolling…</div><div class="dice-notation" id="dice-notation"></div><div class="dice-value" id="dice-value">0</div></div></div>
+<script src="studio_data.js"></script>
+<script src="studio_patch_v080.js"></script>
+<script src="studio_patch_v081.js"></script>
+<script src="studio_patch_v083.js"></script>
+<script src="studio_patch_v084.js"></script>
+<script src="studio_patch_v085.js"></script>
+<script src="studio_patch_v091.js"></script>
+<script src="studio_patch_v092.js"></script>
+<script src="studio_patch_v093.js"></script>
+<script src="studio_patch_v094.js"></script>
+<script src="studio_patch_v095.js"></script>
+<script src="studio_patch_v096.js"></script>
+<script src="studio_patch_v097.js"></script>
+<script src="studio_patch_v099.js"></script>
+<script src="studio_patch_v100.js"></script>
+<script src="studio_patch_v101.js"></script>
+<script src="studio_patch_v102.js"></script>
+
+<script src="studio_patch_v104.js"></script>
+<script src="studio_patch_v105.js"></script>
+<script src="studio_patch_v106.js"></script>
+<script src="studio_patch_v107.js"></script>
+<script src="studio_patch_v108.js"></script>
+<script src="studio_patch_v109.js"></script>
+<script src="studio_patch_v111_default_ruleset.js"></script>
+<script src="runtime.js"></script>
+<script src="i18n_v081.js"></script>
+<script src="game.js"></script>
+<script src="ui_layout.js"></script>
+</body>
+</html>
