@@ -601,14 +601,14 @@ body.game-theme{
   .game-theme.battle-running{
     --battle-stage-width:100vw;
     --battle-stage-left:0px;
-    --card-w:92px;
-    --card-h:146px;
-    --card-pad:7px;
-    --card-overlap:-10px;
-    --card-name-size:12px;
-    --card-meta-size:8px;
-    --card-text-size:9px;
-    --hand-lift:-24px;
+    --card-w:82px;
+    --card-h:130px;
+    --card-pad:6px;
+    --card-overlap:-12px;
+    --card-name-size:11px;
+    --card-meta-size:7px;
+    --card-text-size:8px;
+    --hand-lift:-20px;
   }
   .game-theme main{padding:10px}
   .game-theme header{padding:14px 14px 4px}
@@ -623,13 +623,13 @@ body.game-theme{
   .game-theme #hand-panel{left:6px;right:6px;bottom:6px;padding:0 8px 6px}
   .game-theme #hand-panel h2{font-size:16px}
   .game-theme #hand-panel .panel-head{align-items:flex-start}
-  .game-theme .hand{justify-content:flex-start;max-width:none;min-height:250px;padding:84px 10px 10px;overflow-x:auto;overflow-y:hidden}
-  .game-theme .hand .card{flex-basis:154px;width:154px;min-height:236px;margin-left:-22px;padding:12px}
+  .game-theme .hand{justify-content:center;max-width:none;min-height:200px;padding:84px 10px 10px;overflow-x:auto;overflow-y:hidden}
+  .game-theme .hand .card{flex-basis:var(--card-w);width:var(--card-w);min-height:var(--card-h);margin-left:var(--card-overlap);padding:var(--card-pad)}
   .game-theme .hand .card:first-child{margin-left:0}
-  .game-theme .hand .card.selected{transform:translateY(-42px) rotate(0deg) scale(1.05)}
-  .game-theme .hand .card-name{font-size:16px}
-  .game-theme .hand .card-meta{font-size:12px}
-  .game-theme .hand .card-text{font-size:13px;max-height:124px}
+  .game-theme .hand .card.selected{transform:translateY(var(--hand-lift)) rotate(0deg) scale(1.05)}
+  .game-theme .hand .card-name{font-size:var(--card-name-size)}
+  .game-theme .hand .card-meta{font-size:var(--card-meta-size)}
+  .game-theme .hand .card-text{font-size:var(--card-text-size);max-height:calc(var(--card-h) - 60px)}
   .game-theme #player-info .info-grid{grid-template-columns:1fr}
   .game-theme .top-row{display:block;max-width:none}
   .game-theme #game-screen{display:block;padding-bottom:265px}
@@ -662,34 +662,37 @@ body.game-theme{
   .game-theme.battle-running #player-info,
   .game-theme.battle-running #player-info-rival{
     position:fixed;
-    top:34px;
-    width:calc(50vw - 6px);
-    max-height:74px;
-    overflow:hidden;
+    top:40px;
+    width:calc(50vw - 10px);
+    max-height:none;
+    overflow:visible;
     margin:0;
     padding:4px;
+    background: rgba(18, 12, 8, 0.7);
+    border-radius: 4px;
+    border: 1px solid rgba(239, 196, 110, 0.2);
   }
   .game-theme.battle-running #player-info{left:4px}
   .game-theme.battle-running #player-info-rival{right:4px}
   .game-theme.battle-running .top-row h2{font-size:10px;margin-bottom:3px}
   .game-theme.battle-running .player-title,
   .game-theme.battle-running .stat-line,
-  .game-theme.battle-running .hud-metrics{font-size:9px}
+  .game-theme.battle-running .hud-metrics{font-size:9px; line-height: 1.1;}
   .game-theme.battle-running .hp-bar,
-  .game-theme.battle-running .block-bar{height:8px;margin-top:2px}
-  .game-theme.battle-running .status-row{display:none}
+  .game-theme.battle-running .block-bar{height:10px;margin-top:2px}
+  .game-theme.battle-running .status-row{display:flex; flex-wrap: wrap; gap: 2px;}
   .game-theme.battle-running #battle-log-panel{
     display:none;
   }
   .game-theme.battle-running .log{max-height:42px}
   .game-theme.battle-running .log-entry{font-size:10px;padding:4px 6px}
-  .game-theme.battle-running #hand-panel{left:4px;right:4px;bottom:6px;padding:0 4px 4px}
-  .game-theme.battle-running #hand-panel .panel-head{left:8px;right:auto;bottom:154px;padding:4px}
-  .game-theme.battle-running #hand-panel #selection-hint{left:8px;bottom:10px;max-width:calc(100vw - 16px)}
+  .game-theme.battle-running #hand-panel{left:4px;right:4px;bottom:4px;padding:0; z-index: 100;}
+  .game-theme.battle-running #hand-panel .panel-head{left:8px;right:auto;bottom:160px;padding:4px; z-index: 110;}
+  .game-theme.battle-running #hand-panel #selection-hint{left:0;right:0;bottom:0;max-width:none; width: 100%; border-radius: 0; background: rgba(0,0,0,0.85); z-index: 150;}
   .game-theme.battle-running .hand{
     justify-content:flex-start;
-    min-height:146px;
-    padding:28px 6px 4px;
+    min-height:140px;
+    padding:20px 6px 40px;
     overflow-x:auto;
     overflow-y:visible;
     scrollbar-width:none;

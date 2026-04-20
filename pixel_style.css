@@ -47,6 +47,15 @@ body.pixel-ui #player-info-rival {
     text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7);
 }
 
+@media (max-width: 860px) {
+    body.pixel-ui #player-info,
+    body.pixel-ui #player-info-rival {
+        min-width: 150px !important;
+        max-width: 50vw !important;
+        padding: 4px !important;
+    }
+}
+
 body.pixel-ui .player-side-panel p,
 body.pixel-ui .player-side-panel div {
     white-space: normal !important; /* Allow long text to wrap */
@@ -114,23 +123,55 @@ body.pixel-ui .game-theme .card-text {
 #action-panel {
     bottom: 180px;
     left: 15px;
-    min-width: 100px; /* Minimum width; resizable in edit mode */
     display: flex;
     flex-direction: column;
     gap: 8px;
     background: rgba(18, 12, 8, 0.8);
-    padding: 12px;
+    padding: 10px;
     border: 2px solid #efc46e;
     border-radius: 8px;
     box-shadow: 0 6px 20px rgba(0,0,0,0.8);
 }
 
 #action-panel button {
-    width: 100%; /* Make buttons fill the panel width */
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    padding: 0 !important;
+    display: flex; /* REMOVED !important to allow JS toggling */
+    align-items: center;
+    justify-content: center;
+}
+
+#action-panel button .u-text {
+    display: none !important; /* Globally hide text while keeping logic */
+}
+
+#action-panel .u-icon {
+    font-size: 24px;
+}
+
+@media (max-width: 860px) {
+    #action-panel {
+        flex-direction: row !important;
+        bottom: 12px !important;
+        left: 50% !important;
+        top: auto !important; /* Prevent conflicts with top-aligned presets */
+        transform: translateX(-50%) !important;
+        min-width: 0 !important;
+        width: auto !important;
+        gap: 6px !important;
+        padding: 6px !important;
+        z-index: 200 !important; 
+    }
+    #action-panel button {
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+    }
+    #action-panel .u-icon {
+        font-size: 20px !important;
+    }
 }
 
 #btn-menu-toggle {

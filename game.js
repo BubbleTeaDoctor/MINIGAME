@@ -2806,7 +2806,6 @@ async function applyRewardList(player, rewards, labelPrefix){
       const fromTile = deep(p.pos);
       playUnitAnim(p, anim, spriteAnimDuration(p, anim, 520));
       triggerTeleportCardVisual(handItem.cardKey, cardDef, p, fromTile, tile);
-      p.turn.move = true;
       p.turn.movedDistance = dist(p.pos, tile);
       p.pos = deep(tile);
       enterTile(p);
@@ -3673,17 +3672,21 @@ async function applyRewardList(player, rewards, labelPrefix){
   function renderPassiveButton(){
     const btn = $('btn-passive');
     if (!btn) return;
+    btn.style.display = 'none';
     const p = current();
+    if (!p || !p.professionKey) return;
+    const pk = p.professionKey.toLowerCase();
+    if (pk !== 'warlock' && pk !== 'lock') return;
+
     const passiveEntry = Object.entries(p.profession.passives || {})[0];
     const passiveKey = passiveEntry?.[0] || 'profession_passive';
     const passive = passiveEntry?.[1];
-    if (!passive || passive.template !== 'life_for_card_draw_once_per_turn'){
-      btn.style.display = 'none';
-      return;
+    if (passive && passive.template === 'life_for_card_draw_once_per_turn'){
+      btn.style.display = '';
+      const text = btn.querySelector('.u-text') || btn;
+      text.textContent = `${passive.name || '职业被动'}（-${passive.config?.lifeCost || 0} 生命 / +${passive.config?.drawCount || 1} 抽）`;
+      btn.disabled = !!p.turn?.passiveOnceTriggered?.[passiveKey] || !p.alive;
     }
-    btn.style.display = '';
-    btn.textContent = `${passive.name || '职业被动'}（-${passive.config?.lifeCost || 0} 生命 / +${passive.config?.drawCount || 1} 抽）`;
-    btn.disabled = !!p.turn?.passiveOnceTriggered?.[passiveKey] || !p.alive;
   }
 
   function renderMoveConfirmButton(){
@@ -3691,7 +3694,8 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(!btn) return;
     const show = state.pending?.type === 'move' && currentMovePath().length > 0;
     btn.style.display = show ? '' : 'none';
-    btn.textContent = show ? `确认移动 ${currentMovePath().length}/${movementStepLimit(current())}` : '确认移动';
+    const text = btn.querySelector('.u-text') || btn;
+    text.textContent = show ? `确认移动 ${currentMovePath().length}/${movementStepLimit(current())}` : '确认移动';
     btn.disabled = !show;
   }
 
@@ -4044,6 +4048,45 @@ async function applyRewardList(player, rewards, labelPrefix){
     window.addEventListener('scroll', hideDeckTooltip, true);
   }
 
+  function bindActionTooltips(){
+    const actions = [
+      { id: 'btn-move', title: '移动模式', desc: '进入移动模式，点击棋盘规划路径。' },
+      { id: 'btn-basic-attack', title: '普通攻击', desc: '对攻击范围内的敌人发起一次基础武器攻击。' },
+      { id: 'btn-cancel', title: '取消选择', desc: '放弃当前选择的动作或卡牌。' },
+      { id: 'btn-end-turn', title: '结束回合', desc: '结束你的回合，轮到对手行动。' },
+      { id: 'btn-passive', title: '职业被动', desc: '术士专属被动：通过消耗生命值来抽取额外的卡牌。' },
+      { id: 'btn-confirm-move', title: '确认移动', desc: '确认并执行当前规划的移动路径。' }
+    ];
+
+    const show = (el, title, desc) => {
+      const tip = $('deck-tooltip');
+      if(!tip) return;
+      tip.innerHTML = `<div class="deck-tooltip-title">${escapeHtml(title)}</div><div class="deck-tooltip-meta">${escapeHtml(desc)}</div>`;
+      tip.classList.remove('hidden');
+      const rect = el.getBoundingClientRect();
+      const gap = 10;
+      let left = rect.left;
+      let top = rect.top - tip.offsetHeight - gap;
+      if(top < 10) top = rect.bottom + gap;
+      if(left + tip.offsetWidth > window.innerWidth - 12) left = window.innerWidth - tip.offsetWidth - 12;
+      tip.style.left = `${Math.max(12, left)}px`;
+      tip.style.top = `${Math.max(12, top)}px`;
+    };
+
+    actions.forEach(act => {
+      const el = $(act.id);
+      if(!el) return;
+      el.onmouseenter = () => show(el, act.title, act.desc);
+      el.onmouseleave = hideDeckTooltip;
+      // Mobile support
+      el.ontouchstart = (e) => {
+        // Prevent click but show tooltip
+        show(el, act.title, act.desc);
+        setTimeout(hideDeckTooltip, 3000);
+      };
+    });
+  }
+
   function clampBoardZoom(value){
     const min = window.innerWidth < 720 ? 0.28 : 0.38;
     const max = window.innerWidth < 720 ? 0.9 : 1.25;
@@ -4060,7 +4103,52 @@ async function applyRewardList(player, rewards, labelPrefix){
     }
     const label = $('board-zoom-label');
     if(label) label.textContent = `${Math.round(state.boardZoom * 100)}%`;
-    centerBoardViewport();
+    if(auto) centerBoardViewport();
+  }
+
+  function bindBoardTouchGestures(){
+    const wrap = $('board-wrap');
+    if(!wrap) return;
+
+    let initialDist = 0;
+    let initialZoom = 1;
+    let startX = 0, startY = 0;
+    let startScrollX = 0, startScrollY = 0;
+
+    wrap.addEventListener('touchstart', e => {
+      if(e.touches.length === 2){
+        initialDist = Math.hypot(
+          e.touches[0].pageX - e.touches[1].pageX,
+          e.touches[0].pageY - e.touches[1].pageY
+        );
+        initialZoom = state.boardZoom;
+      } else if(e.touches.length === 1){
+        startX = e.touches[0].pageX;
+        startY = e.touches[0].pageY;
+        startScrollX = wrap.scrollLeft;
+        startScrollY = wrap.scrollTop;
+      }
+    }, { passive: false });
+
+    wrap.addEventListener('touchmove', e => {
+      if(e.touches.length === 2){
+        e.preventDefault();
+        const dist = Math.hypot(
+          e.touches[0].pageX - e.touches[1].pageX,
+          e.touches[0].pageY - e.touches[1].pageY
+        );
+        if(initialDist > 0){
+          const zoomDelta = dist / initialDist;
+          setBoardZoom(initialZoom * zoomDelta, false);
+        }
+      } else if(e.touches.length === 1){
+        e.preventDefault();
+        const dx = e.touches[0].pageX - startX;
+        const dy = e.touches[0].pageY - startY;
+        wrap.scrollLeft = startScrollX - dx;
+        wrap.scrollTop = startScrollY - dy;
+      }
+    }, { passive: false });
   }
 
   function centerBoardViewport(){
@@ -4192,8 +4280,10 @@ async function applyRewardList(player, rewards, labelPrefix){
     if ($('btn-mute')) $('btn-mute').onclick = () => setAudioMuted(!audioState.muted);
     $('ruleset-select').onchange = () => populateSetup($('ruleset-select').value);
     bindBoardZoomControls();
+    bindBoardTouchGestures();
     bindArenaBackgroundControls();
     bindDeckTooltips();
+    bindActionTooltips();
     initAudioSettings();
     bindMenuLogic();
   }

@@ -63,6 +63,7 @@
             <button id="btn-mute" class="secondary" type="button" aria-pressed="false">静音选项</button>
             <button id="btn-export-battle-log" class="secondary">导出战斗日志</button>
             <button id="btn-export-debug-log" class="secondary">导出运行诊断</button>
+            <button id="btn-reset-layout" class="secondary">🔄 重置 UI 布局</button>
             <button class="secondary" onclick="location.href='index.html'" data-i18n="back_home">返回首页</button>
           </div>
           <div class="menu-section">
@@ -81,13 +82,14 @@
       </div>
 
       <!-- Bottom-Left Action Panel -->
+      <!-- Bottom-Left Action Panel -->
       <div id="action-panel" class="floating-ui">
-        <button id="btn-move" data-i18n="move_mode">移动模式</button>
-        <button id="btn-basic-attack" data-i18n="basic_attack">普通攻击</button>
-        <button id="btn-cancel" class="secondary" data-i18n="cancel" style="display:none">取消选择</button>
-        <button id="btn-end-turn" data-i18n="end_turn">结束回合</button>
-        <button id="btn-confirm-move" class="secondary" type="button" style="display:none">确认移动</button>
-        <button id="btn-passive" style="display:none">职业被动</button>
+        <button id="btn-move" title="移动模式"><span class="u-icon">🏃</span><span class="u-text" data-i18n="move_mode">移动模式</span></button>
+        <button id="btn-basic-attack" title="普通攻击"><span class="u-icon">⚔️</span><span class="u-text" data-i18n="basic_attack">普通攻击</span></button>
+        <button id="btn-cancel" class="secondary" style="display:none" title="取消选择"><span class="u-icon">❌</span><span class="u-text" data-i18n="cancel">取消选择</span></button>
+        <button id="btn-end-turn" title="结束回合"><span class="u-icon">⌛</span><span class="u-text" data-i18n="end_turn">结束回合</span></button>
+        <button id="btn-confirm-move" class="secondary" type="button" style="display:none" title="确认移动"><span class="u-icon">✅</span><span class="u-text" data-i18n="confirm_move">确认移动</span></button>
+        <button id="btn-passive" style="display:none" title="职业被动"><span class="u-icon">⚡</span><span class="u-text" data-i18n="passive_skill">职业被动</span></button>
       </div>
       <div class="board-wrap" id="board-wrap"><svg id="board" viewBox="-136 0 2100 1750"></svg></div>
     </section>

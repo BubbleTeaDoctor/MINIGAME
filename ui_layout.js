@@ -61,9 +61,42 @@
           if (pos.width)  el.style.width = pos.width;
           if (pos.height) el.style.height = pos.height;
         }
+        // Ensure it's not completely off-screen after loading
+        clampToViewport(el);
       });
     } catch (e) {
       console.warn('[ui_layout] Failed to load layout:', e);
+    }
+  }
+
+  function clampToViewport(el) {
+    if (!el || el.offsetParent === null) return; // Skip hidden elements
+    
+    const scale = parseFloat(el.dataset.uiScale) || 1;
+    const w = el.offsetWidth * scale;
+    const h = el.offsetHeight * scale;
+    const rect = el.getBoundingClientRect();
+    const winW = window.innerWidth;
+    const winH = window.innerHeight;
+    const margin = 10;
+    
+    let newLeft = rect.left;
+    let newTop = rect.top;
+    let changed = false;
+
+    // If completely off to the right or bottom
+    if (newLeft > winW - margin) { newLeft = winW - w - margin; changed = true; }
+    if (newTop > winH - margin) { newTop = winH - h - margin; changed = true; }
+    
+    // If off to the left or top
+    if (newLeft < 0) { newLeft = 0; changed = true; }
+    if (newTop < 0) { newTop = 0; changed = true; }
+
+    if (changed) {
+      el.style.left = px(newLeft);
+      el.style.top = px(newTop);
+      el.style.right = '';
+      el.style.bottom = '';
     }
   }
 
@@ -261,6 +294,32 @@
     if (editBtn) editBtn.addEventListener('click', enterEditMode);
     const confirmInner = document.getElementById('btn-confirm-layout-inner');
     if (confirmInner) confirmInner.addEventListener('click', exitEditMode);
+
+    const resetBtn = document.getElementById('btn-reset-layout');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (confirm('确定要重置所有 UI 面板的位置吗？')) {
+          localStorage.removeItem(STORAGE_KEY);
+          location.reload();
+        }
+      });
+    }
+
+    // Initial load might fail to clamp if game screen is hidden, 
+    // so we try again when a click happens (user interaction)
+    document.addEventListener('click', () => {
+      DRAGGABLE_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.style.left && el.offsetParent !== null) clampToViewport(el);
+      });
+    }, { once: true });
+
+    window.addEventListener('resize', () => {
+      DRAGGABLE_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.style.left && el.offsetParent !== null) clampToViewport(el);
+      });
+    });
   }
 
   if (document.readyState === 'loading') {
