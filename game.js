@@ -778,6 +778,115 @@
     const mod = detail.modifier ? (detail.modifier>0 ? ` + ${detail.modifier}` : ` - ${Math.abs(detail.modifier)}`) : '';
     return `${detail.notation} → ${body}${mod} = ${detail.total}`;
   }
+  const DICE_BOX_SIDES = new Set([4, 6, 8, 10, 12, 20, 100]);
+  function parseDiceBoxNotation(notation){
+    const raw = String(notation ?? '').trim().toLowerCase();
+    const match = raw.match(/^(\d+)d(\d+)([+-]\d+)?$/);
+    if(!match) return null;
+    const count = Number(match[1] || 0);
+    const sides = Number(match[2] || 0);
+    const modifier = match[3] ? Number(match[3]) : 0;
+    if(!count || !DICE_BOX_SIDES.has(sides)) return null;
+    const suffix = modifier > 0 ? `+${modifier}` : modifier < 0 ? `${modifier}` : '';
+    return {
+      count,
+      sides,
+      modifier,
+      notation: `${count}d${sides}${suffix}`
+    };
+  }
+  function diceBoxDetailFromResults(parsed, results){
+    const rolls = (Array.isArray(results) ? results : [])
+      .map(entry => Number(entry?.value))
+      .filter(Number.isFinite);
+    if(!rolls.length) return null;
+    return {
+      notation: parsed.notation,
+      rolls,
+      modifier: parsed.modifier,
+      total: rolls.reduce((sum, value) => sum + value, 0) + parsed.modifier,
+      mode: 'dice',
+      engine: 'dice-box'
+    };
+  }
+  function parseDiceBoxChoiceNotation(notation){
+    const raw = String(notation ?? '').trim();
+    const match = raw.match(/^(\d+)x\(\s*(-?\d+(?:\.\d+)?)\s*\|\s*(-?\d+(?:\.\d+)?)\s*\)$/i);
+    if(!match) return null;
+    const count = Number(match[1] || 0);
+    const first = Number(match[2]);
+    const second = Number(match[3]);
+    if(!count || !Number.isFinite(first) || !Number.isFinite(second)) return null;
+    return {
+      count,
+      choices: [first, second],
+      notation: raw,
+      diceNotation: `${count}d4`
+    };
+  }
+  function diceBoxChoiceDetailFromResults(parsed, results){
+    const sourceRolls = (Array.isArray(results) ? results : [])
+      .map(entry => Number(entry?.value))
+      .filter(Number.isFinite);
+    if(!sourceRolls.length) return null;
+    const rolls = sourceRolls.map(value => value <= 2 ? parsed.choices[0] : parsed.choices[1]);
+    return {
+      notation: parsed.notation,
+      rolls,
+      modifier: 0,
+      total: rolls.reduce((sum, value) => sum + value, 0),
+      mode: 'repeat_choice',
+      choices: parsed.choices.slice(),
+      sourceRolls,
+      engine: 'dice-box'
+    };
+  }
+  async function playDiceBoxRoll(title, parsed){
+    const bridge = window.DICE_BOX_BRIDGE;
+    if(!bridge || typeof bridge.roll !== 'function'){
+      pushDebug('dicebox.bridge.missing', {
+        title,
+        notation: parsed.notation
+      });
+      return null;
+    }
+    try {
+      const results = await bridge.roll(parsed.notation, { title });
+      return diceBoxDetailFromResults(parsed, results);
+    } catch (error) {
+      pushDebug('dicebox.roll.failed', {
+        title,
+        notation: parsed.notation,
+        bridgeError: bridge?.lastError || null,
+        error: error?.stack || error?.message || String(error)
+      });
+      return null;
+    }
+  }
+  async function playDiceBoxChoiceRoll(title, parsed){
+    const bridge = window.DICE_BOX_BRIDGE;
+    if(!bridge || typeof bridge.roll !== 'function'){
+      pushDebug('dicebox.bridge.missing', {
+        title,
+        notation: parsed.notation,
+        diceNotation: parsed.diceNotation
+      });
+      return null;
+    }
+    try {
+      const results = await bridge.roll(parsed.diceNotation, { title });
+      return diceBoxChoiceDetailFromResults(parsed, results);
+    } catch (error) {
+      pushDebug('dicebox.roll.choice_failed', {
+        title,
+        notation: parsed.notation,
+        diceNotation: parsed.diceNotation,
+        bridgeError: bridge?.lastError || null,
+        error: error?.stack || error?.message || String(error)
+      });
+      return null;
+    }
+  }
   function roll(notation){ return rollDetail(notation).total; }
   function pushDebug(event, detail){
     state.debugLog.push({ time:new Date().toISOString(), event, detail });
@@ -841,14 +950,552 @@
     log(`🎲 ${label}：${details.join('；')} → 合计 ${total}`);
     return total;
   }
+  function waitMs(ms){
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  function formatRollVisualValue(value){
+    if(typeof value !== 'number' || !Number.isFinite(value)) return String(value ?? 0);
+    if(Number.isInteger(value)) return String(value);
+    return String(value).replace(/\.0+$/,'').replace(/(\.\d*?)0+$/,'$1');
+  }
+  function diceSidesFromDetail(detail){
+    const match = String(detail?.notation || '').toLowerCase().match(/^\d+d(\d+)/);
+    return match ? Math.max(2, Number(match[1] || 6)) : 6;
+  }
+  function diceVisualKind(detail){
+    if(detail?.mode === 'repeat_choice' && Array.isArray(detail.choices) && detail.choices.length === 2) return 'coin';
+    if(detail?.mode === 'dice') return 'die';
+    return 'counter';
+  }
+  function dieModelKeyFromSides(sides){
+    const n = Math.max(4, Number(sides || 6));
+    if(n <= 4) return 'd4';
+    if(n <= 6) return 'd6';
+    if(n <= 8) return 'd8';
+    if(n <= 10) return 'd10';
+    if(n <= 12) return 'd12';
+    return 'd20';
+  }
+  function diceVisualEntries(detail){
+    const kind = diceVisualKind(detail);
+    const maxTokens = 18;
+    const values = Array.isArray(detail?.rolls) && detail.rolls.length ? detail.rolls.slice(0, maxTokens) : [detail?.total || 0];
+    const sides = diceSidesFromDetail(detail);
+    const choicePool = Array.isArray(detail?.choices) && detail.choices.length ? detail.choices.map(formatRollVisualValue) : [];
+    return values.map(value => {
+      const finalText = formatRollVisualValue(value);
+      if(kind === 'coin'){
+        return {
+          kind,
+          finalText,
+          randomPool: choicePool.length ? choicePool : ['0', '1'],
+        };
+      }
+      if(kind === 'die'){
+        return {
+          kind,
+          finalText,
+          modelType: dieModelKeyFromSides(sides),
+          randomPool: Array.from({ length: sides }, (_, idx) => String(idx + 1)),
+        };
+      }
+      return {
+        kind,
+        finalText,
+        modelType: 'counter',
+        randomPool: [finalText],
+      };
+    });
+  }
+  function diceSummaryText(detail){
+    if(detail?.mode === 'dice'){
+      const rolls = (detail.rolls || []).map(formatRollVisualValue).join(' + ');
+      if(detail.modifier){
+        const mod = detail.modifier > 0 ? ` + ${detail.modifier}` : ` - ${Math.abs(detail.modifier)}`;
+        return `${rolls}${mod}`;
+      }
+      return rolls;
+    }
+    if(detail?.mode === 'repeat_choice'){
+      const counts = new Map();
+      for(const value of detail.rolls || []){
+        const label = formatRollVisualValue(value);
+        counts.set(label, (counts.get(label) || 0) + 1);
+      }
+      return Array.from(counts.entries()).map(([label, count]) => `${count} x ${label}`).join(' / ');
+    }
+    if(detail?.mode === 'repeat_fixed' && detail.rolls?.length){
+      return `${detail.rolls.length} x ${formatRollVisualValue(detail.rolls[0])}`;
+    }
+    return formatRollDetail(detail);
+  }
+  function createDiceFace(faceName, text){
+    const face = document.createElement('div');
+    face.className = `dice-face ${faceName}`;
+    face.dataset.face = faceName;
+    face.textContent = text;
+    return face;
+  }
+  function randomPoolValue(pool, fallback){
+    return pool[Math.floor(Math.random() * pool.length)] ?? fallback;
+  }
+  function updateRollingFaces(item){
+    const pool = item.entry.randomPool?.length ? item.entry.randomPool : [item.entry.finalText];
+    item.surfaces.forEach(face => {
+      face.textContent = randomPoolValue(pool, item.entry.finalText);
+    });
+  }
+  function settleDiceFaces(item){
+    const pool = item.entry.randomPool?.length ? item.entry.randomPool : [item.entry.finalText];
+    if(item.entry.kind === 'coin'){
+      const [frontLabel, backLabel] = pool;
+      if(item.surfaces[0]) item.surfaces[0].textContent = String(frontLabel ?? item.entry.finalText);
+      if(item.surfaces[1]) item.surfaces[1].textContent = String(backLabel ?? item.entry.finalText);
+      return;
+    }
+    item.surfaces.forEach(face => { face.textContent = item.entry.finalText; });
+  }
+  function createSvgNode(tag, attrs = {}){
+    const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+    return node;
+  }
+  function polyline(points){
+    return points.map(([x, y]) => `${x},${y}`).join(' ');
+  }
+  function appendPoly(svg, points, cls){
+    svg.appendChild(createSvgNode('polygon', { points: polyline(points), class: `die-facet ${cls}` }));
+  }
+  function buildFacetSvg(modelType){
+    const svg = createSvgNode('svg', { viewBox: '0 0 100 100', class: 'die-shape-svg' });
+    if(modelType === 'd4'){
+      appendPoly(svg, [[50, 8], [18, 54], [50, 40]], 'facet-a');
+      appendPoly(svg, [[50, 8], [50, 40], [82, 54]], 'facet-b');
+      appendPoly(svg, [[18, 54], [50, 92], [50, 40]], 'facet-c');
+      appendPoly(svg, [[82, 54], [50, 92], [50, 40]], 'facet-d');
+      return svg;
+    }
+    if(modelType === 'd6'){
+      appendPoly(svg, [[28, 22], [50, 8], [72, 22], [50, 36]], 'facet-a');
+      appendPoly(svg, [[28, 22], [50, 36], [50, 76], [28, 62]], 'facet-b');
+      appendPoly(svg, [[72, 22], [50, 36], [50, 76], [72, 62]], 'facet-c');
+      appendPoly(svg, [[28, 62], [50, 76], [72, 62], [50, 48]], 'facet-d');
+      return svg;
+    }
+    if(modelType === 'd8'){
+      appendPoly(svg, [[50, 8], [24, 38], [50, 52]], 'facet-a');
+      appendPoly(svg, [[50, 8], [50, 52], [76, 38]], 'facet-b');
+      appendPoly(svg, [[24, 38], [50, 52], [50, 92]], 'facet-c');
+      appendPoly(svg, [[76, 38], [50, 52], [50, 92]], 'facet-d');
+      return svg;
+    }
+    if(modelType === 'd10'){
+      appendPoly(svg, [[50, 6], [26, 24], [36, 48], [50, 60]], 'facet-a');
+      appendPoly(svg, [[50, 6], [50, 60], [64, 48], [74, 24]], 'facet-b');
+      appendPoly(svg, [[26, 24], [14, 56], [36, 88], [50, 60]], 'facet-c');
+      appendPoly(svg, [[74, 24], [50, 60], [64, 88], [86, 56]], 'facet-d');
+      return svg;
+    }
+    if(modelType === 'd12'){
+      appendPoly(svg, [[50, 8], [30, 18], [24, 40], [50, 52], [76, 40], [70, 18]], 'facet-a');
+      appendPoly(svg, [[24, 40], [14, 62], [34, 88], [50, 72], [50, 52]], 'facet-b');
+      appendPoly(svg, [[76, 40], [50, 52], [50, 72], [66, 88], [86, 62]], 'facet-c');
+      appendPoly(svg, [[34, 88], [50, 72], [66, 88], [50, 96]], 'facet-d');
+      return svg;
+    }
+    appendPoly(svg, [[50, 4], [30, 22], [46, 36]], 'facet-a');
+    appendPoly(svg, [[50, 4], [46, 36], [54, 36], [70, 22]], 'facet-b');
+    appendPoly(svg, [[30, 22], [18, 46], [38, 58], [46, 36]], 'facet-c');
+    appendPoly(svg, [[70, 22], [54, 36], [62, 58], [82, 46]], 'facet-d');
+    appendPoly(svg, [[38, 58], [50, 92], [62, 58], [54, 36], [46, 36]], 'facet-e');
+    return svg;
+  }
+  function buildPolyDieModel(entry){
+    const model = document.createElement('div');
+    const modelType = entry.modelType || 'd6';
+    model.className = `dice-token-model shape-model ${modelType}`;
+    model.appendChild(buildFacetSvg(modelType));
+    const label = document.createElement('div');
+    label.className = 'dice-label main';
+    label.textContent = entry.finalText;
+    model.appendChild(label);
+    return { model, surfaces: [label] };
+  }
+  function buildCounterModel(entry){
+    const model = document.createElement('div');
+    model.className = 'dice-token-model shape-model counter';
+    model.appendChild(buildFacetSvg('d6'));
+    const label = document.createElement('div');
+    label.className = 'dice-label main';
+    label.textContent = entry.finalText;
+    model.appendChild(label);
+    return { model, surfaces: [label] };
+  }
+  function createDiceToken(entry){
+    const token = document.createElement('div');
+    token.className = `dice-token ${entry.kind}`;
+    const shadow = document.createElement('div');
+    shadow.className = 'dice-token-shadow';
+    token.appendChild(shadow);
+    let model;
+    let surfaces = [];
+    if(entry.kind === 'coin'){
+      const front = createDiceFace('front', String(entry.randomPool?.[0] ?? entry.finalText));
+      const back = createDiceFace('back', String(entry.randomPool?.[1] ?? entry.finalText));
+      const edge = document.createElement('div');
+      edge.className = 'dice-edge';
+      model = document.createElement('div');
+      model.className = 'dice-token-model coin-model';
+      model.append(front, back, edge);
+      surfaces.push(front, back);
+    } else if(entry.kind === 'counter'){
+      const built = buildCounterModel(entry);
+      model = built.model;
+      surfaces = built.surfaces;
+    } else {
+      const built = buildPolyDieModel(entry);
+      model = built.model;
+      surfaces = built.surfaces;
+    }
+    token.appendChild(model);
+    return { token, shadow, model, surfaces, entry };
+  }
+  function randomBetween(min, max){
+    return min + Math.random() * (max - min);
+  }
+  function getDiceArenaRect(){
+    const wrap = $('board-wrap');
+    if(wrap && wrap.offsetParent !== null){
+      const rect = wrap.getBoundingClientRect();
+      return {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+    }
+    const width = Math.min(window.innerWidth - 24, 720);
+    const height = Math.min(window.innerHeight - 24, 420);
+    return {
+      left: (window.innerWidth - width) / 2,
+      top: (window.innerHeight - height) / 2,
+      width,
+      height,
+    };
+  }
+  function syncDiceArenaBounds(){
+    const box = document.querySelector('#dice-overlay .dice-box');
+    if(!box) return null;
+    const rect = getDiceArenaRect();
+    box.style.left = `${Math.round(rect.left)}px`;
+    box.style.top = `${Math.round(rect.top)}px`;
+    box.style.width = `${Math.round(rect.width)}px`;
+    box.style.height = `${Math.round(rect.height)}px`;
+    return rect;
+  }
+  function buildDiceStates(tokens, arenaRect){
+    const edgePadding = Math.max(12, Math.min(24, Math.min(arenaRect.width, arenaRect.height) * 0.024));
+    const bounds = {
+      offsetX: edgePadding,
+      offsetY: edgePadding,
+      width: Math.max(180, arenaRect.width - edgePadding * 2),
+      height: Math.max(180, arenaRect.height - edgePadding * 2),
+    };
+    const totalCount = Math.max(1, tokens.length);
+    const cols = Math.min(totalCount, Math.max(2, Math.ceil(Math.sqrt(totalCount))));
+    return {
+      bounds,
+      states: tokens.map((item, index) => {
+        const crowdScale = totalCount >= 14 ? 0.68 : totalCount >= 10 ? 0.8 : totalCount >= 6 ? 0.9 : 1;
+        const baseSize = item.entry.kind === 'die'
+          ? ({ d4: 66, d6: 74, d8: 74, d10: 76, d12: 78, d20: 82 }[item.entry.modelType] || 74)
+          : item.entry.kind === 'coin' ? 58 : 66;
+        const minSize = item.entry.kind === 'coin' ? 28 : 34;
+        const size = Math.max(minSize, Math.round(baseSize * crowdScale));
+        const row = Math.floor(index / cols);
+        const col = index % cols;
+        const launchBias = index - (totalCount - 1) / 2;
+        const startX = bounds.width * 0.5 - size * 0.5 + (col - (cols - 1) / 2) * size * 0.54;
+        const startY = Math.max(8, bounds.height * 0.08 + row * size * 0.22);
+        const spinBase = item.entry.kind === 'coin' ? 860 : item.entry.kind === 'counter' ? 540 : 680;
+        item.token.style.width = `${size}px`;
+        item.token.style.height = `${size}px`;
+        return {
+          item,
+          size,
+          radius: size * 0.42,
+          x: startX,
+          y: startY,
+          vx: randomBetween(-260, 260) + launchBias * 28,
+          vy: randomBetween(-660, -430) - row * 22,
+          rx: randomBetween(0, 360),
+          ry: randomBetween(0, 360),
+          rz: randomBetween(0, 360),
+          rvx: randomBetween(spinBase * 0.62, spinBase * 1.06) * (Math.random() < 0.5 ? -1 : 1),
+          rvy: randomBetween(spinBase * 0.7, spinBase * 1.14) * (Math.random() < 0.5 ? -1 : 1),
+          rvz: randomBetween(spinBase * 0.24, spinBase * 0.7) * (Math.random() < 0.5 ? -1 : 1),
+          floorDrag: item.entry.kind === 'coin' ? 0.92 : 0.88,
+          bounce: item.entry.kind === 'coin' ? 0.44 : item.entry.kind === 'counter' ? 0.5 : 0.56,
+        };
+      }),
+    };
+  }
+  function keepStateInBounds(state, bounds){
+    const maxX = Math.max(0, bounds.width - state.size);
+    const maxY = Math.max(0, bounds.height - state.size);
+    if(state.x < 0){
+      state.x = 0;
+      state.vx = Math.abs(state.vx) * 0.78;
+      state.ry += 26;
+    } else if(state.x > maxX){
+      state.x = maxX;
+      state.vx = -Math.abs(state.vx) * 0.78;
+      state.ry -= 26;
+    }
+    if(state.y < 0){
+      state.y = 0;
+      state.vy = Math.abs(state.vy) * 0.72;
+      state.rx += 18;
+    } else if(state.y > maxY){
+      state.y = maxY;
+      state.vy = Math.abs(state.vy) < 46 ? 0 : -Math.abs(state.vy) * state.bounce;
+      state.vx *= state.floorDrag;
+      state.rx *= 0.84;
+      state.ry *= 0.84;
+      state.rz *= 0.9;
+    }
+  }
+  function resolveDiceCollisions(states){
+    for(let i = 0; i < states.length; i++){
+      const a = states[i];
+      for(let j = i + 1; j < states.length; j++){
+        const b = states[j];
+        const ax = a.x + a.size / 2;
+        const ay = a.y + a.size / 2;
+        const bx = b.x + b.size / 2;
+        const by = b.y + b.size / 2;
+        const dx = bx - ax;
+        const dy = by - ay;
+        const dist = Math.hypot(dx, dy) || 0.001;
+        const minDist = a.radius + b.radius;
+        if(dist >= minDist) continue;
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const overlap = minDist - dist;
+        a.x -= nx * overlap * 0.5;
+        a.y -= ny * overlap * 0.5;
+        b.x += nx * overlap * 0.5;
+        b.y += ny * overlap * 0.5;
+        const relVx = b.vx - a.vx;
+        const relVy = b.vy - a.vy;
+        const alongNormal = relVx * nx + relVy * ny;
+        if(alongNormal >= 0) continue;
+        const impulse = -(1 + 0.62) * alongNormal / 2;
+        a.vx -= impulse * nx;
+        a.vy -= impulse * ny;
+        b.vx += impulse * nx;
+        b.vy += impulse * ny;
+        a.rz -= impulse * 0.12;
+        b.rz += impulse * 0.12;
+      }
+    }
+  }
+  function renderDiceState(state, bounds){
+    const lift = Math.max(0, Math.min(22, Math.abs(state.vy) * 0.026));
+    const tokenX = bounds.offsetX + state.x;
+    const tokenY = bounds.offsetY + state.y;
+    state.item.token.style.transform = `translate3d(${tokenX}px, ${tokenY}px, 0)`;
+    state.item.model.style.transform = `translateZ(${lift}px) rotateX(${state.rx}deg) rotateY(${state.ry}deg) rotateZ(${state.rz}deg)`;
+    const shadowScale = 0.58 + (1 - Math.min(1, lift / 22)) * 0.46;
+    state.item.shadow.style.transform = `translateY(${Math.round(state.size * 0.76)}px) scale(${shadowScale.toFixed(2)})`;
+    state.item.shadow.style.opacity = (0.18 + shadowScale * 0.28).toFixed(2);
+  }
+  function finalTokenTransform(state){
+    if(state.item.entry.kind === 'coin'){
+      const frontLabel = formatRollVisualValue(state.item.entry.randomPool?.[0]);
+      const coinTurn = frontLabel === state.item.entry.finalText ? 0 : 180;
+      return `rotateX(72deg) rotateY(${coinTurn}deg) rotateZ(${Math.round(randomBetween(-6, 6))}deg)`;
+    }
+    if(state.item.entry.kind === 'counter'){
+      return `rotateX(-10deg) rotateY(18deg) rotateZ(${Math.round(randomBetween(-4, 4))}deg)`;
+    }
+    const modelType = state.item.entry.modelType || 'd6';
+    if(modelType === 'd4') return `rotateX(58deg) rotateY(-18deg) rotateZ(${Math.round(randomBetween(-8, 8))}deg)`;
+    if(modelType === 'd8') return `rotateX(2deg) rotateY(46deg) rotateZ(${Math.round(randomBetween(-8, 8))}deg)`;
+    if(modelType === 'd10') return `rotateX(-8deg) rotateY(34deg) rotateZ(${Math.round(randomBetween(-10, 10))}deg)`;
+    if(modelType === 'd12') return `rotateX(-14deg) rotateY(28deg) rotateZ(${Math.round(randomBetween(-8, 8))}deg)`;
+    if(modelType === 'd20') return `rotateX(-6deg) rotateY(34deg) rotateZ(${Math.round(randomBetween(-10, 10))}deg)`;
+    return `rotateX(-18deg) rotateY(24deg) rotateZ(${Math.round(randomBetween(-8, 8))}deg)`;
+  }
+  async function playRollAnimation(detail){
+    const overlay = $('dice-overlay');
+    const stageWrap = $('dice-stage');
+    const stage = $('dice-token-stage') || stageWrap;
+    const summary = $('dice-summary');
+    const value = $('dice-value');
+    if(!overlay || !stage || !summary || !value){
+      if(value) value.textContent = formatRollVisualValue(detail.total);
+      return;
+    }
+
+    const visualKind = diceVisualKind(detail);
+    const arenaRect = syncDiceArenaBounds() || getDiceArenaRect();
+    const entries = diceVisualEntries(detail);
+    const tokens = entries.map(createDiceToken);
+    stage.innerHTML = '';
+    if(stageWrap){
+      stageWrap.classList.remove('is-dice-box');
+      stageWrap.classList.add('is-custom');
+    }
+    stage.classList.toggle('is-crowded', entries.length > 10);
+    const frag = document.createDocumentFragment();
+    tokens.forEach(item => frag.appendChild(item.token));
+    stage.appendChild(frag);
+    summary.classList.add('hidden');
+    summary.textContent = '';
+    value.textContent = formatRollVisualValue(detail.total);
+    value.classList.remove('is-visible');
+
+    await new Promise(resolve => {
+      const simulation = buildDiceStates(tokens, arenaRect);
+      const { bounds, states } = simulation;
+      const gravity = visualKind === 'coin' ? 1180 : 1320;
+      const duration = visualKind === 'coin'
+        ? Math.min(2600, 1280 + states.length * 44)
+        : Math.min(2200, 1120 + states.length * 36);
+      let lastFrame = performance.now();
+      const startTime = lastFrame;
+      let nextFaceShuffle = 0;
+
+      function frame(now){
+        const dt = Math.min(0.03, Math.max(0.012, (now - lastFrame) / 1000 || 0.016));
+        const elapsed = now - startTime;
+        lastFrame = now;
+
+        if(elapsed >= nextFaceShuffle){
+          states.forEach(state => {
+            if(state.item.entry.kind === 'counter') return;
+            updateRollingFaces(state.item);
+          });
+          nextFaceShuffle = elapsed + (visualKind === 'coin' ? 62 : 76);
+        }
+
+        const settleBlend = elapsed > duration * 0.7 ? (elapsed - duration * 0.7) / (duration * 0.3) : 0;
+        states.forEach(state => {
+          state.vy += gravity * dt;
+          state.x += state.vx * dt;
+          state.y += state.vy * dt;
+          state.rx += state.rvx * dt;
+          state.ry += state.rvy * dt;
+          state.rz += state.rvz * dt;
+          if(settleBlend > 0){
+            state.vx *= 0.985;
+            state.vy *= 0.985;
+            state.rvx *= 0.972;
+            state.rvy *= 0.972;
+            state.rz *= 0.98;
+          }
+          keepStateInBounds(state, bounds);
+        });
+        resolveDiceCollisions(states);
+        states.forEach(state => {
+          keepStateInBounds(state, bounds);
+          renderDiceState(state, bounds);
+        });
+
+        const stillMoving = states.some(state =>
+          Math.abs(state.vx) > 18 ||
+          Math.abs(state.vy) > 18 ||
+          Math.abs(state.rvx) > 42 ||
+          Math.abs(state.rvy) > 42
+        );
+        if(elapsed < duration || stillMoving){
+          requestAnimationFrame(frame);
+          return;
+        }
+
+        states.forEach(state => {
+          settleDiceFaces(state.item);
+          state.item.model.style.transition = 'transform 260ms cubic-bezier(.2,.85,.18,1)';
+          state.item.token.style.transition = 'transform 260ms cubic-bezier(.2,.85,.18,1)';
+          state.item.model.style.transform = finalTokenTransform(state);
+        });
+        summary.textContent = diceSummaryText(detail);
+        if(summary.textContent) summary.classList.remove('hidden');
+        value.textContent = formatRollVisualValue(detail.total);
+        requestAnimationFrame(() => value.classList.add('is-visible'));
+        setTimeout(resolve, visualKind === 'coin' ? 620 : 520);
+      }
+
+      requestAnimationFrame(frame);
+    });
+  }
   async function showDice(title, notation) {
-    const overlay = $('dice-overlay'), val = $('dice-value'), note = $('dice-notation'), tit = $('dice-title');
-    tit.textContent = title; note.textContent = notation || ''; overlay.classList.remove('hidden');
-    const detail = rollDetail(notation);
-    for (let i=0;i<8;i++){ val.textContent = String(Math.floor(Math.random()*20)+1); await new Promise(r=>setTimeout(r,35)); }
-    val.textContent = String(detail.total);
-    await new Promise(r=>setTimeout(r,180));
+    const overlay = $('dice-overlay');
+    const val = $('dice-value');
+    const note = $('dice-notation');
+    const tit = $('dice-title');
+    const summary = $('dice-summary');
+    const stageWrap = $('dice-stage');
+    const tokenStage = $('dice-token-stage');
+    if(!overlay || !val || !note || !tit) return rollDetail(notation).total;
+    tit.textContent = title;
+    note.textContent = notation || '';
+    overlay.classList.remove('hidden');
+    syncDiceArenaBounds();
+    if(stageWrap) stageWrap.classList.remove('is-custom', 'is-dice-box');
+    if(tokenStage){
+      tokenStage.innerHTML = '';
+      tokenStage.classList.remove('is-crowded');
+    }
+    if(summary){
+      summary.textContent = '';
+      summary.classList.add('hidden');
+    }
+    val.textContent = '0';
+    val.classList.remove('is-visible');
+    if(window.DICE_BOX_BRIDGE?.hide) window.DICE_BOX_BRIDGE.hide();
+
+    let detail = null;
+    const parsed = parseDiceBoxNotation(notation);
+    const parsedChoice = parsed ? null : parseDiceBoxChoiceNotation(notation);
+    if(parsed || parsedChoice){
+      if(stageWrap) stageWrap.classList.add('is-dice-box');
+      detail = parsed
+        ? await playDiceBoxRoll(title, parsed)
+        : await playDiceBoxChoiceRoll(title, parsedChoice);
+      if(detail){
+        if(summary){
+          summary.textContent = diceSummaryText(detail);
+          if(summary.textContent) summary.classList.remove('hidden');
+        }
+        val.textContent = formatRollVisualValue(detail.total);
+        requestAnimationFrame(() => val.classList.add('is-visible'));
+        await waitMs(320);
+      } else if(stageWrap){
+        stageWrap.classList.remove('is-dice-box');
+      }
+    }
+    if(!detail){
+      detail = rollDetail(notation);
+      await playRollAnimation(detail);
+      val.textContent = formatRollVisualValue(detail.total);
+      await waitMs(180);
+    }
     overlay.classList.add('hidden');
+    if(window.DICE_BOX_BRIDGE?.hide) window.DICE_BOX_BRIDGE.hide();
+    if(stageWrap){
+      stageWrap.classList.remove('is-custom', 'is-dice-box');
+    }
+    if(tokenStage){
+      tokenStage.classList.remove('is-crowded');
+      tokenStage.innerHTML = '';
+    }
+    if(summary){
+      summary.textContent = '';
+      summary.classList.add('hidden');
+    }
+    val.classList.remove('is-visible');
     log(`🎲 ${title}：${formatRollDetail(detail)}`);
     return detail.total;
   }
@@ -3631,6 +4278,17 @@ async function applyRewardList(player, rewards, labelPrefix){
     const hand = $('hand'); hand.innerHTML='';
     const p=current();
     const count = p.hand.length;
+    const mobileTwoRow = window.innerWidth <= 860 && window.innerHeight > 560 && count > 4;
+    hand.classList.toggle('is-mobile-two-row', mobileTwoRow);
+    if(mobileTwoRow){
+      const perRow = Math.ceil(count / 2);
+      const overlap = 18;
+      const cardWidth = Math.max(76, Math.min(98, Math.floor((window.innerWidth - 24 + overlap * Math.max(0, perRow - 1)) / Math.max(1, perRow))));
+      const handWidth = Math.min(window.innerWidth - 10, perRow * cardWidth - Math.max(0, perRow - 1) * overlap);
+      hand.style.setProperty('--mobile-hand-width', `${handWidth}px`);
+    } else {
+      hand.style.removeProperty('--mobile-hand-width');
+    }
     const mid = (count - 1) / 2;
     p.hand.forEach((item, idx)=>{
       const def = getCardDef(item.cardKey);
@@ -3639,9 +4297,24 @@ async function applyRewardList(player, rewards, labelPrefix){
       b.className='card'+(state.selectedCardIndex===idx?' selected':'');
       b.type = 'button';
       b.setAttribute('aria-pressed', state.selectedCardIndex===idx ? 'true' : 'false');
-      b.style.setProperty('--fan-rotate', `${(idx - mid) * 2.4}deg`);
-      b.style.setProperty('--fan-y', `${Math.abs(idx - mid) * 3}px`);
-      b.style.zIndex = String(20 + idx);
+      if(mobileTwoRow){
+        const perRow = Math.ceil(count / 2);
+        const row = idx >= perRow ? 1 : 0;
+        const rowIndex = row === 0 ? idx : idx - perRow;
+        const rowCount = row === 0 ? perRow : Math.max(0, count - perRow);
+        const rowMid = (Math.max(1, rowCount) - 1) / 2;
+        b.style.setProperty('--fan-x', '0px');
+        b.style.setProperty('--fan-rotate', `${(rowIndex - rowMid) * 3.1}deg`);
+        b.style.setProperty('--fan-y', `${row * 6 + Math.abs(rowIndex - rowMid) * 2}px`);
+        b.style.zIndex = String((row === 0 ? 20 : 60) + idx);
+        if(row === 1) b.classList.add('mobile-row-back');
+        if(rowIndex === 0) b.classList.add('mobile-row-start');
+      } else {
+        b.style.setProperty('--fan-x', '0px');
+        b.style.setProperty('--fan-rotate', `${(idx - mid) * 2.4}deg`);
+        b.style.setProperty('--fan-y', `${Math.abs(idx - mid) * 3}px`);
+        b.style.zIndex = String(20 + idx);
+      }
       b.innerHTML=`<div class="card-name">${I18N().entity('card', item.cardKey, def.name)}</div>
         <div class="card-meta">${I18N().t('source','来源')}：${I18N().entity('origin', item.origin, item.origin)} · ${I18N().t('template','模板')}：${I18N().entity('template', def.template, def.template)}</div>
         <div class="card-text">${def.text || ''}</div>`;
@@ -3706,11 +4379,50 @@ async function applyRewardList(player, rewards, labelPrefix){
     btn.style.display = (state.pending) ? '' : 'none';
   }
 
+  function layoutActionButtons(forceEditLayout = false){
+    if(document.body.classList.contains('ui-edit-mode') && !forceEditLayout) return;
+    const ids = ['btn-passive', 'btn-move', 'btn-basic-attack', 'btn-cancel', 'btn-end-turn', 'btn-confirm-move'];
+    const isMobile = window.innerWidth <= 860;
+    const visibleButtons = ids
+      .map(id => $(id))
+      .filter(btn => btn && getComputedStyle(btn).display !== 'none');
+    const buttonsToLayout = visibleButtons.filter(btn => {
+      if(forceEditLayout) return !btn.dataset.layoutPinned || !btn.style.left || !btn.style.top;
+      return !btn.dataset.layoutPinned;
+    });
+    if(!buttonsToLayout.length) return;
+    const size = isMobile ? 42 : 48;
+    const gap = isMobile ? 8 : 10;
+    const padding = isMobile ? 8 : 16;
+    const maxSlots = isMobile ? 4 : 8;
+    const minSlots = isMobile ? 2 : 3;
+    const maxPerRow = Math.max(minSlots, Math.min(maxSlots, Math.floor((window.innerWidth - padding * 2 + gap) / (size + gap)) || minSlots));
+    const rows = Math.ceil(buttonsToLayout.length / maxPerRow);
+    const baseBottom = isMobile ? 18 : 22;
+    buttonsToLayout.forEach((btn, index) => {
+      const row = Math.floor(index / maxPerRow);
+      const col = index % maxPerRow;
+      const rowStart = row * maxPerRow;
+      const rowCount = Math.min(maxPerRow, buttonsToLayout.length - rowStart);
+      const rowTotal = rowCount * size + Math.max(0, rowCount - 1) * gap;
+      const startX = Math.max(padding, Math.round((window.innerWidth - rowTotal) / 2));
+      const bottom = baseBottom + (rows - 1 - row) * (size + gap);
+      btn.style.setProperty('left', `${startX + col * (size + gap)}px`, 'important');
+      btn.style.setProperty('right', 'auto', 'important');
+      btn.style.setProperty('top', 'auto', 'important');
+      btn.style.setProperty('bottom', `${bottom}px`, 'important');
+      btn.style.setProperty('width', `${size}px`, 'important');
+      btn.style.setProperty('height', `${size}px`, 'important');
+    });
+  }
+  window.layoutActionButtons = layoutActionButtons;
+
   function render(){
     renderPlayerInfo();
     renderPassiveButton();
     renderMoveConfirmButton();
     renderCancelButton();
+    layoutActionButtons();
     renderBoard();
     renderHand();
   }
@@ -4188,6 +4900,8 @@ async function applyRewardList(player, rewards, labelPrefix){
     window.addEventListener('resize', () => {
       if(state.boardZoomAuto) fitBoardZoom();
       else setBoardZoom(state.boardZoom, false);
+      layoutActionButtons();
+      if(state.players.length) renderHand();
     });
   }
 
