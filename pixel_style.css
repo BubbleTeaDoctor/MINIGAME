@@ -5,18 +5,18 @@
 }
 
 body.pixel-ui {
-    font-family: 'RetroPixel', monospace;
-    image-rendering: pixelated;
+    font-family: Georgia, "Times New Roman", serif;
+    image-rendering: auto;
 }
 
 /* Pixel Skinning: Buttons */
 body.pixel-ui button, 
 body.pixel-ui .bg-picker-control {
-    background-image: linear-gradient(180deg,rgba(123,86,56,.92),rgba(77,48,33,.95)), url("assets/ui/freebuttons2.png");
+    background-image: linear-gradient(180deg, rgba(123,86,56,.96), rgba(61,40,25,.96)), url("assets/ui/freebuttons2.png");
     background-size: auto, 128px 64px;
     border: 2px solid #efc46e !important;
     color: #f6ead6 !important;
-    border-radius: 6px !important;
+    border-radius: 8px !important;
     image-rendering: pixelated;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 3px 0 rgba(0,0,0,0.5) !important;
     text-shadow: 0 1px 1px #000;
@@ -27,7 +27,7 @@ body.pixel-ui .bg-picker-control:active {
     box-shadow: none !important;
 }
 body.pixel-ui button.secondary {
-    background-image: linear-gradient(180deg,#5a4a3f,#32251f), url("assets/ui/freebuttons2.png") !important;
+    background-image: linear-gradient(180deg, #5b4a3e, #2d211b), url("assets/ui/freebuttons2.png") !important;
     border-color: #8e6a3c !important;
 }
 
@@ -116,69 +116,90 @@ body.pixel-ui .game-theme .card-text {
 }
 
 #menu-btn-container {
-    top: 15px;
-    right: 15px;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    z-index: 2200;
 }
 
 #action-panel {
-    bottom: 180px;
-    left: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    background: rgba(18, 12, 8, 0.8);
-    padding: 10px;
-    border: 2px solid #efc46e;
-    border-radius: 8px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.8);
+    position: static !important;
+    min-width: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    pointer-events: none;
 }
 
 #action-panel button {
+    position: fixed;
+    left: auto;
+    right: auto !important;
+    top: auto !important;
     width: 48px !important;
     height: 48px !important;
     min-width: 48px !important;
+    min-height: 48px !important;
     padding: 0 !important;
-    display: flex; /* REMOVED !important to allow JS toggling */
+    display: flex;
     align-items: center;
     justify-content: center;
+    gap: 0;
+    text-align: center;
+    letter-spacing: 0.02em;
+    z-index: 2100;
+    pointer-events: auto;
+    will-change: left, top, bottom;
 }
 
 #action-panel button .u-text {
-    display: none !important; /* Globally hide text while keeping logic */
+    display: none !important;
 }
 
 #action-panel .u-icon {
-    font-size: 24px;
+    font-size: 22px;
+    width: auto;
+    text-align: center;
+    flex: 0 0 auto;
 }
 
 @media (max-width: 860px) {
-    #action-panel {
-        flex-direction: row !important;
-        bottom: 12px !important;
-        left: 50% !important;
-        top: auto !important; /* Prevent conflicts with top-aligned presets */
-        transform: translateX(-50%) !important;
-        min-width: 0 !important;
-        width: auto !important;
-        gap: 6px !important;
-        padding: 6px !important;
-        z-index: 200 !important; 
-    }
     #action-panel button {
         width: 42px !important;
         height: 42px !important;
         min-width: 42px !important;
+        min-height: 42px !important;
+        padding: 0 !important;
+        justify-content: center;
     }
     #action-panel .u-icon {
         font-size: 20px !important;
+        width: auto;
+        flex: 0 0 auto;
     }
+    #menu-btn-container {
+        top: max(6px, env(safe-area-inset-top));
+        right: max(6px, env(safe-area-inset-right));
+    }
+    #btn-menu-toggle {
+        padding: 8px 12px !important;
+        font-size: 11px !important;
+    }
+}
+
+body.ui-edit-mode #action-panel button {
+    right: auto !important;
+    top: auto !important;
 }
 
 #btn-menu-toggle {
     background-image: linear-gradient(180deg,#5a4a3f,#32251f), url("assets/ui/freebuttons2.png") !important;
     border-color: #efc46e !important;
-    padding: 8px 16px !important;
+    padding: 10px 18px !important;
     font-weight: bold;
+    letter-spacing: 0.04em;
 }
 
 #game-menu-panel {
@@ -187,6 +208,7 @@ body.pixel-ui .game-theme .card-text {
     width: 300px;
     height: 100vh;
     height: 100dvh;
+    z-index: 2300;
     background: rgba(18, 12, 8, 0.95);
     display: flex;
     flex-direction: column;
@@ -267,7 +289,12 @@ body.pixel-ui .game-theme .card-text {
 /* ── Edit Mode ─────────────────────────────────────────────────────────── */
 
 /* Draggable panels get a dashed highlight border and grab cursor */
-body.ui-edit-mode #action-panel,
+body.ui-edit-mode #btn-passive,
+body.ui-edit-mode #btn-move,
+body.ui-edit-mode #btn-basic-attack,
+body.ui-edit-mode #btn-cancel,
+body.ui-edit-mode #btn-end-turn,
+body.ui-edit-mode #btn-confirm-move,
 body.ui-edit-mode #menu-btn-container,
 body.ui-edit-mode #player-info,
 body.ui-edit-mode #player-info-rival,
@@ -281,9 +308,22 @@ body.ui-edit-mode #selection-hint {
     pointer-events: auto !important;
     position: fixed !important; /* Ensure all are fixed-positioned for dragging */
     overflow: visible !important; /* So resize handle is visible */
+    touch-action: none !important;
 }
 
-body.ui-edit-mode #action-panel:active,
+body.ui-edit-mode #btn-passive,
+body.ui-edit-mode #btn-cancel,
+body.ui-edit-mode #btn-confirm-move {
+    display: flex !important;
+    opacity: 0.92;
+}
+
+body.ui-edit-mode #btn-passive:active,
+body.ui-edit-mode #btn-move:active,
+body.ui-edit-mode #btn-basic-attack:active,
+body.ui-edit-mode #btn-cancel:active,
+body.ui-edit-mode #btn-end-turn:active,
+body.ui-edit-mode #btn-confirm-move:active,
 body.ui-edit-mode #menu-btn-container:active,
 body.ui-edit-mode #player-info:active,
 body.ui-edit-mode #player-info-rival:active,
@@ -397,4 +437,3 @@ body.ui-edit-mode::after {
 #btn-confirm-layout-inner:hover {
     box-shadow: 0 0 40px rgba(100,220,100,0.5), 0 6px 0 rgba(0,0,0,0.5) !important;
 }
-

@@ -7,10 +7,19 @@
  */
 
 (function () {
-  const STORAGE_KEY = 'arena_ui_layout_v2';
+  const STORAGE_KEY = 'arena_ui_layout_v5';
+
+  const ACTION_BUTTON_IDS = [
+    'btn-passive',
+    'btn-move',
+    'btn-basic-attack',
+    'btn-cancel',
+    'btn-end-turn',
+    'btn-confirm-move',
+  ];
 
   const DRAGGABLE_IDS = [
-    'action-panel',
+    ...ACTION_BUTTON_IDS,
     'menu-btn-container',
     'player-info',
     'player-info-rival',
@@ -49,8 +58,15 @@
         const el = document.getElementById(id);
         if (!el || !layout[id]) return;
         const pos = layout[id];
-        if (pos.left) { el.style.left = pos.left; el.style.right = ''; }
-        if (pos.top)  { el.style.top = pos.top; el.style.bottom = ''; }
+        if (pos.left) {
+          el.style.setProperty('left', pos.left, 'important');
+          el.style.setProperty('right', 'auto', 'important');
+        }
+        if (pos.top)  {
+          el.style.setProperty('top', pos.top, 'important');
+          el.style.setProperty('bottom', 'auto', 'important');
+        }
+        if (pos.left || pos.top) el.dataset.layoutPinned = 'true';
         if (SCALE_IDS.has(id)) {
           if (pos.scale) {
             el.dataset.uiScale = pos.scale;
@@ -93,11 +109,18 @@
     if (newTop < 0) { newTop = 0; changed = true; }
 
     if (changed) {
-      el.style.left = px(newLeft);
-      el.style.top = px(newTop);
-      el.style.right = '';
-      el.style.bottom = '';
+      el.style.setProperty('left', px(newLeft), 'important');
+      el.style.setProperty('top', px(newTop), 'important');
+      el.style.setProperty('right', 'auto', 'important');
+      el.style.setProperty('bottom', 'auto', 'important');
     }
+  }
+
+  function clampVisibleLayouts() {
+    DRAGGABLE_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.style.left && el.offsetParent !== null) clampToViewport(el);
+    });
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -116,12 +139,13 @@
   function startDrag(e, el) {
     e.preventDefault();
     e.stopPropagation();
+    el.dataset.layoutPinned = 'true';
     const { x, y } = clientXY(e);
     const rect = el.getBoundingClientRect();
-    el.style.left = px(rect.left);
-    el.style.top = px(rect.top);
-    el.style.right = '';
-    el.style.bottom = '';
+    el.style.setProperty('left', px(rect.left), 'important');
+    el.style.setProperty('top', px(rect.top), 'important');
+    el.style.setProperty('right', 'auto', 'important');
+    el.style.setProperty('bottom', 'auto', 'important');
     activeOp = { el, mode: 'drag', startX: x, startY: y, origLeft: rect.left, origTop: rect.top };
   }
 
@@ -160,8 +184,8 @@
       const h = el.offsetHeight * scale;
       newLeft = Math.max(0, Math.min(window.innerWidth - w, newLeft));
       newTop = Math.max(0, Math.min(window.innerHeight - h, newTop));
-      el.style.left = px(newLeft);
-      el.style.top = px(newTop);
+      el.style.setProperty('left', px(newLeft), 'important');
+      el.style.setProperty('top', px(newTop), 'important');
     } else if (activeOp.mode === 'resize') {
       if (activeOp.isScale) {
         // Scale mode for player status panels
@@ -223,6 +247,9 @@
   function enterEditMode() {
     editModeActive = true;
     document.body.classList.add('ui-edit-mode');
+    if (typeof window.layoutActionButtons === 'function') {
+      window.layoutActionButtons(true);
+    }
 
     const menuPanel = document.getElementById('game-menu-panel');
     if (menuPanel) menuPanel.classList.add('hidden');
@@ -284,6 +311,9 @@
     document.removeEventListener('touchend', onPointerEnd);
 
     saveLayout();
+    if (typeof window.layoutActionButtons === 'function') {
+      window.layoutActionButtons();
+    }
   }
 
   // ── Bootstrap ──────────────────────────────────────────────────────────
@@ -305,20 +335,25 @@
       });
     }
 
-    // Initial load might fail to clamp if game screen is hidden, 
-    // so we try again when a click happens (user interaction)
-    document.addEventListener('click', () => {
-      DRAGGABLE_IDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el && el.style.left && el.offsetParent !== null) clampToViewport(el);
+    // Initial load can happen while the game screen is hidden, so clamp again
+    // as soon as the battle view becomes visible.
+    const gameScreen = document.getElementById('game-screen');
+    if (gameScreen && 'MutationObserver' in window) {
+      const observer = new MutationObserver(() => {
+        if (!gameScreen.classList.contains('hidden')) {
+          requestAnimationFrame(clampVisibleLayouts);
+        }
       });
-    }, { once: true });
+      observer.observe(gameScreen, { attributes: true, attributeFilter: ['class'] });
+      if (!gameScreen.classList.contains('hidden')) {
+        requestAnimationFrame(clampVisibleLayouts);
+      }
+    } else {
+      requestAnimationFrame(clampVisibleLayouts);
+    }
 
     window.addEventListener('resize', () => {
-      DRAGGABLE_IDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el && el.style.left && el.offsetParent !== null) clampToViewport(el);
-      });
+      clampVisibleLayouts();
     });
   }
 
