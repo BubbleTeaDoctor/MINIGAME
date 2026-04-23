@@ -852,8 +852,13 @@
     }
     try {
       const results = await bridge.roll(parsed.notation, { title });
-      return diceBoxDetailFromResults(parsed, results);
+      const detail = diceBoxDetailFromResults(parsed, results);
+      if(!detail){
+        log(`[Dice Box fallback] ${title}: empty result${bridge?.lastInfo ? ` (${bridge.lastInfo})` : ''}`);
+      }
+      return detail;
     } catch (error) {
+      log(`[Dice Box error] ${title}: ${bridge?.lastError || error?.message || String(error)}${bridge?.config?.bundleUrl ? ` | bundle=${bridge.config.bundleUrl}` : ''}`);
       pushDebug('dicebox.roll.failed', {
         title,
         notation: parsed.notation,
@@ -875,8 +880,13 @@
     }
     try {
       const results = await bridge.roll(parsed.diceNotation, { title });
-      return diceBoxChoiceDetailFromResults(parsed, results);
+      const detail = diceBoxChoiceDetailFromResults(parsed, results);
+      if(!detail){
+        log(`[Dice Box fallback] ${title}: empty choice result${bridge?.lastInfo ? ` (${bridge.lastInfo})` : ''}`);
+      }
+      return detail;
     } catch (error) {
+      log(`[Dice Box error] ${title}: ${bridge?.lastError || error?.message || String(error)}${bridge?.config?.bundleUrl ? ` | bundle=${bridge.config.bundleUrl}` : ''}`);
       pushDebug('dicebox.roll.choice_failed', {
         title,
         notation: parsed.notation,
@@ -948,6 +958,28 @@
     let total = 0;
     for(let i=0;i<count;i++){ const detail = rollDetail(notation); details.push(formatRollDetail(detail)); total += detail.total; }
     log(`🎲 ${label}：${details.join('；')} → 合计 ${total}`);
+    return total;
+  }
+  function canAnimateRollNotation(notation){
+    const raw = String(notation || '').trim();
+    if(!raw) return false;
+    return !!(parseDiceBoxNotation(raw) || parseDiceBoxChoiceNotation(raw) || /d/i.test(raw));
+  }
+  async function animatedRoll(label, notation){
+    const raw = String(notation || '1').trim();
+    if(!canAnimateRollNotation(raw)) return loggedRoll(label, raw);
+    return showDice(label, raw);
+  }
+  async function animatedRollBatch(label, notation, count){
+    const totalCount = Math.max(0, Number(count || 0));
+    if(!totalCount) return 0;
+    const raw = String(notation || '1').trim();
+    const simpleDie = raw.match(/^1?d(\d+)$/i);
+    if(simpleDie) return animatedRoll(label, `${totalCount}d${simpleDie[1]}`);
+    let total = 0;
+    for(let i = 0; i < totalCount; i += 1){
+      total += await animatedRoll(`${label} ${i + 1}/${totalCount}`, raw);
+    }
     return total;
   }
   function waitMs(ms){
@@ -2037,19 +2069,19 @@
     }
   }
 
-  function processDotEffects(player){
+  async function processDotEffects(player){
     const active = [];
     if(player.statuses.dot) active.push(player.statuses.dot);
     if(Array.isArray(player.statuses.dots)) active.push(...player.statuses.dots);
     if(!active.length) return;
     const remaining = [];
-    active.forEach((cfg, index) => {
-      const dmg = loggedRoll(`${player.label} ${cfg.sourceName || 'DOT'}`, cfg.damagePerTick || '1');
+    for (const cfg of active){
+      const dmg = await animatedRoll(`${player.label} ${cfg.sourceName || 'DOT'}`, cfg.damagePerTick || '1');
       takePureDamage(player, dmg);
       log(`${player.label} 受到 ${cfg.sourceName || 'DOT'} ${dmg} 伤害。`);
       cfg.durationTurns = Number(cfg.durationTurns || 1) - 1;
       if(cfg.durationTurns > 0) remaining.push(cfg);
-    });
+    }
     player.statuses.dot = null;
     player.statuses.dots = remaining;
   }
@@ -2116,7 +2148,7 @@
     log(`${targetPlayer.label} 的牌库被加入了 ${cnt} 张负面牌。`);
   }
 
-  function triggerMapTokenOnEnter(player, pos = player.pos){
+  async function triggerMapTokenOnEnter(player, pos = player.pos){
     const tilePos = pos || player.pos;
     const tok = getMapToken(tilePos);
     if (!tok || tok.ownerId === player.id) return;
@@ -2134,7 +2166,7 @@
     }
   }
 
-  function processMapTokensAtTurnStart(player){
+  async function processMapTokensAtTurnStart(player){
     if (!state.mapTokens) return;
     for (const [kk, tok] of Array.from(state.mapTokens.entries())){
       if (!tok) continue;
@@ -2497,13 +2529,24 @@ function movePlayerTo(player, tile, opts = {}){
   player.pos = to;
   if(state.board?.length && $('board')) renderBoard();
   return new Promise(resolve => {
-    const finish = () => {
+    const finish = async () => {
       if(player.moveAnim === motion) player.moveAnim = null;
       if(player.anim === 'run') player.anim = 'idle';
       if(player.moveAnimTimer?.interval === interval) clearInterval(interval);
       if(player.moveAnimTimer?.timeout === timeout) clearTimeout(timeout);
       if(player.moveAnimTimer?.interval === interval) player.moveAnimTimer = null;
-      if(opts.triggerPathEffects !== false) resolveMovementTouchEffects(player, from, to, !!opts.triggerDestinationEffects);
+      if(opts.triggerPathEffects !== false){
+        try {
+          await resolveMovementTouchEffectsAnimated(player, from, to, !!opts.triggerDestinationEffects);
+        } catch (error) {
+          pushDebug('movement.touch_effects.failed', {
+            playerId: player.id,
+            from,
+            to,
+            error: error?.stack || error?.message || String(error)
+          });
+        }
+      }
       if(state.board?.length && $('board')) renderBoard();
       resolve(true);
     };
@@ -2953,7 +2996,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     resetTurnState(p);
     p.block = 0;
     if(isBlackHoleEnabled()) await applyBlackHolePull();
-    processDotEffects(p);
+    await processDotEffectsAnimated(p);
     if(p.statuses.burn>0){ takePureDamage(p, 2); p.statuses.burn -= 1; log(`${p.label} 受到点燃 2 伤害。`); }
     if(p.hp<=0){ p.hp=0; p.alive=false; state.winner = enemyOf(p)?.id || 1; render(); setHint('对局结束'); return; }
     const enemy = enemyOf(p);
@@ -2967,7 +3010,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       bonus += loggedRollBatch(`${p.label} 的骨龙自动伤害`, '1d8', dragons);
       if(bonus>0){ takePureDamage(enemy, bonus); log(`${p.label} 的亡灵随从在回合开始合计造成 ${bonus} 伤害。`); if(enemy.hp<=0){ state.winner=p.id; render(); setHint('对局结束'); return; } }
     }
-    processMapTokensAtTurnStart(p);
+    await processMapTokensAtTurnStartAnimated(p);
     if(p.hp<=0){ p.hp=0; p.alive=false; state.winner = enemyOf(p)?.id || 1; render(); setHint('对局结束'); return; }
     if(p.statuses.stun>0){
       p.statuses.stun -= 1;
@@ -2994,12 +3037,80 @@ async function applyRewardList(player, rewards, labelPrefix){
     startTurn();
   }
 
+  async function startTurn(){
+    if(state.winner) return;
+    const p = current();
+    if(!p.alive) return nextTurn();
+    resetTurnState(p);
+    p.block = 0;
+    if(isBlackHoleEnabled()) await applyBlackHolePull();
+    await processDotEffectsAnimated(p);
+    if(p.statuses.burn > 0){
+      takePureDamage(p, 2);
+      p.statuses.burn -= 1;
+      log(`${p.label} takes 2 burn damage.`);
+    }
+    if(p.hp <= 0){
+      p.hp = 0;
+      p.alive = false;
+      state.winner = enemyOf(p)?.id || 1;
+      render();
+      setHint('Battle ended');
+      return;
+    }
+    const enemy = enemyOf(p);
+    if(p.professionKey === 'necro' && enemy){
+      let bonus = 0;
+      const skeletons = p.summons?.skeleton || 0;
+      const dragons = p.summons?.bone_dragon || 0;
+      if(skeletons > 0) triggerSummonAttack(p, 'skeleton');
+      if(dragons > 0) triggerSummonAttack(p, 'bone_dragon');
+      bonus += await animatedRollBatch(`${p.label} skeleton auto damage`, '1d4', skeletons);
+      bonus += await animatedRollBatch(`${p.label} bone dragon auto damage`, '1d8', dragons);
+      if(bonus > 0){
+        takePureDamage(enemy, bonus);
+        log(`${p.label}'s summons deal ${bonus} at turn start.`);
+        if(enemy.hp <= 0){
+          state.winner = p.id;
+          render();
+          setHint('Battle ended');
+          return;
+        }
+      }
+    }
+    await processMapTokensAtTurnStartAnimated(p);
+    if(p.hp <= 0){
+      p.hp = 0;
+      p.alive = false;
+      state.winner = enemyOf(p)?.id || 1;
+      render();
+      setHint('Battle ended');
+      return;
+    }
+    if(p.statuses.stun > 0){
+      p.statuses.stun -= 1;
+      log(`${p.label} is stunned and skips the turn.`);
+      render();
+      setTimeout(nextTurn, 450);
+      return;
+    }
+    drawCards(p, state.matchOptions.drawPerTurn);
+    if(ensureHandLimit(p)){
+      render();
+      return;
+    }
+    setMode('Idle');
+    setHint('Choose move, basic attack, or a card.');
+    render();
+    if(p.type === 'ai') setTimeout(runAiTurn, 450);
+  }
+
   async function applyBlackHolePull(){
     const center={q:0,r:0};
     for(const p of state.players){
       if(!p.alive) continue;
       const opts = neighbors(p.pos).filter(c=>state.boardMap.has(key(c)) && !isBlockedTile(c)).filter(c=>{ const occ=getPlayerAt(c); return !occ || occ.id===p.id; }).sort((a,b)=>dist(a,center)-dist(b,center));
-      if(opts[0] && key(opts[0])!==key(p.pos)){ await movePlayerTo(p, opts[0], { duration: 260 }); enterTile(p); }
+      if(opts[0] && key(opts[0])!==key(p.pos)){ await movePlayerTo(p, opts[0], { duration: 260 }); await enterTileAnimated(p); }
     }
   }
 
@@ -3042,6 +3153,145 @@ async function applyRewardList(player, rewards, labelPrefix){
     }
     triggerMapTokenOnEnter(player, tilePos);
     if(player.hp<=0){ player.hp=0; player.alive=false; state.winner = enemyOf(player)?.id || 1; }
+  }
+
+  async function processDotEffectsAnimated(player){
+    const active = [];
+    if(player.statuses.dot) active.push(player.statuses.dot);
+    if(Array.isArray(player.statuses.dots)) active.push(...player.statuses.dots);
+    if(!active.length) return;
+    const remaining = [];
+    for(const cfg of active){
+      const sourceName = cfg?.sourceName || 'DOT';
+      const dmg = await animatedRoll(`${player.label} ${sourceName}`, cfg?.damagePerTick || '1');
+      takePureDamage(player, dmg);
+      log(`${player.label} takes ${dmg} from ${sourceName}.`);
+      cfg.durationTurns = Number(cfg?.durationTurns || 1) - 1;
+      if(cfg.durationTurns > 0) remaining.push(cfg);
+    }
+    player.statuses.dot = null;
+    player.statuses.dots = remaining;
+  }
+
+  async function triggerMapTokenOnEnterAnimated(player, pos = player.pos){
+    const tilePos = pos || player.pos;
+    const tok = getMapToken(tilePos);
+    if(!tok || tok.ownerId === player.id) return;
+    if(tok.kind !== 'trap_once_negative') return;
+    playSfx('trap', 0.5);
+    if(tok.damage){
+      const sourceName = tok.name || 'Trap';
+      const dmg = await animatedRoll(`${player.label} ${sourceName} damage`, resolvePlayerNotation(player, tok.damage));
+      takePureDamage(player, dmg);
+      log(`${player.label} triggers ${sourceName} for ${dmg}.`);
+    }
+    if(tok.insertCardKey) insertNegativeCardsToDeck(player, tok.insertCardKey, tok.insertCount || 1);
+    applyTokenControl(player, tok);
+    state.mapTokens.delete(key(tilePos));
+  }
+
+  async function processMapTokensAtTurnStartAnimated(player){
+    if(!state.mapTokens) return;
+    for(const [kk, tok] of Array.from(state.mapTokens.entries())){
+      if(!tok) continue;
+      if(tok.kind === 'auto_turret' && tok.ownerId === player.id){
+        const enemies = state.players.filter(x => x.alive && x.id !== player.id);
+        const target = enemies
+          .filter(x => dist(tok.pos, x.pos) <= Number(tok.attackRange || 4))
+          .sort((a, b) => dist(tok.pos, a.pos) - dist(tok.pos, b.pos))[0];
+        if(target){
+          triggerArrowProjectile(tok.pos, target.pos);
+          playSfx('bowAttack', 0.45);
+          if(tok.damage){
+            const sourceName = tok.name || 'Turret';
+            const dmg = await animatedRoll(`${sourceName} attack`, resolvePlayerNotation(player, tok.damage));
+            const finalDamage = Math.max(0, dmg - target.block);
+            target.hp -= finalDamage;
+            target.block = Math.max(0, target.block - dmg);
+            if(dmg > 0) playSfx('bowHit', 0.45);
+            if(finalDamage > 0){
+              if(target.hp <= 0) finalizePlayerState(target);
+              else playUnitAnim(target, 'hurt', 460);
+            }
+            log(`${sourceName} hits ${target.label} for ${dmg} raw, ${finalDamage} final.`);
+          }
+          if(tok.insertCardKey) insertNegativeCardsToDeck(target, tok.insertCardKey, tok.insertCount || 1);
+          applyTokenControl(target, tok);
+          if(target.hp <= 0){ finalizePlayerState(target); state.winner = player.id; }
+        }
+        if(tok.durationTurns != null){
+          tok.durationTurns = Number(tok.durationTurns || 0) - 1;
+          if(tok.durationTurns <= 0) state.mapTokens.delete(kk);
+          else state.mapTokens.set(kk, tok);
+        }
+      } else if(tok.kind === 'permanent_pillar' && tok.durationTurns != null){
+        tok.durationTurns = Number(tok.durationTurns || 0) - 1;
+        if(tok.durationTurns <= 0) state.mapTokens.delete(kk);
+        else state.mapTokens.set(kk, tok);
+      }
+    }
+  }
+
+  async function enterTileAnimated(player, pos = player.pos){
+    if(!player || !player.alive) return;
+    const tilePos = deep(pos || player.pos);
+    const tileKey = key(tilePos);
+    const tile = state.boardMap.get(tileKey);
+    if(!tile) return;
+    if(isSpikeDangerTile(tilePos)){
+      playSfx('trap', 0.55);
+      triggerObeliskLightning(tilePos);
+      const dmg = await animatedRoll(`${player.label} spike field`, '2d8');
+      takePureDamage(player, dmg);
+      log(`${player.label} takes ${dmg} from the spike field.`);
+      if(!player.alive) return;
+    }
+    if(isTokenDangerTile(tilePos)){
+      const tok = getMapToken(tilePos) || neighbors(tilePos).map(getMapToken).find(Boolean);
+      const expr = tok?.damage || '2d8';
+      playSfx('trap', 0.55);
+      const sourceName = tok?.name || 'Danger zone';
+      const dmg = await animatedRoll(`${player.label} ${sourceName}`, resolvePlayerNotation(player, expr));
+      takePureDamage(player, dmg);
+      log(`${player.label} takes ${dmg} from ${sourceName}.`);
+      if(!player.alive) return;
+    }
+    if(isBlackHoleEnabled() && tile.type === 'center'){
+      playSfx('trap', 0.55);
+      const dmg = await animatedRoll(`${player.label} black hole center`, '2d8');
+      takePureDamage(player, dmg);
+      log(`${player.label} takes ${dmg} from the black hole center.`);
+      if(!player.alive) return;
+    }
+    const trap = state.traps.get(tileKey);
+    if(trap && trap.ownerId !== player.id){
+      playSfx('trap', 0.55);
+      const dmg = await animatedRoll(`${player.label} trap damage`, '2d6');
+      takePureDamage(player, dmg);
+      player.statuses.slow = 1;
+      log(`${player.label} triggers a trap for ${dmg} and becomes slowed.`);
+      state.traps.delete(tileKey);
+      if(!player.alive) return;
+    }
+    await triggerMapTokenOnEnterAnimated(player, tilePos);
+    if(player.hp <= 0){ player.hp = 0; player.alive = false; state.winner = enemyOf(player)?.id || 1; }
+  }
+
+  async function resolveMovementTouchEffectsAnimated(player, from, to, includeDestination = false){
+    const path = shortestMovementPath(from, to, player);
+    const limit = includeDestination ? path.length : Math.max(0, path.length - 1);
+    const seen = new Set();
+    for(let i = 0; i < limit; i += 1){
+      const tile = path[i];
+      const kk = key(tile);
+      if(seen.has(kk)) continue;
+      seen.add(kk);
+      await enterTileAnimated(player, tile);
+      if(!player.alive){
+        player.pos = deep(tile);
+        break;
+      }
+    }
   }
 
 
@@ -3152,7 +3402,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     for(const step of path){
       if(!p.alive) break;
       await movePlayerTo(p, step, { duration: 230, triggerPathEffects: false });
-      enterTile(p);
+      await enterTileAnimated(p);
     }
     await applyMovementTriggeredPassives(p);
     finishAfterAction();
@@ -3455,7 +3705,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       triggerTeleportCardVisual(handItem.cardKey, cardDef, p, fromTile, tile);
       p.turn.movedDistance = dist(p.pos, tile);
       p.pos = deep(tile);
-      enterTile(p);
+      await enterTileAnimated(p);
       log(`${p.label} 使用 ${cardDef.name} 移动到目标地块。`);
       finishAfterAction();
       return;
