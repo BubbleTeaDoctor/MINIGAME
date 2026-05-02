@@ -415,6 +415,17 @@
         death: { file: 'assets/sprites/battle-maid/death.png', frames: 12, duration: 860 }
       }
     },
+    paladin: {
+      frameWidth: 384, frameHeight: 260, scale: 0.36, footOffset: 6,
+      animations: {
+        idle: { file: 'assets/sprites/paladin/idle.png?v=paladinHeelAnchor2', frames: 8, duration: 1400, loop: true },
+        run: { file: 'assets/sprites/paladin/run.png?v=paladinHeelAnchor2', frames: 4, duration: 520, loop: true },
+        attack: { file: 'assets/sprites/paladin/attack.png?v=paladinHeelAnchor2', frames: 8, duration: 2400 },
+        cast: { file: 'assets/sprites/paladin/cast.png?v=paladinHeelAnchor2', frames: 8, duration: 1400 },
+        hurt: { file: 'assets/sprites/paladin/hurt.png?v=paladinHeelAnchor2', frames: 6, duration: 1500 },
+        death: { file: 'assets/sprites/paladin/death.png?v=paladinHeelAnchor2', frames: 8, duration: 1500 }
+      }
+    },
     'priest-knight': {
       frameWidth: 100, frameHeight: 64, scale: 1.15, footOffset: 12,
       animations: {
@@ -485,7 +496,7 @@
     warrior: 'warrior',
     mage: 'evil-wizard',
     rogue: 'ninja',
-    priest: 'priest-knight',
+    priest: 'paladin',
     shaman: 'fire-warrior',
     necro: 'countess-vampire',
     warlock: 'blue-witch',
@@ -517,6 +528,7 @@
     summonSeq: 0,
     current: 0,
     pending: null,
+    actionResolving: null,
     selectedCardIndex: null,
     winner: null,
     dualModeCard: null,
@@ -1666,6 +1678,7 @@
       summonUnits: [],
       anim: 'idle',
       animTimer: null,
+      animFrameTimer: null,
       facing: slot===1 ? 1 : -1,
       moveAnim: null,
       moveAnimTimer: null,
@@ -2186,7 +2199,7 @@
             if (dmg > 0) playSfx('bowHit', 0.45);
             if (finalDamage > 0){
               if (target.hp <= 0) finalizePlayerState(target);
-              else playUnitAnim(target, 'hurt', 460);
+              else playUnitAnim(target, 'hurt', spriteAnimDuration(target, 'hurt', 460));
             }
             log(`${tok.name || '炮塔'} 命中 ${target.label}，原始伤害 ${dmg}，目标当前生命 ${target.hp}，格挡 ${target.block}。`);
           }
@@ -2278,7 +2291,7 @@
     if(visual?.anim && hasSpriteAnim(player, visual.anim)) return visual.anim;
     if(['self_buff','grant_multiple_buffs','transform_basic_attack','summon_token_into_self_deck','teleport','create_map_token'].includes(cardDef?.template)) return castOrRangedAnim(player);
     if(cardDef?.config?.spell && Number(cardDef?.config?.range || 1) > 1) return castOrRangedAnim(player);
-    if(isWeaponOrigin(handItem?.origin)) return weaponAttackAnim(player);
+    if(isWeaponOrigin(cardActionSource(handItem, cardDef))) return weaponAttackAnim(player);
     const range = Number(cardDef?.config?.range || cardDef?.config?.baseRange || 1);
     if(range > 1 || cardDef?.template === 'aoe') return castOrRangedAnim(player);
     return 'attack';
@@ -2302,6 +2315,47 @@
 
   function spriteAnimDuration(player, anim, fallback = 520){
     return Number(spriteAnimFor(player, anim)?.duration || fallback);
+  }
+
+  function isJsDrivenSpriteAnim(player, anim){
+    const animDef = spriteAnimFor(player, anim);
+    return spriteProfileKeyFor(player) === 'paladin' && !!animDef && !animDef.loop && Number(animDef.frames || 1) > 1;
+  }
+
+  function spriteAnimImpactFrame(player, anim){
+    const frames = Math.max(1, Number(spriteAnimFor(player, anim)?.frames || 1));
+    return Math.max(0, Math.floor((frames - 1) / 2));
+  }
+
+  function spriteAnimImpactDelay(player, anim){
+    const animDef = spriteAnimFor(player, anim);
+    const frames = Math.max(1, Number(animDef?.frames || 1));
+    const duration = Number(animDef?.duration || 0);
+    if(frames <= 1 || duration <= 0) return 0;
+    return Math.floor((spriteAnimImpactFrame(player, anim) / frames) * duration);
+  }
+
+  function playUnitAnimAfter(player, anim, duration, delay = 0){
+    const wait = Math.max(0, Number(delay || 0));
+    if(wait <= 0) {
+      playUnitAnim(player, anim, duration);
+      return;
+    }
+    setTimeout(() => {
+      if(!player || (!player.alive && anim !== 'death')) return;
+      playUnitAnim(player, anim, duration);
+    }, wait);
+  }
+
+  function actionFinishAnimWait(player){
+    const anim = player?.anim || '';
+    if(spriteProfileKeyFor(player) !== 'paladin') return 0;
+    if(anim !== 'attack' && anim !== 'attackHeavy' && anim !== 'attackCombo' && anim !== 'cast' && anim !== 'hurt') return 0;
+    const startedAt = Number(player.animStartedAt || 0);
+    const duration = Number(player.animDuration || spriteAnimDuration(player, anim, 0));
+    if(startedAt <= 0 || duration <= 0) return 0;
+    const remaining = duration - (performance.now() - startedAt);
+    return Math.max(0, Math.min(2400, remaining + 80));
   }
 
   function vectorAnimName(anim){
@@ -2338,8 +2392,8 @@
 
   function grantCardToHand(player, cardKey, origin){
     if (!cardKey) return;
-    player.hand.push({ cardKey, origin: origin || '职业技能' });
     const def = getCardDef(cardKey);
+    player.hand.push({ cardKey, origin: origin || def?.source || '职业技能' });
     log(`${player.label} 获得了 ${def?.name || cardKey}。`);
   }
 
@@ -2464,7 +2518,7 @@ function maybeTriggerReactiveMoveOnTargeted(attacker, target, source, sourceName
 function finalizePlayerState(player){
   if (player.hp <= 0){
     player.hp = 0;
-    if(player.alive) playUnitAnim(player, 'death', 900);
+    if(player.alive) playUnitAnim(player, 'death', spriteAnimDuration(player, 'death', 900));
     player.alive = false;
     const living = state.players.filter(x => x.alive);
     if (living.length === 1) state.winner = living[0].id;
@@ -2561,13 +2615,31 @@ function movePlayerTo(player, tile, opts = {}){
 function playUnitAnim(player, anim, duration){
   if(!player) return;
   if(player.animTimer) clearTimeout(player.animTimer);
+  if(player.animFrameTimer) clearInterval(player.animFrameTimer);
   player.anim = anim || 'idle';
   const animDuration = Number(duration || spriteAnimDuration(player, player.anim, 520));
+  player.animStartedAt = performance.now();
+  player.animDuration = animDuration;
   if(player.anim === 'cast') playSfx('cast', 0.42);
   if(state.board?.length && $('board')) renderBoard();
+  if(isJsDrivenSpriteAnim(player, player.anim)){
+    const animDef = spriteAnimFor(player, player.anim);
+    const frames = Math.max(1, Number(animDef?.frames || 1));
+    const refreshMs = Math.max(34, Math.min(90, Math.floor(animDuration / Math.max(1, frames * 2))));
+    player.animFrameTimer = setInterval(() => {
+      if(player.anim !== anim || !player.alive && anim !== 'death') return;
+      if(state.board?.length && $('board')) renderBoard();
+    }, refreshMs);
+  } else {
+    player.animFrameTimer = null;
+  }
   player.animTimer = setTimeout(() => {
+    if(player.animFrameTimer) clearInterval(player.animFrameTimer);
     player.anim = 'idle';
     player.animTimer = null;
+    player.animFrameTimer = null;
+    player.animStartedAt = 0;
+    player.animDuration = 0;
     if(state.board?.length && $('board')) renderBoard();
   }, animDuration);
 }
@@ -2643,7 +2715,7 @@ function takePureDamage(player, rawDamage){
   applyDamageTakenTriggeredPassives(player, damage, '受伤');
   applyHealOnDamaged(player, damage);
   if(player.hp <= 0) finalizePlayerState(player);
-  else playUnitAnim(player, 'hurt', 460);
+  else playUnitAnim(player, 'hurt', spriteAnimDuration(player, 'hurt', 460));
   return damage;
 }
 
@@ -2703,7 +2775,14 @@ function dealDamage(attacker, target, rawDamage, meta){
   }
   if(!healOnDamagedApplied) applyHealOnDamaged(target, finalDamage);
 
-  if(finalDamage > 0) playUnitAnim(target, target.hp <= 0 ? 'death' : 'hurt', target.hp <= 0 ? 900 : 460);
+  if(finalDamage > 0) {
+    const targetAnim = target.hp <= 0 ? 'death' : 'hurt';
+    const targetDuration = target.hp <= 0 ? spriteAnimDuration(target, 'death', 900) : spriteAnimDuration(target, 'hurt', 460);
+    const impactDelay = attacker && spriteProfileKeyFor(attacker) === 'paladin' && attackAnim !== 'cast'
+      ? spriteAnimImpactDelay(attacker, attackAnim)
+      : 0;
+    playUnitAnimAfter(target, targetAnim, targetDuration, targetAnim === 'hurt' ? impactDelay : 0);
+  }
 
   finalizePlayerState(target);
   if (attacker) finalizePlayerState(attacker);
@@ -2752,7 +2831,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         player.buffs.extraClassCardUses = (player.buffs.extraClassCardUses || 0) + v;
         log(`${player.label} 本回合额外获得 ${v} 次职业卡使用次数。`);
       } else if (reward.type === 'card') {
-        grantCardToHand(player, reward.cardKey || reward.value, reward.origin || '职业技能');
+        grantCardToHand(player, reward.cardKey || reward.value, reward.origin);
       }
     }
   }
@@ -2963,6 +3042,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     state.summonSeq = 0;
     state.current = 0;
     state.pending = null;
+    state.actionResolving = null;
     state.selectedCardIndex = null;
     state.winner = null;
     state.dualModeCard = null;
@@ -3211,7 +3291,7 @@ async function applyRewardList(player, rewards, labelPrefix){
             if(dmg > 0) playSfx('bowHit', 0.45);
             if(finalDamage > 0){
               if(target.hp <= 0) finalizePlayerState(target);
-              else playUnitAnim(target, 'hurt', 460);
+              else playUnitAnim(target, 'hurt', spriteAnimDuration(target, 'hurt', 460));
             }
             log(`${sourceName} hits ${target.label} for ${dmg} raw, ${finalDamage} final.`);
           }
@@ -3304,6 +3384,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if (!passive) return;
     if(passive.config?.oncePerTurn && p.turn?.passiveOnceTriggered?.[passiveKey]) return;
     if (passive.template === 'life_for_card_draw_once_per_turn'){
+      if(!beginActionResolving('passive')) return;
       const anim = castOrRangedAnim(p);
       playUnitAnim(p, anim, spriteAnimDuration(p, anim, 620));
       triggerSkillTileFx(profDefaultFx(p.professionKey).self || 'buff-red', p.pos);
@@ -3328,18 +3409,32 @@ async function applyRewardList(player, rewards, labelPrefix){
     }
   }
 
-  function actionBucketFor(card){
-    const origin = card.origin;
+  function isKnownActionSource(source){
+    return source === '职业技能' || source === '守护神技能' || source === '武器技能' || source === '饰品技能';
+  }
+
+  function cardActionSource(handItem, cardDef){
+    const origin = String(handItem?.origin || '').trim();
+    const source = String(cardDef?.source || '').trim();
+    const cardDefinesEquipmentBucket = source === '武器技能' || source === '饰品技能';
+    if(origin === '职业技能' && cardDefinesEquipmentBucket) return source;
+    if(isKnownActionSource(origin)) return origin;
+    return source || origin;
+  }
+
+  function actionBucketFor(card, cardDef){
+    const origin = cardActionSource(card, cardDef);
     if(origin==='职业技能' || origin==='守护神技能') return 'class_or_guardian';
     if(origin==='武器技能' || origin==='饰品技能') return 'weapon_or_accessory';
     return 'class_or_guardian';
   }
 
   function cardCanBePlayed(p, handItem, cardDef){
-    const bucket = actionBucketFor(handItem);
+    const source = cardActionSource(handItem, cardDef);
+    const bucket = actionBucketFor(handItem, cardDef);
     if(bucket==='class_or_guardian' && p.turn.classOrGuardianUsed){
       const extraClassUses = Number(p.buffs?.extraClassCardUses || 0);
-      if(!(handItem.origin === '职业技能' && extraClassUses > 0)) return false;
+      if(!(source === '职业技能' && extraClassUses > 0)) return false;
     }
     if(bucket==='weapon_or_accessory' && p.turn.weaponOrAccessoryUsed) return false;
     return true;
@@ -3367,6 +3462,33 @@ async function applyRewardList(player, rewards, labelPrefix){
 
   function currentMovePath(){
     return state.pending?.type === 'move' && Array.isArray(state.pending.path) ? state.pending.path : [];
+  }
+
+  function isActionResolving(){
+    return !!state.actionResolving || !!state.pending?.resolving;
+  }
+
+  function beginActionResolving(kind){
+    if(isActionResolving()) return false;
+    state.actionResolving = { kind, startedAt: Date.now() };
+    if(state.pending && state.pending.type !== 'discard') state.pending.resolving = true;
+    return true;
+  }
+
+  function clearActionResolving(){
+    state.actionResolving = null;
+    if(state.pending) state.pending.resolving = false;
+  }
+
+  async function waitForActionResolvingDone(timeoutMs = 3000){
+    const startedAt = Date.now();
+    while(isActionResolving() && Date.now() - startedAt < timeoutMs){
+      await new Promise(resolve => setTimeout(resolve, 40));
+    }
+  }
+
+  function sleep(ms){
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   function movePathEndpoint(player){
@@ -3397,6 +3519,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       setHint('请先逐格选择移动路线。');
       return;
     }
+    if(!beginActionResolving('move')) return;
     p.turn.move = true;
     p.turn.movedDistance = path.length;
     for(const step of path){
@@ -3492,6 +3615,7 @@ async function applyRewardList(player, rewards, labelPrefix){
   async function useBasicAttack(target){
     const p=current();
     if(p.turn.basicSpent >= 1 + (p.buffs.extraBasicCap||0)) return;
+    if(!beginActionResolving('basic')) return;
     const b = getActiveBasicAttack(p);
     const reactive = maybeTriggerReactiveMoveOnTargeted(p, target, b, b.name || '普通攻击');
     if (reactive.evaded) {
@@ -3520,6 +3644,7 @@ async function applyRewardList(player, rewards, labelPrefix){
   async function playCardFromHand(index){
     const p=current();
     if(state.pending?.type==='discard'){ discardHandCard(index); return; }
+    if(isActionResolving()) return;
     const handItem = p.hand[index];
     const cardDef = getCardDef(handItem.cardKey);
     if(!cardDef) return;
@@ -3553,6 +3678,7 @@ async function applyRewardList(player, rewards, labelPrefix){
 
   async function chooseMode(i){
     const p=current();
+    if(isActionResolving()) return;
     const info=state.dualModeCard; if(!info) return;
     const mode = deep(info.cardDef.config.modes[i]);
     const virtualCard = {
@@ -3574,10 +3700,11 @@ async function applyRewardList(player, rewards, labelPrefix){
     setHint('请点击模式对应的合法目标。');
   }
 
-  function consumeBucket(p, handItem){
-    const bucket = actionBucketFor(handItem);
+  function consumeBucket(p, handItem, cardDef){
+    const source = cardActionSource(handItem, cardDef);
+    const bucket = actionBucketFor(handItem, cardDef);
     if(bucket==='class_or_guardian'){
-      if(p.turn.classOrGuardianUsed && handItem.origin === '职业技能' && (p.buffs.extraClassCardUses || 0) > 0){
+      if(p.turn.classOrGuardianUsed && source === '职业技能' && (p.buffs.extraClassCardUses || 0) > 0){
         p.buffs.extraClassCardUses = Math.max(0, Number(p.buffs.extraClassCardUses || 0) - 1);
       } else {
         p.turn.classOrGuardianUsed = true;
@@ -3588,7 +3715,8 @@ async function applyRewardList(player, rewards, labelPrefix){
 
   async function resolveCard(index, handItem, cardDef, tile, target){
     const p=current();
-    consumeBucket(p, handItem);
+    if(!beginActionResolving('card')) return;
+    consumeBucket(p, handItem, cardDef);
     p.hand.splice(index,1);
     p.discard.push(handItem);
 
@@ -3826,7 +3954,9 @@ async function applyRewardList(player, rewards, labelPrefix){
       }
       log(`${p.label} 使用 ${cardDef.name} 对范围内目标结算完成。`);
       finishAfterAction();
+      return;
     }
+    clearActionResolving();
   }
 
   function resolveNegativeOnDraw(player, handItem){
@@ -3858,7 +3988,10 @@ async function applyRewardList(player, rewards, labelPrefix){
     log(`${player.label} 抽到 ${def.name} 并触发负面效果，当前生命 ${player.hp}。`);
   }
 
-  function finishAfterAction(){
+  async function finishAfterAction(){
+    const animWait = actionFinishAnimWait(current());
+    if(animWait > 0) await sleep(animWait);
+    clearActionResolving();
     state.pending = null;
     state.selectedCardIndex = null;
     $('choice-panel').innerHTML = '';
@@ -4270,13 +4403,16 @@ async function applyRewardList(player, rewards, labelPrefix){
     const frameH = Number(opts.frameHeight || 1);
     const scale = Number(opts.scale || 1);
     const frames = Math.max(1, Number(opts.frames || 1));
-    const sheetW = Number(opts.sheetWidth || frameW * frames);
-    const sheetH = Number(opts.sheetHeight || frameH);
+    const columns = Math.max(1, Number(opts.columns || Math.max(1, Math.floor(Number(opts.sheetWidth || (frameW * frames)) / Math.max(1, frameW)))));
+    const sheetW = Number(opts.sheetWidth || frameW * columns);
+    const rows = Math.max(1, Number(opts.rows || Math.ceil(frames / columns)));
+    const sheetH = Number(opts.sheetHeight || (frameH * rows));
     const row = Math.max(0, Number(opts.row || 0));
     const frameIndex = Math.max(0, Number(opts.frameIndex || 0));
     const duration = Number(opts.duration || 600);
     const x = Number(opts.x || 0);
     const y = Number(opts.y || 0);
+    const startAt = Number(opts.startAt || 0);
     appendNativeSprite._id = (appendNativeSprite._id || 0) + 1;
     const clipId = `sprite-clip-${appendNativeSprite._id}`;
     const frame = document.createElementNS(svgNS, 'g');
@@ -4294,10 +4430,23 @@ async function applyRewardList(player, rewards, labelPrefix){
     const clipped = document.createElementNS(svgNS, 'g');
     clipped.setAttribute('clip-path', `url(#${clipId})`);
     const img = document.createElementNS(svgNS, 'image');
+    const elapsed = !opts.loop && startAt > 0 ? Math.max(0, performance.now() - startAt) : 0;
+    const progress = !opts.loop && duration > 0 ? Math.min(1, elapsed / duration) : 0;
+    const resumedFrameOffset = !opts.loop && frames > 1 ? Math.min(frames - 1, Math.floor(progress * frames)) : 0;
+    const activeFrameIndex = frameIndex + resumedFrameOffset;
+    const framePosition = (absoluteIndex) => {
+      const col = absoluteIndex % columns;
+      const rowIndex = row + Math.floor(absoluteIndex / columns);
+      return {
+        x: x - col * frameW * scale,
+        y: y - rowIndex * frameH * scale
+      };
+    };
+    const activePosition = framePosition(activeFrameIndex);
     setSvgAttrs(img, {
       href: opts.file,
-      x: x - frameIndex * frameW * scale,
-      y: y - row * frameH * scale,
+      x: activePosition.x,
+      y: activePosition.y,
       width: sheetW * scale,
       height: sheetH * scale,
       class: opts.imageClass || 'sprite-sheet-image',
@@ -4305,17 +4454,32 @@ async function applyRewardList(player, rewards, labelPrefix){
     });
     img.setAttributeNS(xlinkNS, 'href', opts.file);
     if(frames > 1){
-      const values = Array.from({ length: frames }, (_, i) => String(x - (frameIndex + i) * frameW * scale)).join(';');
-      const anim = document.createElementNS(svgNS, 'animate');
-      setSvgAttrs(anim, {
+      const remainingFrames = Math.max(1, frames - resumedFrameOffset);
+      const remainingDuration = !opts.loop ? Math.max(1, duration - elapsed) : duration;
+      const positions = Array.from({ length: remainingFrames }, (_, i) => framePosition(activeFrameIndex + i));
+      const animX = document.createElementNS(svgNS, 'animate');
+      setSvgAttrs(animX, {
         attributeName: 'x',
-        values,
-        dur: `${duration}ms`,
+        values: positions.map(pos => String(pos.x)).join(';'),
+        dur: `${remainingDuration}ms`,
         calcMode: 'discrete',
         repeatCount: opts.loop ? 'indefinite' : '1',
         fill: opts.loop ? 'remove' : 'freeze'
       });
-      img.appendChild(anim);
+      if(opts.loop || remainingFrames > 1) img.appendChild(animX);
+      const usesMultipleRows = positions.some(pos => pos.y !== positions[0].y);
+      if(usesMultipleRows){
+        const animY = document.createElementNS(svgNS, 'animate');
+        setSvgAttrs(animY, {
+          attributeName: 'y',
+          values: positions.map(pos => String(pos.y)).join(';'),
+          dur: `${remainingDuration}ms`,
+          calcMode: 'discrete',
+          repeatCount: opts.loop ? 'indefinite' : '1',
+          fill: opts.loop ? 'remove' : 'freeze'
+        });
+        if(opts.loop || remainingFrames > 1) img.appendChild(animY);
+      }
     }
     clipped.appendChild(img);
     frame.appendChild(clipped);
@@ -4421,13 +4585,26 @@ async function applyRewardList(player, rewards, labelPrefix){
     const anim = spriteAnimFor(p, animName);
     if(!profile || !anim) return false;
 
-    const frameW = profile.frameWidth;
-    const frameH = profile.frameHeight;
+    const frameW = Number(anim.frameWidth || profile.frameWidth);
+    const frameH = Number(anim.frameHeight || profile.frameHeight);
     const scale = profile.scale || 1;
     const displayW = frameW * scale;
     const displayH = frameH * scale;
     const frameCount = Math.max(1, Number(anim.frames || 1));
     const duration = Number(anim.duration || 600);
+    const jsDriven = isJsDrivenSpriteAnim(p, animName);
+    let renderFrameCount = frameCount;
+    let renderFrameIndex = 0;
+    let renderSheetWidth = anim.sheetWidth;
+    let renderSheetHeight = anim.sheetHeight;
+    if(jsDriven){
+      const elapsed = Math.max(0, performance.now() - Number(p.animStartedAt || 0));
+      const progress = duration > 0 ? Math.min(0.999, elapsed / duration) : 0;
+      renderFrameIndex = Math.min(frameCount - 1, Math.floor(progress * frameCount));
+      renderFrameCount = 1;
+      renderSheetWidth = anim.sheetWidth || frameW * frameCount;
+      renderSheetHeight = anim.sheetHeight || frameH;
+    }
     const footOffset = Number(profile.footOffset ?? (profile.frameHeight === 96 ? 18 : 20));
     const headOffset = Number(profile.headOffset ?? (displayH - footOffset));
 
@@ -4450,10 +4627,17 @@ async function applyRewardList(player, rewards, labelPrefix){
       file: anim.file,
       frameWidth: frameW,
       frameHeight: frameH,
-      frames: frameCount,
+      frames: renderFrameCount,
+      frameIndex: renderFrameIndex,
+      sheetWidth: renderSheetWidth,
+      sheetHeight: renderSheetHeight,
+      columns: anim.columns,
+      rows: anim.rows,
+      row: anim.row,
       scale,
       duration,
       loop: !!anim.loop,
+      startAt: jsDriven ? 0 : (!anim.loop ? Number(p.animStartedAt || 0) : 0),
       x: -displayW / 2,
       y: -displayH + footOffset,
       className: 'sprite-frame-svg unit-sprite-frame',
@@ -4680,6 +4864,7 @@ async function applyRewardList(player, rewards, labelPrefix){
   async function tileClick(tile){
     const p=current();
     if(state.pending?.type==='discard') return;
+    if(isActionResolving()) return;
     const occ=getPlayerAt(tile);
     if(state.pending?.type==='move'){
       handleMovePathClick(tile);
@@ -4884,6 +5069,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       return true;
     }
     if(action.type === 'move'){
+      if(!beginActionResolving('move')) return false;
       p.turn.move = true;
       p.turn.movedDistance = dist(p.pos, action.tile);
       await movePlayerTo(p, action.tile, { duration: Math.min(640, Math.max(260, 160 * Math.max(1, dist(p.pos, action.tile)))), triggerDestinationEffects: true });
@@ -4906,13 +5092,16 @@ async function applyRewardList(player, rewards, labelPrefix){
       if(!action) break;
       const acted = await executeAiAction(action);
       if(!acted || state.winner || state.pending?.type === 'discard') return;
+      await waitForActionResolvingDone();
       await wait(360);
     }
+    await waitForActionResolvingDone();
     if(current()?.type === 'ai' && !state.winner && state.pending?.type !== 'discard') endTurn();
   }
 
   function endTurn(){
     const p=current();
+    if(isActionResolving()) return;
     if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; }
     if(p.professionKey==='swordsman' && p.turn.basicSpent===0) p.buffs.nextBasicFlat = Math.max(p.buffs.nextBasicFlat||0, 5);
     if(p.buffs.extraBasicCap) p.buffs.extraBasicCap = 0;
@@ -5232,12 +5421,12 @@ async function applyRewardList(player, rewards, labelPrefix){
 
   function bind(){
     $('start-game').onclick = startGame;
-    $('btn-move').onclick = ()=>{ if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending={type:'move', path:[]}; setMode('移动模式'); render(); setHint('请逐格点击绘制移动路线，再点确认移动。'); };
+    $('btn-move').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending={type:'move', path:[]}; setMode('移动模式'); render(); setHint('请逐格点击绘制移动路线，再点确认移动。'); };
     if($('btn-confirm-move')) $('btn-confirm-move').onclick = confirmMovePath;
-    $('btn-basic-attack').onclick = ()=>{ if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending={type:'basic'}; setMode('普通攻击'); render(); setHint('请选择普通攻击目标。'); };
-    $('btn-passive').onclick = ()=>{ if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } useProfessionPassive(); };
-    $('btn-cancel').onclick = ()=>{ if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending=null; state.selectedCardIndex=null; $('choice-panel').innerHTML=''; setMode('待机'); render(); setHint('已取消当前选择。'); };
-    $('btn-end-turn').onclick = endTurn;
+    $('btn-basic-attack').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending={type:'basic'}; setMode('普通攻击'); render(); setHint('请选择普通攻击目标。'); };
+    $('btn-passive').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } useProfessionPassive(); };
+    $('btn-cancel').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending=null; state.selectedCardIndex=null; $('choice-panel').innerHTML=''; setMode('待机'); render(); setHint('已取消当前选择。'); };
+    $('btn-end-turn').onclick = ()=>{ if(isActionResolving()) return; endTurn(); };
     $('btn-restart').onclick = ()=>location.reload();
     if ($('btn-export-battle-log')) $('btn-export-battle-log').onclick = exportBattleLog;
     if ($('btn-export-debug-log')) $('btn-export-debug-log').onclick = exportDebugBundle;
