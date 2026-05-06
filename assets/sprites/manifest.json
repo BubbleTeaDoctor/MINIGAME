@@ -24,10 +24,10 @@
       "scale": 1.4
     },
     "warrior": {
-      "source": "local copy / warrior",
-      "frameWidth": 128,
-      "frameHeight": 128,
-      "scale": 1.05
+      "source": "model-generated from current warrior portrait, normalized to modern mage/shaman/hunter runtime strips",
+      "frameWidth": 320,
+      "frameHeight": 208,
+      "scale": 0.7
     },
     "evil-wizard": {
       "source": "local copy / evil-wizard",
@@ -59,11 +59,35 @@
       "frameHeight": 128,
       "scale": 1.02
     },
+    "necro-new": {
+      "source": "AI-generated from current necromancer portrait, normalized to modern mage/shaman/hunter-scale runtime strips",
+      "frameWidth": 320,
+      "frameHeight": 208,
+      "scale": 0.7
+    },
     "blue-witch": {
       "source": "local copy / blue-witch",
       "frameWidth": 96,
       "frameHeight": 96,
       "scale": 1.4
+    },
+    "elf-warlock": {
+      "source": "generated preview normalized into fixed-frame runtime strips",
+      "frameWidth": 320,
+      "frameHeight": 208,
+      "scale": 0.7
+    },
+    "shaman-new": {
+      "source": "generated from current shaman portrait, normalized to elf-warlock-scale runtime strips",
+      "frameWidth": 320,
+      "frameHeight": 208,
+      "scale": 0.7
+    },
+    "mage-new": {
+      "source": "generated from current mage portrait, normalized to modern priest/warlock-scale runtime strips",
+      "frameWidth": 320,
+      "frameHeight": 208,
+      "scale": 0.7
     },
     "midnight-slash": {
       "source": "local copy / midnight-slash",
@@ -71,11 +95,35 @@
       "frameHeight": 128,
       "scale": 1.02
     },
+    "swordsman-new": {
+      "source": "AI-generated from current swordsman portrait; light attack and cast regenerated as separate action rows",
+      "frameWidth": 320,
+      "frameHeight": 208,
+      "scale": 0.7
+    },
     "huntress-2": {
       "source": "local copy / huntress-2",
       "frameWidth": 128,
       "frameHeight": 128,
       "scale": 0.98
+    },
+    "elf-hunter": {
+      "source": "generated hunter raw atlas normalized into fixed-frame runtime strips",
+      "frameWidth": 320,
+      "frameHeight": 208,
+      "scale": 0.7
+    },
+    "assassin-new": {
+      "source": "generated from current rogue portrait, normalized to modern mage/shaman/hunter-scale runtime strips",
+      "frameWidth": 320,
+      "frameHeight": 208,
+      "scale": 0.7
+    },
+    "red-elf-monk": {
+      "source": "regenerated from high-contrast chroma-key monk sheet, normalized to modern priest/warlock-scale runtime strips",
+      "frameWidth": 320,
+      "frameHeight": 208,
+      "scale": 0.7
     },
     "gothic-monk": {
       "source": "local copy / gothic-monk",
@@ -98,14 +146,14 @@
   },
   "professionMapping": {
     "warrior": "warrior",
-    "mage": "evil-wizard",
-    "rogue": "ninja",
+    "mage": "mage-new",
+    "rogue": "assassin-new",
     "priest": "paladin",
-    "shaman": "fire-warrior",
-    "necro": "countess-vampire",
-    "warlock": "blue-witch",
-    "swordsman": "midnight-slash",
-    "hunter": "huntress-2",
-    "monk": "gothic-monk"
+    "shaman": "shaman-new",
+    "necro": "necro-new",
+    "warlock": "elf-warlock",
+    "swordsman": "swordsman-new",
+    "hunter": "elf-hunter",
+    "monk": "red-elf-monk"
   }
 }

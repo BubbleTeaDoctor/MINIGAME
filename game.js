@@ -5,31 +5,121 @@
   const svgNS = 'http://www.w3.org/2000/svg';
   const xlinkNS = 'http://www.w3.org/1999/xlink';
   const NO_ACCESSORY = '__none__';
-  const DEFAULT_MATCH_OPTIONS = { blackHoleEnabled: true, drawOpening: 6, drawPerTurn: 2 };
+  const DEFAULT_MATCH_OPTIONS = { blackHoleEnabled: true, chestEnabled: true, drawOpening: 6, drawPerTurn: 2 };
+  const RUN_SAVE_KEY = 'arena_run_v1_state';
+  const RUN_DECK_TARGET = 20;
+  const RUN_MATCH_OPTIONS = { drawOpening: 5, drawPerTurn: 1, handLimit: 7, fatigueEnabled: true };
+  const RUN_STAGES = [
+    { key: 'normal', name: 'Stage 1', title: 'Normal Battle', hpBonus: 0, drawOpeningBonus: 0, drawPerTurnBonus: 0 },
+    { key: 'elite', name: 'Stage 2', title: 'Elite Battle', hpBonus: 8, drawOpeningBonus: 1, drawPerTurnBonus: 0 },
+    { key: 'boss', name: 'Stage 3', title: 'Boss Battle', hpBonus: 16, drawOpeningBonus: 0, drawPerTurnBonus: 1, boss: true }
+  ];
+  const RUN_REWARD_DEFINITIONS = [
+    {
+      key: 'basic_crit',
+      scope: 'persistent',
+      title: '普攻暴击',
+      badge: '永久',
+      desc: '普通攻击时掷 1D6；掷出 6 时，额外造成 1D8 伤害。',
+    },
+    {
+      key: 'low_hp_recover',
+      scope: 'persistent',
+      title: '绝境回复',
+      badge: '每场一次',
+      desc: '每场战斗第一次生命低于 30% 时，立刻回复 1D10。',
+    },
+    {
+      key: 'special_tile_dodge',
+      scope: 'persistent',
+      title: '危险步伐',
+      badge: '永久',
+      desc: '踩到宝箱、陷阱或特殊格后，获得一次闪避：下次受到伤害 -3。',
+    },
+    {
+      key: 'next_battle_shield',
+      scope: 'next_battle',
+      title: '开场护盾',
+      badge: '下一场',
+      desc: '下一场战斗开始时获得 1 次护盾：第一次受到伤害 -50%。',
+    },
+    {
+      key: 'melee_pressure',
+      scope: 'persistent',
+      title: '近战压制',
+      badge: '永久',
+      desc: '普通攻击命中后，敌人下回合移动 -1。',
+    },
+    {
+      key: 'risky_class_surge',
+      scope: 'next_battle',
+      title: '冒险专注',
+      badge: '下一场',
+      desc: '下一场战斗最大生命 -10，但每回合可以多使用 1 张职业卡。',
+    }
+  ];
   const BOARD_VIEW = { width: 2100, height: 1750 };
   const MAP_ASSETS = {
     arenaBackdrop: 'assets/map/octopath-arena-backdrop.png',
     obeliskIdle: 'assets/map/obelisk/idle.png',
     spikeFloor: 'assets/map/trap-spikes-floor.png',
     voidFx: 'assets/map/void-fx.png',
+    blackHole: 'assets/map/black-hole-vortex.png',
+    chest: 'assets/map/chest/treasure-chest.png',
     centerTrap: 'assets/map/traps/fire-trap-level-3.png',
     magicTrap: 'assets/map/traps/magic-trap-level-2.png',
     arrowTrap: 'assets/map/traps/arrow-trap-idle.png',
     arrowProjectile: 'assets/map/traps/arrow.png',
     markFx: 'assets/map/fx/mark-red-row.png'
   };
+  const VOICE_AUDIO_DIR = 'assets/audio/voice/';
+  const voiceAudio = file => `${VOICE_AUDIO_DIR}${file}`;
   const AUDIO_ASSETS = {
-    bgm: ['assets/audio/bgm-twilight-battle.ogg', 'assets/audio/bgm-twilight-battle.wav'],
+    bgm: [voiceAudio('3.%20Eclipsed%20Desolation%20%28Loop%29.mp3')],
     meleeAttack: ['assets/audio/attack-melee.ogg', 'assets/audio/attack-melee.wav'],
     meleeHit: ['assets/audio/hit-melee.ogg', 'assets/audio/hit-melee.wav'],
     bowAttack: ['assets/audio/attack-bow.ogg', 'assets/audio/attack-bow.wav'],
     bowHit: ['assets/audio/hit-bow.ogg', 'assets/audio/hit-bow.wav'],
     cast: ['assets/audio/cast-spell.ogg', 'assets/audio/cast-spell.wav'],
     spellImpact: ['assets/audio/spell-impact.ogg', 'assets/audio/spell-impact.wav'],
-    trap: ['assets/audio/trap-trigger.ogg', 'assets/audio/trap-trigger.wav']
+    trap: ['assets/audio/trap-trigger.ogg', 'assets/audio/trap-trigger.wav'],
+    chestOpen: ['assets/audio/chest-open.ogg'],
+    voiceAttack: [voiceAudio('attack1.wav'), voiceAudio('attack2.wav'), voiceAudio('attack3.wav')],
+    voiceJump: [voiceAudio('jump1.wav'), voiceAudio('jump2.wav'), voiceAudio('jump3.wav')],
+    voiceDamaged: [voiceAudio('damaged1.wav'), voiceAudio('damaged2.wav'), voiceAudio('damaged3.wav')],
+    voiceHealed: [voiceAudio('healed1.wav'), voiceAudio('healed2.wav'), voiceAudio('healed3.wav')],
+    voiceAqua: [voiceAudio('aqua.wav')],
+    voiceBlizzard: [voiceAudio('blizzard.wav')],
+    voiceBubbles: [voiceAudio('bubbles.wav')],
+    voiceBurn: [voiceAudio('burn.wav')],
+    voiceCorruption: [voiceAudio('corruption.wav')],
+    voiceCure: [voiceAudio('cure.wav')],
+    voiceCurse: [voiceAudio('curse.wav')],
+    voiceCyclone: [voiceAudio('cyclone.wav')],
+    voiceFire: [voiceAudio('fire.wav')],
+    voiceFreeze: [voiceAudio('freeze.wav')],
+    voiceHeal: [voiceAudio('heal.wav')],
+    voiceHellstorm: [voiceAudio('hellstorm.wav')],
+    voiceHex: [voiceAudio('hex.wav')],
+    voiceIce: [voiceAudio('ice.wav')],
+    voiceTornado: [voiceAudio('tornado.wav')],
+    voiceTwister: [voiceAudio('twister.wav')],
+    voiceWater: [voiceAudio('water.wav')],
+    voiceWind: [voiceAudio('wind.wav')],
+    ultWarrior: ['assets/audio/ultimate/warrior-ult.mp3'],
+    ultMage: ['assets/audio/ultimate/mage-ult.mp3'],
+    ultRogue: ['assets/audio/ultimate/rogue-ult.mp3'],
+    ultPriest: ['assets/audio/ultimate/priest-ult.mp3'],
+    ultShaman: ['assets/audio/ultimate/shaman-ult.mp3'],
+    ultNecro: ['assets/audio/ultimate/necro-ult.mp3'],
+    ultWarlock: ['assets/audio/ultimate/warlock-ult.mp3'],
+    ultSwordsman: ['assets/audio/ultimate/swordsman-ult.mp3'],
+    ultHunter: ['assets/audio/ultimate/hunter-ult.mp3'],
+    ultMonk: ['assets/audio/ultimate/monk-ult.mp3']
   };
-  const audioState = { bgm: null, unlocked: false, muted: false };
+  const audioState = { bgm: null, unlocked: false, muted: false, voiceLastPlayedAt: {} };
   const audioSourceCache = {};
+  const audioSourceListCache = {};
   const LIGHTNING_FRAMES = Array.from({ length: 14 }, (_, i) => `assets/map/fx/lightning/frame-${i}.png`);
   const BLUE_LIGHTNING_FRAMES = Array.from({ length: 14 }, (_, i) => `assets/map/fx/lightning-blue/frame-${i}.png`);
   const FIRE_HIT_FX = {
@@ -59,6 +149,7 @@
   }, extra);
   const SKILL_TILE_FX = {
     'fire-hit': FIRE_HIT_FX,
+    mageImpact: { file: 'assets/sprites/mage-new/impact.png?v=mageNewRuntime1', frameWidth: 96, frameHeight: 96, frames: 6, scale: 1.35, duration: 420, anchor: 'center', yOffset: -4 },
     'slash-red': stripFx('slash-red', 20, 1.45, 480),
     'slash-blue': stripFx('slash-blue', 20, 1.45, 480),
     'bleed-red': stripFx('bleed-red', 12, 1.35, 460),
@@ -85,6 +176,10 @@
   const SKILL_PROJECTILE_FX = {
     fire: FIRE_PROJECTILE_FX,
     shadow: stripFx('projectile-shadow', 11, 0.95, 420, { center: true }),
+    elfWarlock: { file: 'assets/sprites/elf-warlock/projectile.png', frameWidth: 64, frameHeight: 64, frames: 8, scale: 0.95, duration: 420, center: true },
+    hunterArrow: { file: 'assets/sprites/elf-hunter/projectile.png?v=elfHunterRuntime1', frameWidth: 64, frameHeight: 64, frames: 8, scale: 1.05, duration: 420, center: true },
+    mageBasic: { file: 'assets/sprites/mage-new/basic-projectile.png?v=mageNewRuntime1', frameWidth: 64, frameHeight: 64, frames: 8, scale: 0.95, duration: 420, center: true },
+    mageSpell: { file: 'assets/sprites/mage-new/projectile.png?v=mageNewRuntime1', frameWidth: 64, frameHeight: 64, frames: 8, scale: 0.95, duration: 420, center: true },
     ice: stripFx('projectile-ice', 11, 0.95, 420, { center: true }),
     holy: stripFx('projectile-holy', 14, 0.92, 430, { center: true }),
     nature: stripFx('projectile-nature', 14, 0.92, 430, { center: true }),
@@ -172,24 +267,136 @@
     sword_riposte: { self: 'shield-gold', anim: 'cast' },
     sword_shadowstep: { teleport: 'teleport-purple', self: 'teleport-purple', anim: 'cast' },
 
-    hunter_mark: { projectile: 'arrow', hit: 'stun-gold', anim: 'attack' },
-    hunter_aimed: { projectile: 'arrow', hit: 'slash-blue', anim: 'attack' },
+    hunter_mark: { projectile: 'hunterArrow', hit: 'stun-gold', anim: 'attack' },
+    hunter_aimed: { projectile: 'hunterArrow', hit: 'slash-blue', anim: 'attack' },
     hunter_arcane: { projectile: 'blue', hit: 'slash-blue', anim: 'attack' },
     hunter_disengage: { teleport: 'teleport-green', self: 'teleport-green', anim: 'cast' },
-    hunter_snare: { projectile: 'arrow', hit: 'root-green', anim: 'attack' },
-    hunter_kill: { projectile: 'arrow', hit: 'bleed-red', anim: 'attack' },
-    hunter_trap: { projectile: 'arrow', hit: 'root-green', anim: 'attack' },
-    hunter_command: { projectile: 'arrow', hit: 'slash-red', anim: 'attack' },
-    hunter_volley: { projectile: 'arrow', hit: 'slash-blue', anim: 'attack' },
+    hunter_snare: { projectile: 'hunterArrow', hit: 'root-green', anim: 'attack' },
+    hunter_kill: { projectile: 'hunterArrow', hit: 'bleed-red', anim: 'attack' },
+    hunter_trap: { projectile: 'hunterArrow', hit: 'root-green', anim: 'attack' },
+    hunter_command: { projectile: 'hunterArrow', hit: 'slash-red', anim: 'attack' },
+    hunter_volley: { projectile: 'hunterArrow', hit: 'slash-blue', anim: 'attack' },
     hunter_explosive: { projectile: 'fire', hit: 'explosion-red', anim: 'attack' },
-    hunter_tracking: { projectile: 'arrow', hit: 'stun-gold', anim: 'attack' },
+    hunter_tracking: { projectile: 'hunterArrow', hit: 'stun-gold', anim: 'attack' },
     hunter_camouflage: { self: 'wind-green', anim: 'cast' },
 
     '武僧_strike': { hit: 'stun-gold', anim: 'attack' },
     '黑虎掏心': { hit: 'bleed-red', anim: 'attackHeavy' },
-    '降龙十八掌': { hit: 'stun-gold', anim: 'attackCombo' },
+    'dragon_combo': { hit: 'stun-gold', anim: 'attackCombo' },
     '飞龙在天': { hit: 'stun-gold', anim: 'attackHeavy' },
     '闪电反射': { self: 'blue-lightning', anim: 'cast' }
+  };
+  const CARD_VOICE_PROFILES = {
+    warrior_charge: 'voiceAttack',
+    warrior_rage: 'voiceAttack',
+    warrior_throw: 'voiceAttack',
+    warrior_execute: 'voiceAttack',
+    warrior_hamstring: 'voiceAttack',
+    mage_fireball: 'voiceFire',
+    mage_nova: 'voiceBlizzard',
+    mage_blink: 'voiceJump',
+    mage_lightning: 'voiceTwister',
+    mage_phase: 'voiceJump',
+    rogue_ambush: 'voiceAttack',
+    rogue_disarm: 'voiceAttack',
+    rogue_assassinate: 'voiceHex',
+    rogue_step: 'voiceJump',
+    rogue_bloodmix: 'voiceBurn',
+    rogue_feast: 'voiceAttack',
+    priest_heal: 'voiceHeal',
+    priest_pain: 'voiceCurse',
+    priest_smite: 'voiceCure',
+    priest_stance: 'voiceCure',
+    priest_shield: 'voiceCure',
+    priest_sanctuary: 'voiceCure',
+    priest_judgement: 'voiceCure',
+    priest_holyfire: 'voiceFire',
+    priest_barrier: 'voiceCure',
+    priest_radiance: 'voiceHeal',
+    shaman_shock: 'voiceTwister',
+    shaman_windfury: 'voiceWind',
+    shaman_avatar: 'voiceWind',
+    shaman_earthshield: 'voiceCure',
+    shaman_bloodlust: 'voiceAttack',
+    shaman_chain: 'voiceTwister',
+    shaman_spiritwalk: 'voiceJump',
+    shaman_tide: 'voiceWater',
+    shaman_earthbind: 'voiceAqua',
+    shaman_thunderstorm: 'voiceCyclone',
+    shaman_stormstrike: 'voiceTornado',
+    shaman_ancestral: 'voiceHeal',
+    shaman_stone_skin: 'voiceCure',
+    necro_bomb: 'voiceCorruption',
+    necro_skeleton: 'voiceCurse',
+    necro_bonedragon: 'voiceHex',
+    necro_burst: 'voiceCorruption',
+    necro_shield: 'voiceCurse',
+    necro_spear: 'voiceHex',
+    necro_gravebind: 'voiceCurse',
+    necro_legion: 'voiceCorruption',
+    necro_deathcoil: 'voiceCurse',
+    necro_boneprison: 'voiceHex',
+    necro_harvest: 'voiceCorruption',
+    lock_corrode: 'voiceCorruption',
+    lock_soulfire: 'voiceFire',
+    lock_nightdash: 'voiceJump',
+    lock_leech: 'voiceCurse',
+    lock_shadowflame: 'voiceHex',
+    lock_bloodpact: 'voiceBurn',
+    lock_doom: 'voiceCurse',
+    lock_siphon: 'voiceCurse',
+    lock_hellfire: 'voiceHellstorm',
+    lock_shadowbolt: 'voiceHex',
+    lock_demonskin: 'voiceHex',
+    lock_agony: 'voiceCurse',
+    lock_metamorphosis: 'voiceCorruption',
+    lock_life_tap: 'voiceBurn',
+    sword_parry: 'voiceAttack',
+    sword_read: 'voiceTwister',
+    sword_flash: 'voiceAttack',
+    sword_drawdash: 'voiceJump',
+    sword_finish: 'voiceAttack',
+    sword_focus: 'voiceCure',
+    sword_riposte: 'voiceAttack',
+    sword_shadowstep: 'voiceJump',
+    hunter_mark: 'voiceAttack',
+    hunter_aimed: 'voiceAttack',
+    hunter_arcane: 'voiceTwister',
+    hunter_disengage: 'voiceJump',
+    hunter_snare: 'voiceAqua',
+    hunter_kill: 'voiceAttack',
+    hunter_trap: 'voiceAqua',
+    hunter_command: 'voiceAttack',
+    hunter_volley: 'voiceAttack',
+    hunter_explosive: 'voiceFire',
+    hunter_tracking: 'voiceAttack',
+    hunter_camouflage: 'voiceWind'
+  };
+  const FX_VOICE_PROFILES = {
+    'fire-hit': 'voiceFire',
+    'explosion-red': 'voiceHellstorm',
+    'explosion-purple': 'voiceCorruption',
+    'ice-blue': 'voiceIce',
+    'heal-green': 'voiceHeal',
+    'holy-gold': 'voiceCure',
+    'shield-gold': 'voiceCure',
+    'wind-green': 'voiceWind',
+    'blue-lightning': 'voiceTwister',
+    'root-green': 'voiceAqua',
+    'nature-green': 'voiceWind',
+    'earth-gold': 'voiceCure',
+    'shadow-purple': 'voiceHex',
+    'dark-skull': 'voiceCurse',
+    'bone-white': 'voiceCurse',
+    'teleport-blue': 'voiceJump',
+    'teleport-purple': 'voiceJump',
+    'teleport-green': 'voiceJump',
+    'slash-red': 'voiceAttack',
+    'slash-blue': 'voiceAttack',
+    'bleed-red': 'voiceAttack',
+    'stun-gold': 'voiceAttack',
+    'buff-red': 'voiceAttack',
+    'buff-gold': 'voiceCure'
   };
   const SUMMON_SPRITES = {
     skeleton: {
@@ -260,16 +467,16 @@
       }
     },
     warrior: {
-      frameWidth: 96, frameHeight: 80, scale: 1.42, footOffset: 8, headOffset: 86,
+      frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
       animations: {
-        idle: { file: 'assets/sprites/warrior/idle.png', frames: 6, duration: 880, loop: true },
-        run: { file: 'assets/sprites/warrior/run.png', frames: 8, duration: 620, loop: true },
-        attack: { file: 'assets/sprites/warrior/attack.png', frames: 12, duration: 620 },
-        attackHeavy: { file: 'assets/sprites/warrior/attack-heavy.png', frames: 10, duration: 660 },
-        attackCombo: { file: 'assets/sprites/warrior/attack.png', frames: 12, duration: 720 },
-        cast: { file: 'assets/sprites/warrior/attack-heavy.png', frames: 10, duration: 660 },
-        hurt: { file: 'assets/sprites/warrior/hurt.png', frames: 4, duration: 320 },
-        death: { file: 'assets/sprites/warrior/death.png', frames: 11, duration: 900 }
+        idle: { file: 'assets/sprites/warrior-new/idle.png?v=warriorModelRuntime1', frames: 6, duration: 980, loop: true },
+        run: { file: 'assets/sprites/warrior-new/run.png?v=warriorModelRuntime1', frames: 7, duration: 660, loop: true },
+        attack: { file: 'assets/sprites/warrior-new/attack.png?v=warriorModelRuntime1', frames: 8, duration: 620 },
+        attackHeavy: { file: 'assets/sprites/warrior-new/attack-heavy.png?v=warriorModelRuntime1', frames: 8, duration: 700 },
+        attackCombo: { file: 'assets/sprites/warrior-new/attack-heavy.png?v=warriorModelRuntime1', frames: 8, duration: 740 },
+        cast: { file: 'assets/sprites/warrior-new/cast.png?v=warriorModelRuntime1', frames: 5, duration: 620 },
+        hurt: { file: 'assets/sprites/warrior-new/hurt.png?v=warriorModelRuntime1', frames: 2, duration: 320 },
+        death: { file: 'assets/sprites/warrior-new/death.png?v=warriorModelRuntime1', frames: 9, duration: 900 }
       }
     },
     samurai: {
@@ -296,6 +503,19 @@
         cast: { file: 'assets/sprites/midnight-slash/attack-heavy.png', frames: 6, duration: 620 },
         hurt: { file: 'assets/sprites/midnight-slash/hurt.png', frames: 4, duration: 340 },
         death: { file: 'assets/sprites/midnight-slash/death.png', frames: 6, duration: 860 }
+      }
+    },
+    'swordsman-new': {
+      frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
+      animations: {
+        idle: { file: 'assets/sprites/swordsman-new/idle.png?v=swordsmanNewRuntime3', frames: 6, duration: 980, loop: true },
+        run: { file: 'assets/sprites/swordsman-new/run.png?v=swordsmanNewRuntime3', frames: 7, duration: 660, loop: true },
+        attack: { file: 'assets/sprites/swordsman-new/attack.png?v=swordsmanNewRuntime3', frames: 8, duration: 620 },
+        attackHeavy: { file: 'assets/sprites/swordsman-new/attack-heavy.png?v=swordsmanNewRuntime3', frames: 8, duration: 700 },
+        attackCombo: { file: 'assets/sprites/swordsman-new/attack-heavy.png?v=swordsmanNewRuntime3', frames: 8, duration: 740 },
+        cast: { file: 'assets/sprites/swordsman-new/cast.png?v=swordsmanNewRuntime3', frames: 5, duration: 620 },
+        hurt: { file: 'assets/sprites/swordsman-new/hurt.png?v=swordsmanNewRuntime3', frames: 2, duration: 320 },
+        death: { file: 'assets/sprites/swordsman-new/death.png?v=swordsmanNewRuntime3', frames: 9, duration: 900 }
       }
     },
     'severed-fang': {
@@ -376,6 +596,19 @@
         death: { file: 'assets/sprites/huntress-2/death.png', frames: 10, duration: 860 }
       }
     },
+    'elf-hunter': {
+      frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
+      animations: {
+        idle: { file: 'assets/sprites/elf-hunter/idle.png?v=elfHunterRuntime1', frames: 6, duration: 980, loop: true },
+        run: { file: 'assets/sprites/elf-hunter/run.png?v=elfHunterRuntime1', frames: 7, duration: 660, loop: true },
+        attack: { file: 'assets/sprites/elf-hunter/attack.png?v=elfHunterRuntime1', frames: 8, duration: 620 },
+        attackHeavy: { file: 'assets/sprites/elf-hunter/attack.png?v=elfHunterRuntime1', frames: 8, duration: 700 },
+        attackCombo: { file: 'assets/sprites/elf-hunter/attack.png?v=elfHunterRuntime1', frames: 8, duration: 740 },
+        cast: { file: 'assets/sprites/elf-hunter/cast.png?v=elfHunterRuntime1', frames: 5, duration: 620 },
+        hurt: { file: 'assets/sprites/elf-hunter/hurt.png?v=elfHunterRuntime1', frames: 2, duration: 320 },
+        death: { file: 'assets/sprites/elf-hunter/death.png?v=elfHunterRuntime1', frames: 9, duration: 900 }
+      }
+    },
     'duskborne-demonkin': {
       frameWidth: 128, frameHeight: 128, scale: 1.05, footOffset: -5,
       animations: {
@@ -400,6 +633,58 @@
         cast: { file: 'assets/sprites/blue-witch/cast.png', frames: 5, duration: 620 },
         hurt: { file: 'assets/sprites/blue-witch/hurt.png', frames: 3, duration: 320 },
         death: { file: 'assets/sprites/blue-witch/death.png', frames: 10, duration: 900 }
+      }
+    },
+    'elf-warlock': {
+      frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
+      animations: {
+        idle: { file: 'assets/sprites/elf-warlock/idle.png', frames: 6, duration: 980, loop: true },
+        run: { file: 'assets/sprites/elf-warlock/run.png', frames: 7, duration: 660, loop: true },
+        attack: { file: 'assets/sprites/elf-warlock/attack.png', frames: 8, duration: 620 },
+        attackHeavy: { file: 'assets/sprites/elf-warlock/attack.png', frames: 8, duration: 700 },
+        attackCombo: { file: 'assets/sprites/elf-warlock/attack.png', frames: 8, duration: 740 },
+        cast: { file: 'assets/sprites/elf-warlock/cast.png', frames: 5, duration: 620 },
+        hurt: { file: 'assets/sprites/elf-warlock/hurt.png', frames: 2, duration: 320 },
+        death: { file: 'assets/sprites/elf-warlock/death.png', frames: 9, duration: 900 }
+      }
+    },
+    'shaman-new': {
+      frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
+      animations: {
+        idle: { file: 'assets/sprites/shaman-new/idle.png?v=shamanCut4', frames: 6, duration: 980, loop: true },
+        run: { file: 'assets/sprites/shaman-new/run.png?v=shamanCut4', frames: 7, duration: 660, loop: true },
+        attack: { file: 'assets/sprites/shaman-new/attack.png?v=shamanCut4', frames: 8, duration: 620 },
+        attackHeavy: { file: 'assets/sprites/shaman-new/attack-heavy.png?v=shamanCut4', frames: 8, duration: 700 },
+        attackCombo: { file: 'assets/sprites/shaman-new/attack-heavy.png?v=shamanCut4', frames: 8, duration: 740 },
+        cast: { file: 'assets/sprites/shaman-new/cast.png?v=shamanCut4', frames: 5, duration: 620 },
+        hurt: { file: 'assets/sprites/shaman-new/hurt.png?v=shamanCut4', frames: 2, duration: 320 },
+        death: { file: 'assets/sprites/shaman-new/death.png?v=shamanCut4', frames: 5, duration: 720 }
+      }
+    },
+    'mage-new': {
+      frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
+      animations: {
+        idle: { file: 'assets/sprites/mage-new/idle.png?v=mageNewRuntime1', frames: 6, duration: 980, loop: true },
+        run: { file: 'assets/sprites/mage-new/run.png?v=mageNewRuntime1', frames: 7, duration: 660, loop: true },
+        attack: { file: 'assets/sprites/mage-new/attack.png?v=mageNewRuntime1', frames: 8, duration: 620 },
+        attackHeavy: { file: 'assets/sprites/mage-new/attack-heavy.png?v=mageNewRuntime1', frames: 8, duration: 700 },
+        attackCombo: { file: 'assets/sprites/mage-new/attack-heavy.png?v=mageNewRuntime1', frames: 8, duration: 740 },
+        cast: { file: 'assets/sprites/mage-new/cast.png?v=mageNewRuntime1', frames: 5, duration: 620 },
+        hurt: { file: 'assets/sprites/mage-new/hurt.png?v=mageNewRuntime1', frames: 2, duration: 320 },
+        death: { file: 'assets/sprites/mage-new/death.png?v=mageNewRuntime1', frames: 9, duration: 900 }
+      }
+    },
+    'assassin-new': {
+      frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
+      animations: {
+        idle: { file: 'assets/sprites/assassin-new/idle.png?v=assassinRuntime1', frames: 6, duration: 980, loop: true },
+        run: { file: 'assets/sprites/assassin-new/run.png?v=assassinRuntime1', frames: 7, duration: 660, loop: true },
+        attack: { file: 'assets/sprites/assassin-new/attack.png?v=assassinRuntime1', frames: 8, duration: 620 },
+        attackHeavy: { file: 'assets/sprites/assassin-new/attack-heavy.png?v=assassinRuntime1', frames: 8, duration: 700 },
+        attackCombo: { file: 'assets/sprites/assassin-new/attack-heavy.png?v=assassinRuntime1', frames: 8, duration: 740 },
+        cast: { file: 'assets/sprites/assassin-new/cast.png?v=assassinRuntime1', frames: 5, duration: 620 },
+        hurt: { file: 'assets/sprites/assassin-new/hurt.png?v=assassinRuntime1', frames: 2, duration: 320 },
+        death: { file: 'assets/sprites/assassin-new/death.png?v=assassinRuntime1', frames: 9, duration: 900 }
       }
     },
     'battle-maid': {
@@ -478,6 +763,19 @@
         death: { file: 'assets/sprites/countess-vampire/death.png', frames: 8, duration: 860 }
       }
     },
+    'necro-new': {
+      frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
+      animations: {
+        idle: { file: 'assets/sprites/necro-new/idle.png?v=necroAi1', frames: 6, duration: 980, loop: true },
+        run: { file: 'assets/sprites/necro-new/run.png?v=necroAi1', frames: 7, duration: 660, loop: true },
+        attack: { file: 'assets/sprites/necro-new/attack.png?v=necroAi1', frames: 8, duration: 620 },
+        attackHeavy: { file: 'assets/sprites/necro-new/attack-heavy.png?v=necroAi1', frames: 8, duration: 700 },
+        attackCombo: { file: 'assets/sprites/necro-new/attack-heavy.png?v=necroAi1', frames: 8, duration: 740 },
+        cast: { file: 'assets/sprites/necro-new/cast.png?v=necroAi1', frames: 5, duration: 620 },
+        hurt: { file: 'assets/sprites/necro-new/hurt.png?v=necroAi1', frames: 2, duration: 320 },
+        death: { file: 'assets/sprites/necro-new/death.png?v=necroAi1', frames: 9, duration: 900 }
+      }
+    },
     'gothic-monk': {
       frameWidth: 82, frameHeight: 60, scale: 2.0, footOffset: 16,
       animations: {
@@ -490,20 +788,182 @@
         hurt: { file: 'assets/sprites/gothic-monk/hurt.png', frames: 2, duration: 320 },
         death: { file: 'assets/sprites/gothic-monk/death.png', frames: 2, duration: 720 }
       }
+    },
+    'red-elf-monk': {
+      frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
+      animations: {
+        idle: { file: 'assets/sprites/monk-new/idle.png?v=monkV2Green5', frames: 5, duration: 900, loop: true },
+        run: { file: 'assets/sprites/monk-new/run.png?v=monkV2Green5', frames: 8, duration: 620, loop: true },
+        attack: { file: 'assets/sprites/monk-new/attack.png?v=monkV2Green5', frames: 8, duration: 560 },
+        attackHeavy: { file: 'assets/sprites/monk-new/attack-heavy.png?v=monkV2Green5', frames: 7, duration: 620 },
+        attackCombo: { file: 'assets/sprites/monk-new/attack-heavy.png?v=monkV2Green5', frames: 7, duration: 660 },
+        cast: { file: 'assets/sprites/monk-new/cast.png?v=monkV2Green5', frames: 7, duration: 680 },
+        hurt: { file: 'assets/sprites/monk-new/hurt.png?v=monkV2Green5', frames: 3, duration: 320 },
+        death: { file: 'assets/sprites/monk-new/death.png?v=monkV2Green5', frames: 4, duration: 620 }
+      }
     }
   };
   const PROFESSION_SPRITE_PROFILES = {
     warrior: 'warrior',
-    mage: 'evil-wizard',
-    rogue: 'ninja',
+    mage: 'mage-new',
+    rogue: 'assassin-new',
     priest: 'paladin',
-    shaman: 'fire-warrior',
-    necro: 'countess-vampire',
-    warlock: 'blue-witch',
-    swordsman: 'midnight-slash',
-    hunter: 'huntress-2',
-    monk: 'gothic-monk',
-    '武僧': 'gothic-monk'
+    shaman: 'shaman-new',
+    necro: 'necro-new',
+    warlock: 'elf-warlock',
+    swordsman: 'swordsman-new',
+    hunter: 'elf-hunter',
+    monk: 'red-elf-monk',
+    '武僧': 'red-elf-monk'
+  };
+  const PROFESSION_ART = {
+    warrior: { select: 'assets/portraits/warrior-select.png', ultimate: 'assets/portraits/warrior-ultimate.png' },
+    mage: { select: 'assets/portraits/mage-select.png', ultimate: 'assets/portraits/mage-ultimate.png' },
+    rogue: { select: 'assets/portraits/rogue-select.png', ultimate: 'assets/portraits/rogue-ultimate.png' },
+    priest: { select: 'assets/portraits/priest-select.png', ultimate: 'assets/portraits/priest-ultimate.png' },
+    shaman: { select: 'assets/portraits/shaman-select.png', ultimate: 'assets/portraits/shaman-ultimate.png' },
+    necro: { select: 'assets/portraits/necro-select.png', ultimate: 'assets/portraits/necro-ultimate.png' },
+    warlock: { select: 'assets/portraits/warlock-select.png', ultimate: 'assets/portraits/warlock-ultimate.png' },
+    swordsman: { select: 'assets/portraits/swordsman-select.png', ultimate: 'assets/portraits/swordsman-ultimate.png' },
+    hunter: { select: 'assets/portraits/hunter-select.png', ultimate: 'assets/portraits/hunter-ultimate.png' },
+    monk: { select: 'assets/portraits/monk-select.png', ultimate: 'assets/portraits/monk-ultimate.png' },
+    '武僧': { select: 'assets/portraits/monk-select.png', ultimate: 'assets/portraits/monk-ultimate.png' }
+  };
+  const ULTIMATE_CUTIN_DEFAULTS = {
+    duration: 2850,
+    hitStop: 250,
+    introDelay: 250,
+    voiceDelay: 900,
+    titleDelay: 1400,
+    finalDelay: 2200,
+    shakeIntensity: 30,
+    flashAlpha: 1,
+    portraitScale: 1.12,
+    portraitEnterScale: 1.48,
+    portraitPosition: 'center center',
+    particleCount: 84,
+    crackAngle: -18,
+    shockwaveSize: 2.25
+  };
+  const ULTIMATE_CALL_OUTS = {
+    warrior: {
+      voiceKey: 'ultWarrior',
+      zh: { introLine: '我的意志，绝不会倒下?', ultimateName: '破军裂地斩！', finalLine: '站起来，如果你还能的话?' },
+      en: { introLine: 'My will shall never break!', ultimateName: 'Earthshatter Cleave!', finalLine: 'Rise, if you still can.' }
+    },
+    mage: {
+      voiceKey: 'ultMage',
+      zh: { introLine: '元素汇聚，世界将在此重塑?', ultimateName: '星界灭绝术！', finalLine: '魔力，才是真正的秩序?' },
+      en: { introLine: 'Elements converge. Reality bends to my will.', ultimateName: 'Astral Annihilation!', finalLine: 'Magic is the true order.' }
+    },
+    rogue: {
+      voiceKey: 'ultRogue',
+      zh: { introLine: '你已经暴露在我的刀锋之下?', ultimateName: '影灭瞬杀?', finalLine: '死亡，从不发出声响?' },
+      en: { introLine: "You are already within my blade's reach.", ultimateName: 'Shadow Execution!', finalLine: 'Death makes no sound.' }
+    },
+    priest: {
+      voiceKey: 'ultPriest',
+      zh: { introLine: '以圣光之名，审判降临?', ultimateName: '神圣断罪斩！', finalLine: '归于光明吧?' },
+      en: { introLine: 'By the light, I shall end this.', ultimateName: 'Divine Severance!', finalLine: 'Be purified.' }
+    },
+    shaman: {
+      voiceKey: 'ultShaman',
+      zh: { introLine: '古老的灵啊，回应我的召唤！', ultimateName: '万灵雷鸣祭！', finalLine: '这是自然的审判?' },
+      en: { introLine: 'Ancient spirits, answer my call!', ultimateName: 'Thunder Rite of Spirits!', finalLine: "This is nature's judgment." }
+    },
+    necro: {
+      voiceKey: 'ultNecro',
+      zh: { introLine: '亡者的低语，正在呼唤你?', ultimateName: '冥骨万魂葬！', finalLine: '欢迎，加入我的亡灵军团?' },
+      en: { introLine: 'The whispers of the dead call your name.', ultimateName: 'Graveborn Soul Burial!', finalLine: 'Welcome to my army of the dead.' }
+    },
+    warlock: {
+      voiceKey: 'ultWarlock',
+      zh: { introLine: '深渊已经注视着你?', ultimateName: '黑焰终末契约?', finalLine: '你的灵魂，归我了?' },
+      en: { introLine: 'The abyss has set its gaze upon you.', ultimateName: 'Darkflame Covenant!', finalLine: 'Your soul belongs to me.' }
+    },
+    swordsman: {
+      voiceKey: 'ultSwordsman',
+      zh: { introLine: '此刃，只为斩断命运?', ultimateName: '天燕一文字?', finalLine: '胜负已分?' },
+      en: { introLine: 'This blade shall sever fate itself.', ultimateName: 'Heavenly Ichi-Monji!', finalLine: 'The duel is over.' }
+    },
+    hunter: {
+      voiceKey: 'ultHunter',
+      zh: { introLine: '目标锁定，猎杀开始?', ultimateName: '星陨贯魂箭！', finalLine: '猎物，终将倒下?' },
+      en: { introLine: 'Target locked. The hunt begins.', ultimateName: 'Starfall Piercing Shot!', finalLine: 'All prey must fall.' }
+    },
+    monk: {
+      voiceKey: 'ultMonk',
+      zh: { introLine: '心若止水，拳破山河?', ultimateName: '金刚灭世拳！', finalLine: '你的执念，太弱了?' },
+      en: { introLine: 'Still mind. Unbreakable fist.', ultimateName: 'Vajra Worldbreaker Fist!', finalLine: 'Your resolve was weak.' }
+    },
+    monk_alt: {
+      voiceKey: 'ultMonk',
+      zh: { introLine: '心若止水，拳破山河?', ultimateName: '金刚灭世拳！', finalLine: '你的执念，太弱了?' },
+      en: { introLine: 'Still mind. Unbreakable fist.', ultimateName: 'Vajra Worldbreaker Fist!', finalLine: 'Your resolve was weak.' }
+    }
+  };
+  const ULTIMATE_ZH = value => decodeURIComponent(value);
+  const ULTIMATE_CALL_OUTS_SAFE = {
+    warrior: {
+      voiceKey: 'ultWarrior',
+      voiceDurationMs: 6000,
+      zh: { introLine: ULTIMATE_ZH('%E6%88%91%E7%9A%84%E6%84%8F%E5%BF%97%EF%BC%8C%E7%BB%9D%E4%B8%8D%E4%BC%9A%E5%80%92%E4%B8%8B%EF%BC%81'), ultimateName: ULTIMATE_ZH('%E7%A0%B4%E5%86%9B%E8%A3%82%E5%9C%B0%E6%96%A9%EF%BC%81'), finalLine: ULTIMATE_ZH('%E7%AB%99%E8%B5%B7%E6%9D%A5%EF%BC%8C%E5%A6%82%E6%9E%9C%E4%BD%A0%E8%BF%98%E8%83%BD%E7%9A%84%E8%AF%9D%E3%80%82') },
+      en: { introLine: 'My will shall never break!', ultimateName: 'Earthshatter Cleave!', finalLine: 'Rise, if you still can.' }
+    },
+    mage: {
+      voiceKey: 'ultMage',
+      voiceDurationMs: 9000,
+      zh: { introLine: ULTIMATE_ZH('%E5%85%83%E7%B4%A0%E6%B1%87%E8%81%9A%EF%BC%8C%E4%B8%96%E7%95%8C%E5%B0%86%E5%9C%A8%E6%AD%A4%E9%87%8D%E5%A1%91%E3%80%82'), ultimateName: ULTIMATE_ZH('%E6%98%9F%E7%95%8C%E7%81%AD%E7%BB%9D%E6%9C%AF%EF%BC%81'), finalLine: ULTIMATE_ZH('%E9%AD%94%E5%8A%9B%EF%BC%8C%E6%89%8D%E6%98%AF%E7%9C%9F%E6%AD%A3%E7%9A%84%E7%A7%A9%E5%BA%8F%E3%80%82') },
+      en: { introLine: 'Elements converge. Reality bends to my will.', ultimateName: 'Astral Annihilation!', finalLine: 'Magic is the true order.' }
+    },
+    rogue: {
+      voiceKey: 'ultRogue',
+      voiceDurationMs: 7000,
+      zh: { introLine: ULTIMATE_ZH('%E4%BD%A0%E5%B7%B2%E7%BB%8F%E6%9A%B4%E9%9C%B2%E5%9C%A8%E6%88%91%E7%9A%84%E5%88%80%E9%94%8B%E4%B9%8B%E4%B8%8B%E3%80%82'), ultimateName: ULTIMATE_ZH('%E5%BD%B1%E7%81%AD%E7%9E%AC%E6%9D%80%EF%BC%81'), finalLine: ULTIMATE_ZH('%E6%AD%BB%E4%BA%A1%EF%BC%8C%E4%BB%8E%E4%B8%8D%E5%8F%91%E5%87%BA%E5%A3%B0%E5%93%8D%E3%80%82') },
+      en: { introLine: "You are already within my blade's reach.", ultimateName: 'Shadow Execution!', finalLine: 'Death makes no sound.' }
+    },
+    priest: {
+      voiceKey: 'ultPriest',
+      voiceDurationMs: 5000,
+      zh: { introLine: ULTIMATE_ZH('%E4%BB%A5%E5%9C%A3%E5%85%89%E4%B9%8B%E5%90%8D%EF%BC%8C%E5%AE%A1%E5%88%A4%E9%99%8D%E4%B8%B4%E3%80%82'), ultimateName: ULTIMATE_ZH('%E7%A5%9E%E5%9C%A3%E6%96%AD%E7%BD%AA%E6%96%A9%EF%BC%81'), finalLine: ULTIMATE_ZH('%E5%BD%92%E4%BA%8E%E5%85%89%E6%98%8E%E5%90%A7%E3%80%82') },
+      en: { introLine: 'By the light, I shall end this.', ultimateName: 'Divine Severance!', finalLine: 'Be purified.' }
+    },
+    shaman: {
+      voiceKey: 'ultShaman',
+      voiceDurationMs: 8000,
+      zh: { introLine: ULTIMATE_ZH('%E5%8F%A4%E8%80%81%E7%9A%84%E7%81%B5%E5%95%8A%EF%BC%8C%E5%9B%9E%E5%BA%94%E6%88%91%E7%9A%84%E5%8F%AC%E5%94%A4%EF%BC%81'), ultimateName: ULTIMATE_ZH('%E4%B8%87%E7%81%B5%E9%9B%B7%E9%B8%A3%E7%A5%AD%EF%BC%81'), finalLine: ULTIMATE_ZH('%E8%BF%99%E6%98%AF%E8%87%AA%E7%84%B6%E7%9A%84%E5%AE%A1%E5%88%A4%E3%80%82') },
+      en: { introLine: 'Ancient spirits, answer my call!', ultimateName: 'Thunder Rite of Spirits!', finalLine: "This is nature's judgment." }
+    },
+    necro: {
+      voiceKey: 'ultNecro',
+      voiceDurationMs: 7000,
+      zh: { introLine: ULTIMATE_ZH('%E4%BA%A1%E8%80%85%E7%9A%84%E4%BD%8E%E8%AF%AD%EF%BC%8C%E6%AD%A3%E5%9C%A8%E5%91%BC%E5%94%A4%E4%BD%A0%E3%80%82'), ultimateName: ULTIMATE_ZH('%E5%86%A5%E9%AA%A8%E4%B8%87%E9%AD%82%E8%91%AC%EF%BC%81'), finalLine: ULTIMATE_ZH('%E6%AC%A2%E8%BF%8E%EF%BC%8C%E5%8A%A0%E5%85%A5%E6%88%91%E7%9A%84%E4%BA%A1%E7%81%B5%E5%86%9B%E5%9B%A2%E3%80%82') },
+      en: { introLine: 'The whispers of the dead call your name.', ultimateName: 'Graveborn Soul Burial!', finalLine: 'Welcome to my army of the dead.' }
+    },
+    warlock: {
+      voiceKey: 'ultWarlock',
+      voiceDurationMs: 7000,
+      zh: { introLine: ULTIMATE_ZH('%E6%B7%B1%E6%B8%8A%E5%B7%B2%E7%BB%8F%E6%B3%A8%E8%A7%86%E7%9D%80%E4%BD%A0%E3%80%82'), ultimateName: ULTIMATE_ZH('%E9%BB%91%E7%84%B0%E7%BB%88%E6%9C%AB%E5%A5%91%E7%BA%A6%EF%BC%81'), finalLine: ULTIMATE_ZH('%E4%BD%A0%E7%9A%84%E7%81%B5%E9%AD%82%EF%BC%8C%E5%BD%92%E6%88%91%E4%BA%86%E3%80%82') },
+      en: { introLine: 'The abyss has set its gaze upon you.', ultimateName: 'Darkflame Covenant!', finalLine: 'Your soul belongs to me.' }
+    },
+    swordsman: {
+      voiceKey: 'ultSwordsman',
+      voiceDurationMs: 7000,
+      zh: { introLine: ULTIMATE_ZH('%E6%AD%A4%E5%88%83%EF%BC%8C%E5%8F%AA%E4%B8%BA%E6%96%A9%E6%96%AD%E5%91%BD%E8%BF%90%E3%80%82'), ultimateName: ULTIMATE_ZH('%E5%A4%A9%E7%87%95%E4%B8%80%E6%96%87%E5%AD%97%EF%BC%81'), finalLine: ULTIMATE_ZH('%E8%83%9C%E8%B4%9F%E5%B7%B2%E5%88%86%E3%80%82') },
+      en: { introLine: 'This blade shall sever fate itself.', ultimateName: 'Heavenly Ichi-Monji!', finalLine: 'The duel is over.' }
+    },
+    hunter: {
+      voiceKey: 'ultHunter',
+      voiceDurationMs: 6000,
+      zh: { introLine: ULTIMATE_ZH('%E7%9B%AE%E6%A0%87%E9%94%81%E5%AE%9A%EF%BC%8C%E7%8C%8E%E6%9D%80%E5%BC%80%E5%A7%8B%E3%80%82'), ultimateName: ULTIMATE_ZH('%E6%98%9F%E9%99%A8%E8%B4%AF%E9%AD%82%E7%AE%AD%EF%BC%81'), finalLine: ULTIMATE_ZH('%E7%8C%8E%E7%89%A9%EF%BC%8C%E7%BB%88%E5%B0%86%E5%80%92%E4%B8%8B%E3%80%82') },
+      en: { introLine: 'Target locked. The hunt begins.', ultimateName: 'Starfall Piercing Shot!', finalLine: 'All prey must fall.' }
+    },
+    monk: {
+      voiceKey: 'ultMonk',
+      voiceDurationMs: 6000,
+      zh: { introLine: ULTIMATE_ZH('%E5%BF%83%E8%8B%A5%E6%AD%A2%E6%B0%B4%EF%BC%8C%E6%8B%B3%E7%A0%B4%E5%B1%B1%E6%B2%B3%E3%80%82'), ultimateName: ULTIMATE_ZH('%E9%87%91%E5%88%9A%E7%81%AD%E4%B8%96%E6%8B%B3%EF%BC%81'), finalLine: ULTIMATE_ZH('%E4%BD%A0%E7%9A%84%E6%89%A7%E5%BF%B5%EF%BC%8C%E5%A4%AA%E5%BC%B1%E4%BA%86%E3%80%82') },
+      en: { introLine: 'Still mind. Unbreakable fist.', ultimateName: 'Vajra Worldbreaker Fist!', finalLine: 'Your resolve was weak.' }
+    }
   };
   const WEAPON_PRESENTATION = {
     greatsword: { kind: 'greatsword', anim: 'attackHeavy', color: '#e8e4d7', accent: '#b98a44' },
@@ -514,6 +974,8 @@
     twin_blades: { kind: 'dual_blades', anim: 'attackCombo', color: '#d9dee6', accent: '#ffcf6a' },
     totem: { kind: 'totem', anim: 'cast', color: '#a7764f', accent: '#73d6a2' }
   };
+  let ultimateCutInTimer = null;
+  let ultimateCutInTimers = [];
   const state = {
     ruleset: null,
     players: [],
@@ -532,7 +994,24 @@
     selectedCardIndex: null,
     winner: null,
     dualModeCard: null,
+    turnCount: 0,
+    turnSerial: 0,
+    turnStartKey: '',
     matchOptions: { ...DEFAULT_MATCH_OPTIONS },
+    run: {
+      active: false,
+      stageIndex: 0,
+      stages: [],
+      playerLoadout: null,
+      runDeck: [],
+      rewardHistory: [],
+      pendingRewards: [],
+      battleResults: [],
+      fatigueByPlayer: {},
+      pendingOutcome: null,
+      resumeAvailable: false,
+      lastSaved: null,
+    },
     customArenaBackdropUrl: null,
     customArenaBackdropName: '',
     boardZoom: 0.7,
@@ -549,32 +1028,54 @@
     return '';
   }
 
-  function resolveAudioSource(name){
-    if(audioSourceCache[name]) return audioSourceCache[name];
+  function playableAudioSources(name){
+    if(audioSourceListCache[name]) return audioSourceListCache[name];
     const raw = AUDIO_ASSETS[name];
     const sources = Array.isArray(raw) ? raw : [raw].filter(Boolean);
-    let chosen = sources[0] || '';
+    let playableSources = sources.slice();
     try{
       const probe = document.createElement('audio');
-      const playable = sources.find(src => {
+      const filtered = sources.filter(src => {
         const mime = audioMimeFor(src);
         return !mime || !!probe.canPlayType(mime);
       });
-      if(playable) chosen = playable;
+      if(filtered.length) playableSources = filtered;
     } catch (_) {}
+    audioSourceListCache[name] = playableSources;
+    return playableSources;
+  }
+
+  function resolveAudioSource(name){
+    if(audioSourceCache[name]) return audioSourceCache[name];
+    const chosen = playableAudioSources(name)[0] || '';
     audioSourceCache[name] = chosen;
     return chosen;
   }
 
-  function playSfx(name, volume = 0.55){
+  function resolveRandomAudioSource(name){
+    const sources = playableAudioSources(name);
+    if(!sources.length) return '';
+    return sources[Math.floor(Math.random() * sources.length)];
+  }
+
+  function playSfx(name, volume = 0.55, options = {}){
     if(audioState.muted) return;
-    const src = resolveAudioSource(name);
+    const src = options.random ? resolveRandomAudioSource(name) : resolveAudioSource(name);
     if(!src) return;
     try{
       const a = new Audio(src);
       a.volume = Math.max(0, Math.min(1, volume));
       a.play().catch(() => {});
     } catch (_) {}
+  }
+
+  function playVoiceLine(name, volume = 0.72, cooldownMs = 650){
+    if(!name || audioState.muted) return;
+    const now = performance.now();
+    const last = audioState.voiceLastPlayedAt[name] || 0;
+    if(now - last < cooldownMs) return;
+    audioState.voiceLastPlayedAt[name] = now;
+    playSfx(name, volume, { random: true });
   }
 
   function playAttackSfx(attacker){
@@ -1563,6 +2064,10 @@
     return state.matchOptions?.blackHoleEnabled !== false;
   }
 
+  function isChestEnabled(){
+    return state.matchOptions?.chestEnabled !== false;
+  }
+
   function countCardsFromArray(arr){
     const out = {};
     (arr || []).forEach(cardKey => {
@@ -1584,8 +2089,648 @@
     return data?.cardLibrary?.[cardKey] || { name: cardKey };
   }
 
+  function sourceDeckEntries(kind, entity, origin, targetCount){
+    const counts = deckCountsFor(kind, entity);
+    const weighted = [];
+    Object.entries(counts || {}).forEach(([cardKey, count]) => {
+      const n = Math.max(0, Number(count || 0));
+      for(let i = 0; i < n; i += 1) weighted.push({ cardKey, origin });
+    });
+    if(!weighted.length || targetCount <= 0) return [];
+    const out = [];
+    while(out.length < targetCount){
+      shuffle(weighted.slice()).forEach(item => {
+        if(out.length < targetCount) out.push(deep(item));
+      });
+    }
+    return out;
+  }
+
+  function buildRunDeck(loadout){
+    const data = state.ruleset?.data || {};
+    const profession = data.professions?.[loadout.professionKey];
+    const weapon = data.weaponLibrary?.[loadout.weaponKey];
+    const accessory = isNoAccessory(loadout.accessoryKey) ? null : data.accessoryLibrary?.[loadout.accessoryKey];
+    const split = accessory
+      ? { profession: 10, weapon: 5, accessory: 5 }
+      : { profession: 14, weapon: 6, accessory: 0 };
+    const deck = [
+      ...sourceDeckEntries('profession', profession, 'class_skill', split.profession),
+      ...sourceDeckEntries('weapon', weapon, 'weapon_skill', split.weapon),
+      ...sourceDeckEntries('accessory', accessory, 'accessory_skill', split.accessory),
+    ];
+    return shuffle(deck).slice(0, RUN_DECK_TARGET);
+  }
+
+  function runSerializable(){
+    return {
+      active: !!state.run.active,
+      stageIndex: state.run.stageIndex || 0,
+      stages: state.run.stages || RUN_STAGES,
+      playerLoadout: state.run.playerLoadout,
+      runDeck: state.run.runDeck || [],
+      rewardHistory: state.run.rewardHistory || [],
+      pendingRewards: state.run.pendingRewards || [],
+      battleResults: state.run.battleResults || [],
+      fatigueByPlayer: state.run.fatigueByPlayer || {},
+      rulesetId: state.run.rulesetId || $('ruleset-select')?.value || STUDIO_RUNTIME.getActiveRulesetId(),
+      lastSaved: new Date().toISOString(),
+    };
+  }
+
+  function runRewardDef(rewardKey){
+    return RUN_REWARD_DEFINITIONS.find(reward => reward.key === rewardKey) || null;
+  }
+
+  function runRewardName(entry){
+    const def = runRewardDef(entry?.key);
+    return def?.title || entry?.name || entry?.cardKey || entry?.key || '奖励';
+  }
+
+  function runRewardCount(player, rewardKey){
+    if(!player?.runRewards) return 0;
+    return Number(player.runRewards[rewardKey] || 0);
+  }
+
+  function hasRunReward(player, rewardKey){
+    return runRewardCount(player, rewardKey) > 0;
+  }
+
+  function activeRunRewardEntriesForStage(stageIndex){
+    const currentStage = Number(stageIndex || 0);
+    return (state.run.rewardHistory || []).filter(entry => {
+      const def = runRewardDef(entry.key);
+      if(!def) return false;
+      if(def.scope === 'next_battle') return Number(entry.appliesToStageIndex) === currentStage;
+      return def.scope === 'persistent';
+    });
+  }
+
+  function activeRunRewardCountsForStage(stageIndex){
+    const counts = {};
+    activeRunRewardEntriesForStage(stageIndex).forEach(entry => {
+      counts[entry.key] = (counts[entry.key] || 0) + 1;
+    });
+    return counts;
+  }
+
+  function saveRunState(){
+    if(!state.run?.active) return;
+    try{
+      const data = runSerializable();
+      state.run.lastSaved = data.lastSaved;
+      localStorage.setItem(RUN_SAVE_KEY, JSON.stringify(data));
+      updateRunResumeButton();
+    } catch (_) {}
+  }
+
+  function loadRunState(){
+    try{
+      const raw = localStorage.getItem(RUN_SAVE_KEY);
+      if(!raw) return null;
+      const saved = JSON.parse(raw);
+      if(!saved || !saved.active || !saved.playerLoadout || !Array.isArray(saved.runDeck)) return null;
+      return saved;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function clearRunState(){
+    try{ localStorage.removeItem(RUN_SAVE_KEY); } catch (_) {}
+    state.run.resumeAvailable = false;
+    updateRunResumeButton();
+  }
+
+  function updateRunResumeButton(){
+    const btn = $('continue-arena-run');
+    if(!btn) return;
+    const saved = loadRunState();
+    btn.classList.toggle('hidden', !saved);
+    if(saved){
+      btn.textContent = `Continue Arena Run (${Number(saved.stageIndex || 0) + 1}/${(saved.stages || RUN_STAGES).length})`;
+    }
+  }
+
+  function hideRunPanel(){
+    const panel = $('run-panel');
+    if(panel) panel.classList.add('hidden');
+  }
+
+  function showRunPanel(html){
+    const panel = $('run-panel');
+    const body = $('run-panel-body');
+    if(!panel || !body) return;
+    body.innerHTML = html;
+    panel.classList.remove('hidden');
+  }
+
+  function runRulesetFromId(rulesetId){
+    const id = rulesetId || $('ruleset-select')?.value || STUDIO_RUNTIME.getActiveRulesetId();
+    const ruleset = STUDIO_RUNTIME.findRuleset(id) || STUDIO_RUNTIME.findRuleset(STUDIO_RUNTIME.getActiveRulesetId()) || STUDIO_RUNTIME.loadRulesets()[0];
+    if(!ruleset) throw new Error('No ruleset available for Arena Run.');
+    state.ruleset = deep(ruleset);
+    normalizeRulesetForBattle(state.ruleset);
+    syncCardLibraryFromProfessions(state.ruleset);
+    STUDIO_RUNTIME.setActiveRulesetId(ruleset.id || id);
+    return ruleset.id || id;
+  }
+
+  function selectedRunLoadout(){
+    return {
+      professionKey: $('p1-profession').value,
+      weaponKey: $('p1-weapon').value,
+      accessoryKey: $('p1-accessory').value,
+    };
+  }
+
+  function sanitizeLoadout(loadout){
+    const data = state.ruleset?.data || {};
+    return {
+      professionKey: data.professions?.[loadout?.professionKey] ? loadout.professionKey : fallbackKey(data.professions, 'warrior', 0),
+      weaponKey: data.weaponLibrary?.[loadout?.weaponKey] ? loadout.weaponKey : fallbackKey(data.weaponLibrary, 'greatsword', 0),
+      accessoryKey: isNoAccessory(loadout?.accessoryKey) || data.accessoryLibrary?.[loadout?.accessoryKey]
+        ? (loadout?.accessoryKey || NO_ACCESSORY)
+        : NO_ACCESSORY,
+    };
+  }
+
+  function fallbackKey(obj, preferred, index = 0){
+    if(obj?.[preferred]) return preferred;
+    const keys = Object.keys(obj || {});
+    return keys[index % Math.max(1, keys.length)] || preferred;
+  }
+
+  function stageEnemyLoadout(stageIndex){
+    const data = state.ruleset?.data || {};
+    const profs = ['mage', 'rogue', 'necro'];
+    const weapons = ['longbow', 'dagger', 'greatsword'];
+    const accessories = ['lincoln', 'trapbag', 'hope'];
+    return {
+      professionKey: fallbackKey(data.professions, profs[stageIndex], 0),
+      weaponKey: fallbackKey(data.weaponLibrary, weapons[stageIndex], 0),
+      accessoryKey: fallbackKey(data.accessoryLibrary, accessories[stageIndex], 0),
+    };
+  }
+
+  function resetBattleRuntime(){
+    state.board = buildBoard();
+    state.boardMap = new Map(state.board.map(t=>[key(t),t]));
+    state.traps = new Map();
+    state.mapTokens = new Map();
+    state.mapHazardTimers.forEach(timers => {
+      clearInterval(timers.interval);
+      clearTimeout(timers.timeout);
+    });
+    (state.projectileTimers || []).forEach(timers => {
+      clearInterval(timers.interval);
+      clearTimeout(timers.timeout);
+    });
+    state.mapHazardAnims = new Map();
+    state.mapHazardTimers = new Map();
+    state.projectileAnims = [];
+    state.projectileTimers = [];
+    state.summonSeq = 0;
+    state.current = 0;
+    state.pending = null;
+    state.actionResolving = null;
+    state.selectedCardIndex = null;
+    state.winner = null;
+    state.dualModeCard = null;
+    state.turnCount = 0;
+    state.turnSerial = 0;
+    state.turnStartKey = '';
+    if($('choice-panel')) $('choice-panel').innerHTML = '';
+    if($('log')) $('log').innerHTML = '';
+  }
+
+  function startArenaRun(savedRun = null){
+    hideDeckTooltip();
+    hideRunPanel();
+    clearUltimateCutIn();
+    startBattleAudio();
+    document.body.classList.add('battle-running');
+    relocateLanguageControls();
+    syncArenaScreenBackdrop();
+    const rulesetId = runRulesetFromId(savedRun?.rulesetId);
+    const loadout = sanitizeLoadout(savedRun?.playerLoadout || selectedRunLoadout());
+    state.run = Object.assign({}, state.run, {
+      active: true,
+      stageIndex: Number(savedRun?.stageIndex || 0),
+      stages: savedRun?.stages || RUN_STAGES,
+      playerLoadout: loadout,
+      runDeck: savedRun?.runDeck?.length ? deep(savedRun.runDeck) : buildRunDeck(loadout),
+      rewardHistory: savedRun?.rewardHistory || [],
+      pendingRewards: savedRun?.pendingRewards || [],
+      battleResults: savedRun?.battleResults || [],
+      fatigueByPlayer: savedRun?.fatigueByPlayer || {},
+      pendingOutcome: null,
+      rulesetId,
+    });
+    saveRunState();
+    if(state.run.pendingRewards?.length){
+      if(!state.run.pendingRewards.some(reward => reward?.key && runRewardDef(reward.key))){
+        state.run.pendingRewards = generateRunRewards();
+        saveRunState();
+      }
+      $('setup-panel').classList.add('hidden');
+      $('game-screen').classList.remove('hidden');
+      showRunRewards(state.run.pendingRewards);
+      return;
+    }
+    startRunBattle(state.run.stageIndex || 0);
+  }
+
+  function startNewArenaRun(){
+    const freshRun = {
+      active: true,
+      rulesetId: $('ruleset-select')?.value || STUDIO_RUNTIME.getActiveRulesetId(),
+      stageIndex: 0,
+      stages: RUN_STAGES,
+      playerLoadout: selectedRunLoadout(),
+      runDeck: [],
+      rewardHistory: [],
+      pendingRewards: [],
+      battleResults: [],
+      fatigueByPlayer: {},
+    };
+    clearRunState();
+    startArenaRun(freshRun);
+  }
+
+  function continueArenaRun(){
+    const saved = loadRunState();
+    if(!saved) return;
+    startArenaRun(saved);
+  }
+
+  function startRunBattle(stageIndex){
+    const stage = state.run.stages[stageIndex] || state.run.stages[0];
+    state.run.stageIndex = stageIndex;
+    state.run.pendingOutcome = null;
+    state.matchOptions = Object.assign({}, readMatchOptions(), RUN_MATCH_OPTIONS, {
+      blackHoleEnabled: $('black-hole-enabled')?.value !== 'false',
+      chestEnabled: true,
+    });
+    resetBattleRuntime();
+    const enemy = stageEnemyLoadout(stageIndex);
+    state.players = [
+      buildPlayer(1, state.run.playerLoadout.professionKey, state.run.playerLoadout.weaponKey, state.run.playerLoadout.accessoryKey, 'human', {q:-R,r:0}, {
+        deckOverride: state.run.runDeck,
+        labelOverride: 'Runner',
+      }),
+      buildPlayer(2, enemy.professionKey, enemy.weaponKey, enemy.accessoryKey, 'ai', {q:R,r:0}, {
+        hpBonus: stage.hpBonus,
+        drawOpeningBonus: stage.drawOpeningBonus,
+        drawPerTurnBonus: stage.drawPerTurnBonus,
+        labelOverride: stage.boss ? 'Boss' : stage.title,
+        boss: !!stage.boss,
+      }),
+    ];
+    applyRunRewardsToPlayer(state.players[0], stageIndex);
+    $('setup-panel').classList.add('hidden');
+    $('game-screen').classList.remove('hidden');
+    spawnBattleChest();
+    state.players.forEach(p=>drawCards(p, state.matchOptions.drawOpening + Number(p.drawOpeningBonus || 0)));
+    state.players.forEach(p=>ensureHandLimit(p));
+    log(`Arena Run ${stage.name}: ${stage.title}. Deck ${state.run.runDeck.length} cards.`);
+    saveRunState();
+    startTurn();
+    setTimeout(fitBoardZoom, 0);
+  }
+
+  function finishRunBattle(winnerId){
+    if(!state.run?.active) return;
+    const stage = state.run.stages[state.run.stageIndex] || RUN_STAGES[state.run.stageIndex] || RUN_STAGES[0];
+    const won = Number(winnerId) === 1;
+    state.run.battleResults.push({
+      stageIndex: state.run.stageIndex,
+      key: stage.key,
+      title: stage.title,
+      won,
+      turns: Number(state.turnCount || 0),
+    });
+    if(!won){
+      showRunResult(false);
+      return;
+    }
+    if(state.run.stageIndex >= state.run.stages.length - 1){
+      showRunResult(true);
+      return;
+    }
+    state.run.pendingRewards = generateRunRewards();
+    state.run.stageIndex += 1;
+    saveRunState();
+    showRunRewards(state.run.pendingRewards);
+  }
+
+  function generateRunRewards(){
+    const persistentTaken = new Set((state.run.rewardHistory || [])
+      .filter(entry => runRewardDef(entry.key)?.scope === 'persistent')
+      .map(entry => entry.key));
+    const freshPool = RUN_REWARD_DEFINITIONS.filter(reward => reward.scope !== 'persistent' || !persistentTaken.has(reward.key));
+    const pool = freshPool.length >= 3 ? freshPool : RUN_REWARD_DEFINITIONS;
+    return shuffle(pool.map(deep)).slice(0, 3);
+  }
+
+  function showRunRewards(rewards){
+    const rewardDefs = (rewards || []).map(reward => runRewardDef(reward.key) || reward).filter(reward => reward?.key);
+    const cards = rewardDefs.map(reward => `
+      <button class="run-reward-card" type="button" data-run-reward="${escapeHtml(reward.key)}">
+        <strong>${escapeHtml(reward.title || reward.name || reward.key)}</strong>
+        <span>${escapeHtml(reward.badge || reward.scope || '奖励')}</span>
+        <p>${escapeHtml(reward.desc || '')}</p>
+      </button>
+    `).join('');
+    showRunPanel(`
+      <div class="run-panel-head">
+        <span class="badge">Arena Run</span>
+        <h2>选择奖励</h2>
+      </div>
+      <p class="muted">Choose one reward before the next battle.</p>
+      <div class="run-reward-grid">${cards}</div>
+    `);
+    document.querySelectorAll('#run-panel .run-reward-card').forEach(btn => {
+      btn.onclick = () => chooseRunReward(btn.dataset.runReward);
+    });
+  }
+
+  function chooseRunReward(rewardKey){
+    if(!rewardKey || !state.run?.active) return;
+    const reward = runRewardDef(rewardKey);
+    if(!reward) return;
+    state.run.rewardHistory.push({
+      stageIndex: Math.max(0, Number(state.run.stageIndex || 1) - 1),
+      key: reward.key,
+      scope: reward.scope,
+      name: reward.title,
+      desc: reward.desc,
+      appliesToStageIndex: reward.scope === 'next_battle' ? Number(state.run.stageIndex || 0) : null,
+    });
+    state.run.pendingRewards = [];
+    hideRunPanel();
+    saveRunState();
+    startRunBattle(state.run.stageIndex);
+  }
+
+  function showRunResult(won){
+    const completed = state.run.battleResults.filter(x => x.won).length;
+    const turns = state.run.battleResults.reduce((sum, x) => sum + Number(x.turns || 0), 0);
+    const rewards = state.run.rewardHistory.map(x => `<li>${escapeHtml(runRewardName(x))}</li>`).join('') || '<li>None</li>';
+    showRunPanel(`
+      <div class="run-panel-head">
+        <span class="badge">${won ? 'Victory' : 'Defeat'}</span>
+        <h2>${won ? 'Arena Run Cleared' : 'Arena Run Failed'}</h2>
+      </div>
+      <div class="run-result-grid">
+        <div><strong>${completed}</strong><span>Stages won</span></div>
+        <div><strong>${turns}</strong><span>Total turns</span></div>
+        <div><strong>${state.run.runDeck.length}</strong><span>牌库张数</span></div>
+      </div>
+      <h3>Rewards gained</h3>
+      <ul class="run-reward-history">${rewards}</ul>
+      <div class="run-actions">
+        <button id="run-restart" type="button">Restart Arena Run</button>
+        <button id="run-back-setup" class="secondary" type="button">Back to setup</button>
+      </div>
+    `);
+    state.run.active = false;
+    clearRunState();
+    const restart = $('run-restart');
+    const back = $('run-back-setup');
+    if(restart) restart.onclick = () => startNewArenaRun();
+    if(back) back.onclick = () => {
+      hideRunPanel();
+      document.body.classList.remove('battle-running');
+      $('game-screen').classList.add('hidden');
+      $('setup-panel').classList.remove('hidden');
+    };
+  }
+
+  function maybeFinishRunBattle(){
+    if(!state.run?.active || !state.winner || state.run.pendingOutcome) return;
+    state.run.pendingOutcome = state.winner;
+    saveRunState();
+    setTimeout(() => finishRunBattle(state.run.pendingOutcome), 650);
+  }
+
   function escapeHtml(value){
     return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+  }
+
+  function activeRulesetData(){
+    if(state.ruleset?.data) return state.ruleset.data;
+    const id = $('ruleset-select')?.value || STUDIO_RUNTIME.getActiveRulesetId?.();
+    return id ? STUDIO_RUNTIME.findRuleset(id)?.data : null;
+  }
+
+  function professionArtFor(professionKey){
+    return PROFESSION_ART[professionKey] || (professionKey === '武僧' ? PROFESSION_ART.monk : null);
+  }
+
+  function professionDisplayName(professionKey, fallback = ''){
+    const prof = activeRulesetData()?.professions?.[professionKey];
+    return I18N().entity('profession', professionKey, prof?.name || fallback || professionKey);
+  }
+
+  function renderSetupPortraits(){
+    const host = $('setup-portrait-stage');
+    if(!host) return;
+    const slots = [
+      { side: 'p1', label: 'Player 1', selectId: 'p1-profession' },
+      { side: 'p2', label: 'Player 2', selectId: 'p2-profession' }
+    ];
+    host.innerHTML = slots.map(slot => {
+      const professionKey = $(slot.selectId)?.value || '';
+      const art = professionArtFor(professionKey);
+      const name = professionDisplayName(professionKey, professionKey);
+      const src = art?.select || '';
+      return `<article class="setup-portrait-card ${slot.side}">
+        <div class="setup-portrait-frame">${src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(name)}">` : ''}</div>
+        <div class="setup-portrait-label"><span>${escapeHtml(slot.label)}</span><strong>${escapeHtml(name)}</strong></div>
+      </article>`;
+    }).join('');
+  }
+
+  function renderBattlePortraits(){
+    const host = $('battle-portrait-stage');
+    if(!host) return;
+    if(!state.players.length){
+      host.innerHTML = '';
+      host.dataset.signature = '';
+      return;
+    }
+    const active = current();
+    const signature = state.players.map(player => `${player.id}:${player.professionKey || ''}`).join('|') + `:${active?.id || 0}`;
+    if(host.dataset.signature === signature) return;
+    host.dataset.signature = signature;
+    host.innerHTML = state.players.map(player => {
+      const art = professionArtFor(player.professionKey);
+      if(!art?.select) return '';
+      const side = player.id === 1 ? 'left' : 'right';
+      const activeClass = active?.id === player.id ? 'is-active' : '';
+      const name = I18N().entity('profession', player.professionKey, player.profession?.name || player.professionKey);
+      return `<figure class="battle-portrait ${side} ${activeClass}">
+        <img src="${escapeHtml(art.select)}" alt="${escapeHtml(name)}">
+      </figure>`;
+    }).join('');
+  }
+
+  function clearUltimateCutIn(){
+    const layer = $('ultimate-cutin-layer');
+    if(ultimateCutInTimer){
+      clearTimeout(ultimateCutInTimer);
+      ultimateCutInTimer = null;
+    }
+    ultimateCutInTimers.forEach(timer => clearTimeout(timer));
+    ultimateCutInTimers = [];
+    document.body.classList.remove('ultimate-hitstop');
+    if(layer){
+      layer.classList.add('hidden');
+      layer.innerHTML = '';
+    }
+  }
+
+  function queueUltimateCutIn(delay, fn){
+    const timer = setTimeout(() => {
+      ultimateCutInTimers = ultimateCutInTimers.filter(x => x !== timer);
+      fn();
+    }, delay);
+    ultimateCutInTimers.push(timer);
+  }
+
+  function ultimateCalloutFor(professionKey){
+    const data = ULTIMATE_CALL_OUTS_SAFE[professionKey] || (professionKey === 'monk' ? ULTIMATE_CALL_OUTS_SAFE.monk : null);
+    if(!data) return null;
+    const lang = String(I18N().getLang?.() || 'zh').toLowerCase().startsWith('en') ? 'en' : 'zh';
+    const lines = data[lang] || data.zh || data.en || {};
+    return { ...lines, voiceKey: data.voiceKey || '', voiceDurationMs: Number(data.voiceDurationMs || 0) };
+  }
+
+  function activateUltimateText(layer, selector){
+    const node = layer?.querySelector(selector);
+    if(!node) return;
+    node.classList.remove('is-active');
+    void node.offsetWidth;
+    node.classList.add('is-active');
+  }
+
+  function playUltimateVoice(callout){
+    if(!callout?.voiceKey) return;
+    playSfx(callout.voiceKey, 0.92);
+  }
+
+  function ultimateParticles(count, kind){
+    return Array.from({ length: count }, (_, i) => {
+      const spread = (i / Math.max(1, count - 1)) * Math.PI * 2;
+      const distance = kind === 'shard' ? 40 + Math.random() * 66 : 28 + Math.random() * 54;
+      const tx = Math.cos(spread) * distance + (Math.random() - 0.5) * 58;
+      const ty = Math.sin(spread) * distance + (Math.random() - 0.5) * 50;
+      const rot = Math.round((Math.random() * 2 - 1) * 240);
+      const delay = Math.round(220 + Math.random() * 340);
+      const dur = Math.round(1420 + Math.random() * 820);
+      const size = kind === 'shard' ? Math.round(10 + Math.random() * 22) : Math.round(4 + Math.random() * 10);
+      return `<i class="ultimate-${kind}" style="--i:${i};--tx:${tx.toFixed(1)}vw;--ty:${ty.toFixed(1)}vh;--rot:${rot}deg;--delay:${delay}ms;--dur:${dur}ms;--size:${size}px"></i>`;
+    }).join('');
+  }
+
+  function playUltimateCutIn(characterPortrait, options = {}){
+    const layer = $('ultimate-cutin-layer');
+    if(!layer || !characterPortrait?.src || ultimateCutInTimer) return;
+    const config = { ...ULTIMATE_CUTIN_DEFAULTS, ...options };
+    const side = characterPortrait.side === 'right' ? 'right' : 'left';
+    const name = characterPortrait.name || '';
+    const damage = Number(characterPortrait.damage || 0);
+    const callout = characterPortrait.callout || null;
+    const introLine = callout?.introLine || '';
+    const ultimateName = callout?.ultimateName || name;
+    const finalLine = callout?.finalLine || '';
+    const voiceDurationMs = Number(callout?.voiceDurationMs || 0);
+    const actualDuration = Math.max(config.duration, config.voiceDelay + voiceDurationMs + 650);
+    const finalDelay = Math.max(config.finalDelay, actualDuration - 2100);
+    const introTextDuration = Math.min(2600, Math.max(1900, config.titleDelay - config.introDelay + 520));
+    const titleTextDuration = Math.max(2300, actualDuration - config.titleDelay - 520);
+    const finalTextDuration = Math.max(1650, actualDuration - finalDelay - 260);
+    const particles = ultimateParticles(config.particleCount, 'particle');
+    const shards = ultimateParticles(Math.max(18, Math.round(config.particleCount * 0.75)), 'shard');
+    layer.className = `ultimate-cutin-layer side-${side}`;
+    layer.style.setProperty('--ultimate-duration', `${actualDuration}ms`);
+    layer.style.setProperty('--ultimate-intro-text-duration', `${introTextDuration}ms`);
+    layer.style.setProperty('--ultimate-title-text-duration', `${titleTextDuration}ms`);
+    layer.style.setProperty('--ultimate-final-text-duration', `${finalTextDuration}ms`);
+    layer.style.setProperty('--ultimate-shake', `${config.shakeIntensity}px`);
+    layer.style.setProperty('--ultimate-shake-a', `${config.shakeIntensity * -0.4}px`);
+    layer.style.setProperty('--ultimate-shake-b', `${config.shakeIntensity * 0.65}px`);
+    layer.style.setProperty('--ultimate-shake-c', `${config.shakeIntensity * -0.52}px`);
+    layer.style.setProperty('--ultimate-shake-d', `${config.shakeIntensity * 0.32}px`);
+    layer.style.setProperty('--ultimate-flash-alpha', String(config.flashAlpha));
+    layer.style.setProperty('--ultimate-portrait-scale', String(config.portraitScale));
+    layer.style.setProperty('--ultimate-portrait-pop-scale', String(config.portraitScale * 1.1));
+    layer.style.setProperty('--ultimate-portrait-settle-scale', String(config.portraitScale * 1.02));
+    layer.style.setProperty('--ultimate-portrait-enter-scale', String(config.portraitEnterScale));
+    layer.style.setProperty('--ultimate-portrait-position', config.portraitPosition);
+    layer.style.setProperty('--ultimate-crack-angle', `${config.crackAngle}deg`);
+    layer.style.setProperty('--ultimate-shockwave-size', String(config.shockwaveSize));
+    layer.style.setProperty('--ultimate-shockwave-end-size', String(config.shockwaveSize * 1.35));
+    layer.innerHTML = `
+      <div class="ultimate-dim"></div>
+      <div class="ultimate-crack-layer">
+        <div class="ultimate-crack">
+          <span class="ultimate-crack-core"></span>
+          <span class="ultimate-crack-edge edge-a"></span>
+          <span class="ultimate-crack-edge edge-b"></span>
+          <span class="ultimate-crack-branch branch-a"></span>
+          <span class="ultimate-crack-branch branch-b"></span>
+          <span class="ultimate-crack-branch branch-c"></span>
+          <span class="ultimate-crack-branch branch-d"></span>
+        </div>
+      </div>
+      <div class="ultimate-fx-layer">
+        <div class="ultimate-energy-bloom"></div>
+        <div class="ultimate-shockwave"></div>
+        <div class="ultimate-shockwave secondary"></div>
+        <div class="ultimate-sparks">${particles}</div>
+        <div class="ultimate-shards">${shards}</div>
+      </div>
+      <figure class="ultimate-cutin-afterimage afterimage-a">
+        <img src="${escapeHtml(characterPortrait.src)}" alt="">
+      </figure>
+      <figure class="ultimate-cutin-afterimage afterimage-b">
+        <img src="${escapeHtml(characterPortrait.src)}" alt="">
+      </figure>
+      <figure class="ultimate-cutin-art">
+        <img src="${escapeHtml(characterPortrait.src)}" alt="${escapeHtml(name)} ultimate">
+      </figure>
+      <div class="ultimate-callout ultimate-intro-line">${escapeHtml(introLine)}</div>
+      <div class="ultimate-title-burst">
+        <span class="ultimate-title-shadow">${escapeHtml(ultimateName)}</span>
+        <strong>${escapeHtml(ultimateName)}</strong>
+      </div>
+      <div class="ultimate-callout ultimate-final-line">${escapeHtml(finalLine)}</div>
+      <div class="ultimate-cutin-copy">
+        <span>${escapeHtml(name)}</span>
+        ${damage > 0 ? `<strong>${Math.round(damage)}</strong>` : ''}
+      </div>
+      <div class="ultimate-speed-layer"></div>
+      <div class="ultimate-impact-frame"></div>
+      <div class="ultimate-flash"></div>`;
+    document.body.classList.add('ultimate-hitstop');
+    setTimeout(() => document.body.classList.remove('ultimate-hitstop'), config.hitStop);
+    queueUltimateCutIn(config.introDelay, () => activateUltimateText(layer, '.ultimate-intro-line'));
+    queueUltimateCutIn(config.voiceDelay, () => playUltimateVoice(callout));
+    queueUltimateCutIn(config.titleDelay, () => activateUltimateText(layer, '.ultimate-title-burst'));
+    queueUltimateCutIn(finalDelay, () => activateUltimateText(layer, '.ultimate-final-line'));
+    ultimateCutInTimer = setTimeout(() => {
+      clearUltimateCutIn();
+    }, actualDuration);
+  }
+  function triggerUltimateCutIn(attacker, finalDamage){
+    if(!attacker || finalDamage <= 10 || ultimateCutInTimer) return;
+    const art = professionArtFor(attacker.professionKey);
+    if(!art?.ultimate) return;
+    const side = attacker.id === 2 ? 'right' : 'left';
+    const name = I18N().entity('profession', attacker.professionKey, attacker.profession?.name || attacker.professionKey);
+    playUltimateCutIn({ src: art.ultimate, name, damage: finalDamage, side, callout: ultimateCalloutFor(attacker.professionKey) });
   }
 
   function setupRulesetData(){
@@ -1599,8 +2744,11 @@
     const perTurnFallback = clampInt(defaults.drawPerTurn ?? DEFAULT_MATCH_OPTIONS.drawPerTurn, DEFAULT_MATCH_OPTIONS.drawPerTurn);
     return {
       blackHoleEnabled: $('black-hole-enabled')?.value !== 'false',
+      chestEnabled: $('chest-enabled')?.value !== 'false',
       drawOpening: clampInt($('draw-opening')?.value, openingFallback),
       drawPerTurn: clampInt($('draw-per-turn')?.value, perTurnFallback),
+      handLimit: clampInt(defaults.handLimit ?? 10, 10, 1, 99),
+      fatigueEnabled: false,
     };
   }
 
@@ -1658,19 +2806,20 @@
     return shuffle(deck);
   }
 
-  function buildPlayer(slot, professionKey, weaponKey, accessoryKey, type, startPos) {
+  function buildPlayer(slot, professionKey, weaponKey, accessoryKey, type, startPos, opts = {}) {
     const ruleset = state.ruleset;
     const profession = ruleset.data.professions[professionKey];
     const weapon = ruleset.data.weaponLibrary[weaponKey];
     const accessory = isNoAccessory(accessoryKey) ? null : ruleset.data.accessoryLibrary[accessoryKey];
+    const maxHp = Number(profession.hp || 0) + Number(opts.hpBonus || 0);
     return {
-      id: slot, type, label: `玩家 ${slot}`, color: slot===1 ? '#65a9ff' : '#ff8aa8',
+      id: slot, type, label: opts.labelOverride || `玩家 ${slot}`, color: slot===1 ? '#65a9ff' : '#ff8aa8',
       professionKey, weaponKey, accessoryKey: accessory ? accessoryKey : NO_ACCESSORY, profession, weapon, accessory,
-      maxHp: profession.hp, hp: profession.hp, moveBase: profession.move, pos: deep(startPos),
-      deck: buildDeckFor({ ruleset, professionKey, weaponKey, accessoryKey }),
+      maxHp, hp: maxHp, moveBase: profession.move, pos: deep(startPos),
+      deck: opts.deckOverride ? shuffle(deep(opts.deckOverride)) : buildDeckFor({ ruleset, professionKey, weaponKey, accessoryKey }),
       discard: [], hand: [], alive: true, block: 0,
       statuses: { burn:0, slow:0, disarm:0, sheep:0, stun:0, root:0, dot:null, dots:[] },
-      buffs: { nextBasicFlat:0, nextBasicDie:null, spellImmune:false, extraBasicCap:0, extraClassCardUses:0, swordBonusStored:false, dodgeNextDamage:0, counterDamage:'', counterUseTakenDamage:false, counterCharges:0, reactiveMoveTrigger:'', reactiveMoveMaxDistance:0, reactiveMoveCharges:0, healOnDamaged:'', healOnDamagedCharges:0, disarmAttackerOnHit:0, disarmAttackerCharges:0 },
+      buffs: { nextBasicFlat:0, nextBasicDie:null, spellImmune:false, extraBasicCap:0, extraClassCardUses:0, swordBonusStored:false, dodgeNextDamage:0, counterDamage:'', counterUseTakenDamage:false, counterCharges:0, reactiveMoveTrigger:'', reactiveMoveMaxDistance:0, reactiveMoveCharges:0, healOnDamaged:'', healOnDamagedCharges:0, disarmAttackerOnHit:0, disarmAttackerCharges:0, runShieldHalfCharges:0, runDodgeReductionCharges:0, runLowHpRecoveryAvailable:0, runExtraClassCardUsesPerTurn:0, runMovePenaltyActive:0, runMovePenaltyNext:0 },
       turn: { move:false, classOrGuardianUsed:false, weaponOrAccessoryUsed:false, basicSpent:0, blockUsed:false, movedDistance:0, autoBlockTriggered:false },
       counters: { heal_count:0 },
       negativeQueue: [],
@@ -1682,13 +2831,48 @@
       facing: slot===1 ? 1 : -1,
       moveAnim: null,
       moveAnimTimer: null,
+      drawOpeningBonus: Number(opts.drawOpeningBonus || 0),
+      drawPerTurnBonus: Number(opts.drawPerTurnBonus || 0),
+      boss: !!opts.boss,
       marked: false,
+      runRewards: {},
     };
+  }
+
+  function applyRunRewardsToPlayer(player, stageIndex){
+    if(!state.run?.active || !player || player.id !== 1) return;
+    const rewards = activeRunRewardCountsForStage(stageIndex);
+    player.runRewards = rewards;
+    if(rewards.low_hp_recover){
+      player.buffs.runLowHpRecoveryAvailable = Math.max(1, Number(rewards.low_hp_recover || 1));
+    }
+    if(rewards.next_battle_shield){
+      player.buffs.runShieldHalfCharges = 1;
+    }
+    if(rewards.risky_class_surge){
+      const hpLoss = 10 * Number(rewards.risky_class_surge || 1);
+      player.maxHp = Math.max(1, player.maxHp - hpLoss);
+      player.hp = Math.min(player.hp, player.maxHp);
+      player.buffs.runExtraClassCardUsesPerTurn = Number(rewards.risky_class_surge || 1);
+    }
+  }
+
+  function applyFatigueDamage(player){
+    if(!state.matchOptions?.fatigueEnabled || !player?.alive) return;
+    const byPlayer = state.run.fatigueByPlayer || (state.run.fatigueByPlayer = {});
+    const amount = Math.max(1, Number(byPlayer[player.id] || 1));
+    byPlayer[player.id] = amount + 1;
+    takePureDamage(player, amount);
+    log(`${player.label} suffers ${amount} fatigue damage.`);
+    finalizePlayerState(player);
+    if(state.run?.active) saveRunState();
   }
 
   function drawCards(player, n){
     for(let i=0;i<n;i++){
       if(player.deck.length===0){
+        applyFatigueDamage(player);
+        if(!player.alive) return;
         if(player.discard.length===0) return;
         player.deck = shuffle(player.discard.splice(0));
         log(`${player.label} 将弃牌堆重新洗回牌库。`);
@@ -1888,14 +3072,14 @@
   function profDefaultFx(profKey){
     const map = {
       warrior: { hit: 'slash-red', self: 'buff-red' },
-      mage: { projectile: 'blue', hit: 'blue-lightning', self: 'teleport-blue' },
+      mage: { projectile: 'mageSpell', hit: 'mageImpact', self: 'teleport-blue' },
       rogue: { hit: 'slash-red', self: 'buff-red', teleport: 'teleport-purple' },
       priest: { projectile: 'holy', hit: 'holy-gold', self: 'heal-green' },
       shaman: { projectile: 'nature', hit: 'blue-lightning', self: 'nature-green', teleport: 'teleport-green' },
       necro: { projectile: 'shadow', hit: 'dark-skull', self: 'bone-white' },
       warlock: { projectile: 'shadow', hit: 'shadow-purple', self: 'buff-red', teleport: 'teleport-purple' },
       swordsman: { hit: 'slash-blue', self: 'buff-gold', teleport: 'teleport-blue' },
-      hunter: { projectile: 'arrow', hit: 'slash-blue', self: 'wind-green', teleport: 'teleport-green' },
+      hunter: { projectile: 'hunterArrow', hit: 'slash-blue', self: 'wind-green', teleport: 'teleport-green' },
       monk: { hit: 'stun-gold', self: 'buff-gold' },
       '武僧': { hit: 'stun-gold', self: 'buff-gold' }
     };
@@ -1937,6 +3121,36 @@
     const range = Number(cfg.range || cfg.baseRange || 1);
     if(cfg.spell || range > 1) return { projectile: defaults.projectile, hit: defaults.hit || 'slash-blue', anim: cfg.spell ? 'cast' : 'attack' };
     return { hit: defaults.hit || 'slash-red', anim: 'attack' };
+  }
+
+  function voiceLineForCard(cardKey, cardDef, caster){
+    const exact = CARD_VOICE_PROFILES[cardKey] || CARD_VOICE_PROFILES[cardDef?.name];
+    if(exact) return exact;
+    const cfg = cardDef?.config || {};
+    const template = cardDef?.template || '';
+    if(template === 'teleport' || template === 'dash_hit') return 'voiceJump';
+    if(cfg.heal || cfg.healOnDamaged) return 'voiceHeal';
+    if(cfg.applyTemplate === 'dot_damage_over_time'){
+      if(caster?.professionKey === 'mage') return 'voiceBurn';
+      if(caster?.professionKey === 'warlock' || caster?.professionKey === 'necro') return 'voiceCorruption';
+      return 'voiceBurn';
+    }
+    const profile = visualProfileForCard(cardKey, cardDef, caster);
+    return FX_VOICE_PROFILES[profile?.area]
+      || FX_VOICE_PROFILES[profile?.hit]
+      || FX_VOICE_PROFILES[profile?.self]
+      || FX_VOICE_PROFILES[profile?.teleport]
+      || (profile?.projectile === 'fire' ? 'voiceFire' : '')
+      || (profile?.projectile === 'ice' ? 'voiceIce' : '')
+      || (profile?.projectile === 'holy' ? 'voiceCure' : '')
+      || (profile?.projectile === 'nature' ? 'voiceWind' : '')
+      || (profile?.projectile === 'shadow' || profile?.projectile === 'purple' || profile?.projectile === 'elfWarlock' ? 'voiceHex' : '')
+      || (profile?.projectile === 'blue' ? 'voiceTwister' : '')
+      || 'voiceAttack';
+  }
+
+  function playCardVoice(cardKey, cardDef, caster){
+    playVoiceLine(voiceLineForCard(cardKey, cardDef, caster), 0.74, 900);
   }
 
   function triggerVisualProfile(profile, caster, targetTile){
@@ -1987,6 +3201,46 @@
     return !!((tok && tok.kind === 'permanent_pillar') || hasAdjacentDangerToken(tile));
   }
 
+  function isBattleChestToken(token){
+    return token?.kind === 'battle_chest';
+  }
+
+  function isBattleChestTile(tile){
+    return isBattleChestToken(getMapToken(tile));
+  }
+
+  function battleChestCandidates(){
+    if(!state.board?.length) return [];
+    return state.board.filter(tile => {
+      const kk = key(tile);
+      if(tile.type === 'center') return false;
+      if(isSpikeDangerTile(tile)) return false;
+      if(getPlayerAt(tile)) return false;
+      if(state.mapTokens?.has(kk)) return false;
+      if(state.traps?.has(kk)) return false;
+      if(isBlockedTile(tile)) return false;
+      return true;
+    });
+  }
+
+  function spawnBattleChest(){
+    if(!isChestEnabled() || !state.mapTokens) return;
+    if(Array.from(state.mapTokens.values()).some(isBattleChestToken)) return;
+    const candidates = battleChestCandidates();
+    if(!candidates.length){
+      log('No safe tile was found for the chest.');
+      return;
+    }
+    const tile = deep(randItem(candidates));
+    state.mapTokens.set(key(tile), {
+      kind: 'battle_chest',
+      name: '宝箱',
+      pos: tile,
+      blocking: false
+    });
+    log(`一个宝箱出现在 ${tile.q},${tile.r}。`);
+  }
+
   function applyTokenControl(player, token){
     const ctl = token.controlType || '';
     const dur = Number(token.controlDuration || 1);
@@ -2022,7 +3276,7 @@
     } else {
       target.statuses.dot = dot;
     }
-    log(`${target.label} 获得 ${sourceName}：每回合 ${dot.damagePerTick}，持续 ${dot.durationTurns} 回合。`);
+    log(`${target.label} 获得 ${sourceName}：每回合 ${dot.damagePerTick}，持�?${dot.durationTurns} 回合。`);
   }
 
   function applyControlStatus(target, controlType, duration, sourceName = '控制'){
@@ -2034,7 +3288,7 @@
     else if(controlType === 'burn') target.statuses.burn = Math.max(target.statuses.burn || 0, dur);
     else if(controlType === 'stun') target.statuses.stun = Math.max(target.statuses.stun || 0, dur);
     else if(controlType === 'root') target.statuses.root = Math.max(target.statuses.root || 0, dur);
-    log(`${target.label} 受到 ${sourceName}：${controlType} ${dur} 回合。`);
+    log(`${target.label} 受到 ${sourceName}:${controlType} ${dur} 回合。`);
   }
 
   function applyStatusConfig(target, cfg = {}, sourceName = '效果'){
@@ -2164,6 +3418,10 @@
   async function triggerMapTokenOnEnter(player, pos = player.pos){
     const tilePos = pos || player.pos;
     const tok = getMapToken(tilePos);
+    if(isBattleChestToken(tok)){
+      openBattleChest(player, tilePos, false);
+      return;
+    }
     if (!tok || tok.ownerId === player.id) return;
     if (tok.kind === 'trap_once_negative'){
       playSfx('trap', 0.5);
@@ -2175,6 +3433,7 @@
       if (tok.insertCardKey) insertNegativeCardsToDeck(player, tok.insertCardKey, tok.insertCount || 1);
       applyTokenControl(player, tok);
       state.mapTokens.delete(key(tilePos));
+      grantRunSpecialTileDodge(player, tok.name || '陷阱');
       return;
     }
   }
@@ -2241,6 +3500,106 @@
     log(`${player.label} 在 ${tile.q},${tile.r} 放置了 ${token.name}。`);
   }
 
+  function chestRewardDefinitions(){
+    return [
+      { key: 'heal', title: '战地补给', dice: '2D10', desc: '立刻回复 2D10 生命，不能超过最大生命。' },
+      { key: 'basic_bonus', title: '淬刃强攻', dice: '+1D8', desc: '本场战斗中，普通攻击额外造成 1D8 伤害。' },
+      { key: 'direct_damage', title: '宝箱爆破', dice: '2D8', desc: '立刻对敌人造成 2D8 伤害，可直接结束战斗。' }
+    ];
+  }
+
+  function chooseAutoChestReward(player){
+    const enemy = enemyOf(player);
+    if(player.hp < player.maxHp * 0.5) return 'heal';
+    if(enemy && Number(enemy.hp || 0) + Number(enemy.block || 0) <= 9) return 'direct_damage';
+    return 'basic_bonus';
+  }
+
+  function showBattleChestRewards(player){
+    const buttons = chestRewardDefinitions().map(reward => `
+      <button class="run-reward-card" type="button" data-chest-reward="${escapeHtml(reward.key)}" data-player-id="${player.id}">
+        <strong>${escapeHtml(reward.title)}</strong>
+        <span>${escapeHtml(reward.dice)}</span>
+        <p>${escapeHtml(reward.desc)}</p>
+      </button>
+    `).join('');
+    showRunPanel(`
+      <div class="run-panel-head">
+        <span class="badge">宝箱</span>
+        <h2>选择奖励</h2>
+      </div>
+      <p class="muted">${escapeHtml(player.label)} 打开了宝箱，选择一个本场即时奖励。</p>
+      <div class="run-reward-grid">${buttons}</div>
+    `);
+    document.querySelectorAll('#run-panel [data-chest-reward]').forEach(btn => {
+      btn.onclick = () => chooseBattleChestReward(Number(btn.dataset.playerId), btn.dataset.chestReward);
+    });
+  }
+
+  async function chooseBattleChestReward(playerId, rewardKey){
+    const player = state.players.find(p => p.id === Number(playerId));
+    if(!player?.alive){
+      hideRunPanel();
+      return;
+    }
+    await applyBattleChestReward(player, rewardKey, true);
+    hideRunPanel();
+    render();
+  }
+
+  async function applyBattleChestReward(player, rewardKey, animated = true){
+    if(!player?.alive) return;
+    if(rewardKey === 'heal'){
+      const amount = animated ? await animatedRoll(`${player.label} 宝箱治疗`, '2d10') : loggedRoll(`${player.label} 宝箱治疗`, '2d10');
+      const before = Number(player.hp || 0);
+      player.hp = Math.min(player.maxHp, player.hp + amount);
+      triggerSkillTileFx('heal-green', player.pos);
+      log(`${player.label} 从宝箱中获得战地补给，回复 ${player.hp - before}/${amount} 生命。`);
+      return;
+    }
+    if(rewardKey === 'basic_bonus'){
+      player.buffs.runChestBasicBonusDie = '1d8';
+      triggerSkillTileFx('buff-gold', player.pos);
+      log(`${player.label} 获得淬刃强攻：本场战斗普通攻击额外 +1D8。`);
+      return;
+    }
+    if(rewardKey === 'direct_damage'){
+      const enemy = enemyOf(player);
+      if(!enemy) return;
+      const dmg = animated ? await animatedRoll(`${player.label} 宝箱爆破`, '2d8') : loggedRoll(`${player.label} 宝箱爆破`, '2d8');
+      triggerSkillTileFx('holy-gold', enemy.pos);
+      const result = dealDamage(player, enemy, dmg, { sourceName: '宝箱爆破', spell: true, anim: 'cast' });
+      if(enemy.hp <= 0){
+        finalizePlayerState(enemy);
+        state.winner = player.id;
+        setHint(`${player.label} 获胜！`);
+      }
+      log(`${player.label} 触发宝箱爆破，对 ${enemy.label} 掷出 ${dmg} 点伤害，实际造成 ${result.finalDamage} 点。`);
+    }
+  }
+
+  async function openBattleChest(player, tilePos, animated = true){
+    const tileKey = key(tilePos);
+    const tok = state.mapTokens?.get(tileKey);
+    if(!isBattleChestToken(tok) || !player?.alive) return false;
+    state.mapTokens.delete(tileKey);
+    playSfx('chestOpen', 0.58);
+    triggerSkillTileFx('buff-gold', tilePos);
+    log(`${player.label} 打开了宝箱。`);
+    grantRunSpecialTileDodge(player, '宝箱');
+    if(player.type === 'ai'){
+      const rewardKey = chooseAutoChestReward(player);
+      const reward = chestRewardDefinitions().find(x => x.key === rewardKey);
+      log(`${player.label} 自动选择宝箱奖励：${reward?.title || '未知奖励'}。`);
+      await applyBattleChestReward(player, rewardKey, animated);
+      render();
+    } else {
+      showBattleChestRewards(player);
+      setHint('宝箱已打开，请选择一个奖励。');
+    }
+    return true;
+  }
+
   function getActiveBasicAttack(p){
     const base = deep(p.weapon.basic || {});
     const trans = p.buffs.basicTransform;
@@ -2259,6 +3618,7 @@
   function basicProjectileFor(player){
     const presentation = weaponPresentation(player);
     const basic = getActiveBasicAttack(player);
+    if(player?.professionKey === 'mage' && presentation.kind === 'wand') return 'mageBasic';
     if(presentation.kind === 'wand') return 'fire';
     if(presentation.kind === 'bow' || Number(basic?.range || 1) > 1) return 'arrow';
     return '';
@@ -2267,7 +3627,7 @@
   function triggerBasicAttackVisual(player, target){
     const projectile = basicProjectileFor(player);
     if(!projectile || !player?.pos || !target?.pos) return;
-    triggerSkillProjectileFx(projectile, player.pos, target.pos);
+    triggerSkillProjectileFx(projectile, player.pos, target.pos, projectile === 'mageBasic' ? 'mageImpact' : '');
   }
 
   function hasSpriteAnim(player, anim){
@@ -2564,6 +3924,7 @@ function movePlayerTo(player, tile, opts = {}){
   const from = deep(player.pos);
   const to = deep(tile);
   if(key(from) === key(to)) return Promise.resolve(false);
+  playVoiceLine('voiceJump', 0.58, 900);
   setFacingToward(player, to, from);
   clearUnitMoveAnim(player);
   if(opts.instant){
@@ -2703,15 +4064,53 @@ function applyHealOnDamaged(player, finalDamage){
   const heal = rollOrValue(`${player.label} 受伤后自疗`, player.buffs.healOnDamaged);
   if (heal > 0) {
     player.hp = Math.min(player.maxHp, player.hp + heal);
+    playVoiceLine('voiceHealed', 0.68, 900);
     log(`${player.label} 受伤后立即恢复 ${heal} 生命。`);
   }
 }
 
+function applyRunIncomingDamageModifiers(target, rawDamage, sourceName){
+  let damage = Math.max(0, Number(rawDamage || 0));
+  if(!target?.buffs || damage <= 0) return damage;
+  if(Number(target.buffs.runShieldHalfCharges || 0) > 0){
+    target.buffs.runShieldHalfCharges = 0;
+    const reduced = Math.max(0, Math.ceil(damage / 2));
+    log(`${target.label} 的开场护盾将 ${sourceName || '伤害'} �?${damage} 降至 ${reduced}。`);
+    damage = reduced;
+  }
+  if(damage > 0 && Number(target.buffs.runDodgeReductionCharges || 0) > 0){
+    target.buffs.runDodgeReductionCharges = 0;
+    const reduced = Math.max(0, damage - 3);
+    log(`${target.label} 的危险步伐将 ${sourceName || '伤害'} �?${damage} 降至 ${reduced}。`);
+    damage = reduced;
+  }
+  return damage;
+}
+
+function maybeTriggerRunLowHpRecovery(player){
+  if(!player?.alive || !player.buffs || Number(player.buffs.runLowHpRecoveryAvailable || 0) <= 0) return;
+  if(player.hp <= 0 || player.hp > player.maxHp * 0.3) return;
+  player.buffs.runLowHpRecoveryAvailable = Math.max(0, Number(player.buffs.runLowHpRecoveryAvailable || 0) - 1);
+  const heal = rollOrValue(`${player.label} 绝境回复`, '1d10');
+  player.hp = Math.min(player.maxHp, player.hp + heal);
+  triggerSkillTileFx('heal-green', player.pos);
+  log(`${player.label} 的绝境回复恢�?${heal} 生命。`);
+}
+
+function grantRunSpecialTileDodge(player, reason){
+  if(!player?.alive || !hasRunReward(player, 'special_tile_dodge')) return;
+  if(Number(player.buffs.runDodgeReductionCharges || 0) > 0) return;
+  player.buffs.runDodgeReductionCharges = 1;
+  triggerSkillTileFx('buff-gold', player.pos);
+  log(`${player.label} �?${reason || '特殊地格'} 获得危险步伐：下次受到伤�?-3。`);
+}
+
 function takePureDamage(player, rawDamage){
-  const damage = Math.max(0, Number(rawDamage || 0));
+  const damage = applyRunIncomingDamageModifiers(player, rawDamage, '伤害');
   if(!player || !player.alive || damage <= 0) return 0;
   playSfx('meleeHit', 0.36);
   player.hp -= damage;
+  maybeTriggerRunLowHpRecovery(player);
   applyDamageTakenTriggeredPassives(player, damage, '受伤');
   applyHealOnDamaged(player, damage);
   if(player.hp <= 0) finalizePlayerState(player);
@@ -2739,11 +4138,14 @@ function dealDamage(attacker, target, rawDamage, meta){
     return { rawDamage: damage, blocked: 0, finalDamage: 0, dodged: true };
   }
 
+  damage = applyRunIncomingDamageModifiers(target, damage, sourceName);
   const blocked = Math.min(Number(target.block || 0), damage);
   const finalDamage = Math.max(0, damage - blocked);
   target.block = Math.max(0, Number(target.block || 0) - damage);
   target.hp -= finalDamage;
+  if(finalDamage > 0) maybeTriggerRunLowHpRecovery(target);
   if(damage > 0) playHitSfx(attacker, attackAnim === 'cast' || info.spell === true);
+  if(attacker && finalDamage > 10) triggerUltimateCutIn(attacker, finalDamage);
 
   let healOnDamagedApplied = false;
   if (allowReactions && finalDamage > 0) {
@@ -2776,6 +4178,7 @@ function dealDamage(attacker, target, rawDamage, meta){
   if(!healOnDamagedApplied) applyHealOnDamaged(target, finalDamage);
 
   if(finalDamage > 0) {
+    playVoiceLine('voiceDamaged', 0.68, 850);
     const targetAnim = target.hp <= 0 ? 'death' : 'hurt';
     const targetDuration = target.hp <= 0 ? spriteAnimDuration(target, 'death', 900) : spriteAnimDuration(target, 'hurt', 460);
     const impactDelay = attacker && spriteProfileKeyFor(attacker) === 'paladin' && attackAnim !== 'cast'
@@ -2804,10 +4207,10 @@ async function applyRewardList(player, rewards, labelPrefix){
       } else if (reward.type === 'buff_basic' || reward.type === 'buffBasic') {
         const v = Number(reward.value || 0);
         player.buffs.nextBasicFlat = (player.buffs.nextBasicFlat || 0) + v;
-        log(`${player.label} 的下次普攻 +${v}。`);
+      log(`${player.label} 的下次普攻 +${v}。`);
       } else if (reward.type === 'bonus_die' || reward.type === 'bonusDie') {
         player.buffs.nextBasicDie = reward.value;
-        log(`${player.label} 获得额外骰 ${reward.value}。`);
+        log(`${player.label} 获得额外�?${reward.value}。`);
       } else if (reward.type === 'draw') {
         drawCards(player, Number(reward.value || 1));
       } else if (reward.type === 'extra_basic_cap') {
@@ -2818,7 +4221,7 @@ async function applyRewardList(player, rewards, labelPrefix){
           player.turn.basicSpent = Math.max(0, player.turn.basicSpent - refunded);
           log(`${player.label} 立即返还 ${refunded} 次普通攻击次数。`);
         } else {
-          log(`${player.label} 本回合额外获得 ${v} 次普攻容量。`);
+          log(`${player.label} 本回合额外获�?${v} 次普攻容量。`);
         }
       } else if (reward.type === 'spell_immune') {
         player.buffs.spellImmune = true;
@@ -2829,7 +4232,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       } else if (reward.type === 'extra_class_card_use') {
         const v = Number(reward.value || 1);
         player.buffs.extraClassCardUses = (player.buffs.extraClassCardUses || 0) + v;
-        log(`${player.label} 本回合额外获得 ${v} 次职业卡使用次数。`);
+        log(`${player.label} 本回合额外获�?${v} 次职业卡使用次数。`);
       } else if (reward.type === 'card') {
         grantCardToHand(player, reward.cardKey || reward.value, reward.origin);
       }
@@ -2886,7 +4289,7 @@ async function applyRewardList(player, rewards, labelPrefix){
             player.turn.passiveOnceTriggered = player.turn.passiveOnceTriggered || {};
             player.turn.passiveOnceTriggered[passiveKey] = true;
           }
-          log(`${player.label} 的被动 ${passive.name || ''} 在造成伤害后触发多重增益。`);
+          log(`${player.label} 的被�?${passive.name || ''} 在造成伤害后触发多重增益。`);
         }
       }
     }
@@ -2927,7 +4330,7 @@ async function applyRewardList(player, rewards, labelPrefix){
 
 
   function handLimit(){
-    return Number(state.ruleset?.data?.ruleDefaults?.handLimit || 10);
+    return Number(state.matchOptions?.handLimit || state.ruleset?.data?.ruleDefaults?.handLimit || 10);
   }
 
   function ensureHandLimit(player){
@@ -2971,6 +4374,11 @@ async function applyRewardList(player, rewards, labelPrefix){
 
   function resetTurnState(player){
     player.turn = { move:false, classOrGuardianUsed:false, weaponOrAccessoryUsed:false, basicSpent:0, blockUsed:false, movedDistance:0, autoBlockTriggered:false, passiveOnceTriggered:{} };
+    if(player?.buffs){
+      player.buffs.extraClassCardUses = Number(player.buffs.runExtraClassCardUsesPerTurn || 0);
+      player.buffs.runMovePenaltyActive = Number(player.buffs.runMovePenaltyNext || 0);
+      player.buffs.runMovePenaltyNext = 0;
+    }
   }
 
 
@@ -3046,10 +4454,18 @@ async function applyRewardList(player, rewards, labelPrefix){
     state.selectedCardIndex = null;
     state.winner = null;
     state.dualModeCard = null;
+    state.turnCount = 0;
+    state.turnSerial = 0;
+    state.turnStartKey = '';
+    state.run.active = false;
+    state.run.pendingOutcome = null;
+    hideRunPanel();
+    clearUltimateCutIn();
     $('setup-panel').classList.add('hidden');
     $('game-screen').classList.remove('hidden');
     $('log').innerHTML = '';
-    state.players.forEach(p=>drawCards(p, state.matchOptions.drawOpening));
+    spawnBattleChest();
+    state.players.forEach(p=>drawCards(p, state.matchOptions.drawOpening + Number(p.drawOpeningBonus || 0)));
     state.players.forEach(p=>ensureHandLimit(p));
     log(isBlackHoleEnabled() ? '对局开始。黑洞每回合将所有单位向中心牵引 1 格。' : '对局开始。黑洞已关闭。');
     startTurn();
@@ -3073,6 +4489,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(state.winner) return;
     const p = current();
     if(!p.alive) return nextTurn();
+    if(p.id === 1) state.turnCount = Number(state.turnCount || 0) + 1;
     resetTurnState(p);
     p.block = 0;
     if(isBlackHoleEnabled()) await applyBlackHolePull();
@@ -3099,7 +4516,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       setTimeout(nextTurn, 450);
       return;
     }
-    drawCards(p, state.matchOptions.drawPerTurn);
+    drawCards(p, state.matchOptions.drawPerTurn + Number(p.drawPerTurnBonus || 0));
     if(ensureHandLimit(p)){ render(); return; }
     setMode('待机');
     setHint('选择移动、普通攻击，或打出一张牌。');
@@ -3114,6 +4531,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       else prev.buffs.basicTransform = null;
     }
     state.current = (state.current + 1) % state.players.length;
+    state.turnSerial = Number(state.turnSerial || 0) + 1;
     startTurn();
   }
 
@@ -3121,6 +4539,10 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(state.winner) return;
     const p = current();
     if(!p.alive) return nextTurn();
+    const turnKey = `${Number(state.turnSerial || 0)}:${p.id}`;
+    if(state.turnStartKey === turnKey) return;
+    state.turnStartKey = turnKey;
+    if(p.id === 1) state.turnCount = Number(state.turnCount || 0) + 1;
     resetTurnState(p);
     p.block = 0;
     if(isBlackHoleEnabled()) await applyBlackHolePull();
@@ -3174,7 +4596,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       setTimeout(nextTurn, 450);
       return;
     }
-    drawCards(p, state.matchOptions.drawPerTurn);
+    drawCards(p, state.matchOptions.drawPerTurn + Number(p.drawPerTurnBonus || 0));
     if(ensureHandLimit(p)){
       render();
       return;
@@ -3206,6 +4628,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       takePureDamage(player, dmg);
       log(`${player.label} 触碰飞行方尖碑危险区域，受到 ${dmg} 伤害。`);
       if(!player.alive) return;
+      grantRunSpecialTileDodge(player, 'spike hazard');
     }
     if(isTokenDangerTile(tilePos)){
       const tok = getMapToken(tilePos) || neighbors(tilePos).map(getMapToken).find(Boolean);
@@ -3213,8 +4636,9 @@ async function applyRewardList(player, rewards, labelPrefix){
       playSfx('trap', 0.55);
       const dmg = loggedRoll(`${player.label} ${tok?.name || '危险区'}伤害`, resolvePlayerNotation(player, expr));
       takePureDamage(player, dmg);
-      log(`${player.label} 触碰 ${tok?.name || '危险区'}，受到 ${dmg} 伤害。`);
+      log(`${player.label} touched ${tok?.name || 'hazard'} and took ${dmg} damage.`);
       if(!player.alive) return;
+      grantRunSpecialTileDodge(player, tok?.name || 'hazard');
     }
     if(isBlackHoleEnabled() && t.type==='center'){
       playSfx('trap', 0.55);
@@ -3222,14 +4646,16 @@ async function applyRewardList(player, rewards, labelPrefix){
       takePureDamage(player, dmg);
       log(`${player.label} 被黑洞中心撕扯，受到 ${dmg} 伤害。`);
       if(!player.alive) return;
+      grantRunSpecialTileDodge(player, '黑洞中心');
     }
     const trap = state.traps.get(tileKey);
     if(trap && trap.ownerId !== player.id){
       playSfx('trap', 0.55);
       const dmg = loggedRoll(`${player.label} 陷阱伤害`, '2d6'); takePureDamage(player, dmg); player.statuses.slow = 1;
-      log(`${player.label} 触发陷阱，受到 ${dmg} 伤害并减速。`);
+      log(`${player.label} triggered a trap and took ${dmg} damage.`);
       state.traps.delete(tileKey);
       if(!player.alive) return;
+      grantRunSpecialTileDodge(player, '陷阱');
     }
     triggerMapTokenOnEnter(player, tilePos);
     if(player.hp<=0){ player.hp=0; player.alive=false; state.winner = enemyOf(player)?.id || 1; }
@@ -3256,6 +4682,10 @@ async function applyRewardList(player, rewards, labelPrefix){
   async function triggerMapTokenOnEnterAnimated(player, pos = player.pos){
     const tilePos = pos || player.pos;
     const tok = getMapToken(tilePos);
+    if(isBattleChestToken(tok)){
+      await openBattleChest(player, tilePos, true);
+      return;
+    }
     if(!tok || tok.ownerId === player.id) return;
     if(tok.kind !== 'trap_once_negative') return;
     playSfx('trap', 0.5);
@@ -3268,6 +4698,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(tok.insertCardKey) insertNegativeCardsToDeck(player, tok.insertCardKey, tok.insertCount || 1);
     applyTokenControl(player, tok);
     state.mapTokens.delete(key(tilePos));
+    grantRunSpecialTileDodge(player, tok.name || 'Trap');
   }
 
   async function processMapTokensAtTurnStartAnimated(player){
@@ -3325,6 +4756,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       takePureDamage(player, dmg);
       log(`${player.label} takes ${dmg} from the spike field.`);
       if(!player.alive) return;
+      grantRunSpecialTileDodge(player, 'spike field');
     }
     if(isTokenDangerTile(tilePos)){
       const tok = getMapToken(tilePos) || neighbors(tilePos).map(getMapToken).find(Boolean);
@@ -3335,6 +4767,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       takePureDamage(player, dmg);
       log(`${player.label} takes ${dmg} from ${sourceName}.`);
       if(!player.alive) return;
+      grantRunSpecialTileDodge(player, sourceName);
     }
     if(isBlackHoleEnabled() && tile.type === 'center'){
       playSfx('trap', 0.55);
@@ -3342,6 +4775,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       takePureDamage(player, dmg);
       log(`${player.label} takes ${dmg} from the black hole center.`);
       if(!player.alive) return;
+      grantRunSpecialTileDodge(player, 'black hole center');
     }
     const trap = state.traps.get(tileKey);
     if(trap && trap.ownerId !== player.id){
@@ -3352,6 +4786,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       log(`${player.label} triggers a trap for ${dmg} and becomes slowed.`);
       state.traps.delete(tileKey);
       if(!player.alive) return;
+      grantRunSpecialTileDodge(player, 'trap');
     }
     await triggerMapTokenOnEnterAnimated(player, tilePos);
     if(player.hp <= 0){ player.hp = 0; player.alive = false; state.winner = enemyOf(player)?.id || 1; }
@@ -3424,6 +4859,8 @@ async function applyRewardList(player, rewards, labelPrefix){
 
   function actionBucketFor(card, cardDef){
     const origin = cardActionSource(card, cardDef);
+    if(origin === 'weapon_skill' || origin === 'accessory_skill') return 'weapon_or_accessory';
+    if(origin === 'class_skill' || origin === 'guardian_skill') return 'class_or_guardian';
     if(origin==='职业技能' || origin==='守护神技能') return 'class_or_guardian';
     if(origin==='武器技能' || origin==='饰品技能') return 'weapon_or_accessory';
     return 'class_or_guardian';
@@ -3434,7 +4871,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     const bucket = actionBucketFor(handItem, cardDef);
     if(bucket==='class_or_guardian' && p.turn.classOrGuardianUsed){
       const extraClassUses = Number(p.buffs?.extraClassCardUses || 0);
-      if(!(source === '职业技能' && extraClassUses > 0)) return false;
+      if(!((source === '\u804c\u4e1a\u6280\u80fd' || source === 'class_skill') && extraClassUses > 0)) return false;
     }
     if(bucket==='weapon_or_accessory' && p.turn.weaponOrAccessoryUsed) return false;
     return true;
@@ -3457,7 +4894,8 @@ async function applyRewardList(player, rewards, labelPrefix){
   }
 
   function movementStepLimit(player){
-    return player.statuses.slow>0 ? Math.ceil(player.moveBase/2) : player.moveBase;
+    const base = player.statuses.slow>0 ? Math.ceil(player.moveBase/2) : player.moveBase;
+    return Math.max(0, base - Number(player.buffs?.runMovePenaltyActive || 0));
   }
 
   function currentMovePath(){
@@ -3626,13 +5064,27 @@ async function applyRewardList(player, rewards, labelPrefix){
       finishAfterAction();
       return;
     }
+    playVoiceLine('voiceAttack', 0.72, 800);
     let dmg = await showDice(`${b.name || p.weapon.name + ' 普攻'}`, resolvePlayerNotation(p, b.damage));
     dmg += Number(p.buffs.nextBasicFlat || 0);
     if(p.buffs.nextBasicDie) dmg += await showDice('额外骰', resolvePlayerNotation(p, p.buffs.nextBasicDie));
+    if(p.buffs.runChestBasicBonusDie) dmg += await showDice('宝箱普攻追加', resolvePlayerNotation(p, p.buffs.runChestBasicBonusDie));
+    if(hasRunReward(p, 'basic_crit')){
+      const critCheck = await showDice('普攻暴击检', '1d6');
+      if(critCheck >= 6){
+        const critDamage = await showDice('普攻暴击', '1d8');
+        dmg += critDamage;
+        log(`${p.label} 的普攻暴击追�?${critDamage} 伤害。`);
+      }
+    }
     if(p.professionKey==='rogue' && isControlled(target)) dmg += await showDice('盗贼被动', '1d4');
     triggerBasicAttackVisual(p, target);
     const damageResult = dealDamage(p, target, dmg, { sourceName: b.name || '普通攻击', anim: weaponAttackAnim(p), spell: weaponPresentation(p).kind === 'wand' });
     if(!damageResult.dodged) applySourceOnHitEffects(p, target, b, b.name || '普通攻击', { includeBasicPassive: true });
+    if(!damageResult.dodged && hasRunReward(p, 'melee_pressure') && target?.alive){
+      target.buffs.runMovePenaltyNext = Math.max(Number(target.buffs.runMovePenaltyNext || 0), 1);
+      log(`${p.label} 的近战压制使 ${target.label} 下回合移�?-1。`);
+    }
     p.turn.basicSpent += 1;
     p.buffs.nextBasicFlat = 0; p.buffs.nextBasicDie = null; p.buffs.swordBonusStored = false;
     if(p.buffs.basicTransform && p.buffs.basicTransform.consumeOn === 'next_basic_attack') p.buffs.basicTransform = null;
@@ -3704,7 +5156,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     const source = cardActionSource(handItem, cardDef);
     const bucket = actionBucketFor(handItem, cardDef);
     if(bucket==='class_or_guardian'){
-      if(p.turn.classOrGuardianUsed && source === '职业技能' && (p.buffs.extraClassCardUses || 0) > 0){
+      if(p.turn.classOrGuardianUsed && (source === '\u804c\u4e1a\u6280\u80fd' || source === 'class_skill') && (p.buffs.extraClassCardUses || 0) > 0){
         p.buffs.extraClassCardUses = Math.max(0, Number(p.buffs.extraClassCardUses || 0) - 1);
       } else {
         p.turn.classOrGuardianUsed = true;
@@ -3719,6 +5171,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     consumeBucket(p, handItem, cardDef);
     p.hand.splice(index,1);
     p.discard.push(handItem);
+    playCardVoice(handItem.cardKey, cardDef, p);
 
     if(cardDef.template==='summon_token_into_self_deck'){
       const anim = cardActionAnim(p, handItem, cardDef);
@@ -3741,6 +5194,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       if(cardDef.config.heal){
         const heal = typeof cardDef.config.heal==='string' && cardDef.config.heal.includes('d') ? await showDice('治疗', cardDef.config.heal) : Number(cardDef.config.heal||0);
         p.hp = Math.min(p.maxHp, p.hp + heal);
+        if(heal > 0) playVoiceLine('voiceHealed', 0.68, 900);
         if(p.professionKey==='priest'){ p.counters.heal_count += 1; if(p.counters.heal_count % 4 === 0){ const bonus = await showDice('牧师被动', '1d6'); p.hp = Math.min(p.maxHp, p.hp + bonus); log(`${p.label} 的牧师被动额外恢复 ${bonus}。`); } }
       }
       if(cardDef.config.block){ const block = typeof cardDef.config.block==='string' && cardDef.config.block.includes('d') ? await showDice('格挡', cardDef.config.block) : Number(cardDef.config.block||0); p.block += block; }
@@ -3768,7 +5222,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         p.buffs.disarmAttackerCharges = (p.buffs.disarmAttackerCharges||0) + 1;
       }
       if(cardDef.name.includes('法术无效') || cardDef.config.consumeOn==='next_spell_hit') p.buffs.spellImmune = true;
-      log(`${p.label} 使用了 ${cardDef.name}，当前生命 ${p.hp}，格挡 ${p.block}。`);
+      log(`${p.label} 使用�?${cardDef.name}，当前生�?${p.hp}，格�?${p.block}。`);
       finishAfterAction();
       return;
     }
@@ -3779,7 +5233,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       triggerSelfCardVisual(handItem.cardKey, cardDef, p);
       await applyRewardList(p, cardDef.config.rewardList || [], cardDef.name);
       if(cardDef.config.consumeOn === 'next_spell_hit') p.buffs.spellImmune = true;
-      log(`${p.label} 使用了 ${cardDef.name}，直接获得多个增益。当前生命 ${p.hp}，格挡 ${p.block}。`);
+      log(`${p.label} 使用�?${cardDef.name}，直接获得多个增益。当前生�?${p.hp}，格�?${p.block}。`);
       finishAfterAction();
       return;
     }
@@ -3915,7 +5369,7 @@ async function applyRewardList(player, rewards, labelPrefix){
           await applyRewardList(p, cardDef.config.rewardList || [], cardDef.name);
           log(`${cardDef.name} 达到阈值 ${threshold}，获得后续增益。`);
         } else {
-          log(`${cardDef.name} 未达到阈值 ${threshold}，不获得后续增益。`);
+          log(`${cardDef.name} 未达到阈�?${threshold}，不获得后续增益。`);
         }
       }
       if(cardDef.template==='damage_roll_grant_card'){
@@ -3925,9 +5379,9 @@ async function applyRewardList(player, rewards, labelPrefix){
           if(cardDef.config.refundBucket === 'class_or_guardian') p.turn.classOrGuardianUsed = false;
           if(cardDef.config.refundBucket === 'weapon_or_accessory') p.turn.weaponOrAccessoryUsed = false;
           if(cardDef.config.refundBucket === 'basic_attack') p.turn.basicSpent = Math.max(0, (p.turn.basicSpent || 0) - 1);
-          log(`${p.label} 的 ${cardDef.name} 触发成功，可以再次行动。`);
+          log(`${p.label} �?${cardDef.name} 触发成功，可以再次行动。`);
         } else {
-          log(`${p.label} 的 ${cardDef.name} 未触发追加效果。`);
+          log(`${p.label} �?${cardDef.name} 未触发追加效果。`);
         }
       }
       await applyDamageTriggeredPassives(p, damageResult.finalDamage, target, cardDef.name);
@@ -3950,7 +5404,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         let dmg = await showDice(cardDef.name, resolvePlayerNotation(p, cardDef.config.damage));
         const damageResult = dealDamage(p, target, dmg, { sourceName: cardDef.name, anim: cardAnim, spell: !!cardDef.config?.spell });
         if(!damageResult.dodged) applySourceOnHitEffects(p, target, cardDef.config || {}, cardDef.name);
-        log(`${p.label} 的 ${cardDef.name} 命中 ${target.label}，原始伤害 ${dmg}，实际伤害 ${damageResult.finalDamage}，目标当前生命 ${target.hp}，格挡 ${target.block}。`);
+        log(`${p.label} �?${cardDef.name} 命中 ${target.label}，原始伤�?${dmg}，实际伤�?${damageResult.finalDamage}，目标当前生�?${target.hp}，格�?${target.block}。`);
       }
       log(`${p.label} 使用 ${cardDef.name} 对范围内目标结算完成。`);
       finishAfterAction();
@@ -4008,7 +5462,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       const blockPct = Math.max(0, Math.min(100, p.block*10));
       const accessoryName = p.accessory ? I18N().entity('accessory', p.accessoryKey, p.accessory.name) : I18N().t('no_accessory','无饰品');
       return `<div class="player-box${p.id===active.id?' active':''}">
-        <div class="player-title"><strong>${p.label}</strong><span>${I18N().entity('profession', p.professionKey, p.profession.name)} / ${I18N().entity('weapon', p.weaponKey, p.weapon.name)} / ${accessoryName}</span></div>
+        <div class="player-title"><strong>${p.label}${p.boss ? ' [BOSS]' : ''}</strong><span>${I18N().entity('profession', p.professionKey, p.profession.name)} / ${I18N().entity('weapon', p.weaponKey, p.weapon.name)} / ${accessoryName}</span></div>
         <div class="hud-metrics">
           <span>${I18N().t('hp','生命')} ${p.hp}/${p.maxHp}</span>
           <span>${I18N().t('block','格挡')} ${p.block}</span>
@@ -4054,6 +5508,11 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.buffs.disarmAttackerCharges && p.buffs.disarmAttackerOnHit) out.push(`<span class="status-chip">受击缴械 ${p.buffs.disarmAttackerOnHit}</span>`);
     if(p.buffs.nextBasicFlat) out.push(`<span class="status-chip">下次普攻 +${p.buffs.nextBasicFlat}</span>`);
     if(p.buffs.nextBasicDie) out.push(`<span class="status-chip">下次普攻 +${p.buffs.nextBasicDie}</span>`);
+    if(p.buffs.runChestBasicBonusDie) out.push(`<span class="status-chip">宝箱普攻 +${p.buffs.runChestBasicBonusDie}</span>`);
+    if(p.buffs.runShieldHalfCharges) out.push(`<span class="status-chip">开场护�?x${p.buffs.runShieldHalfCharges}</span>`);
+    if(p.buffs.runDodgeReductionCharges) out.push(`<span class="status-chip">危险步伐 -3 x${p.buffs.runDodgeReductionCharges}</span>`);
+    if(p.buffs.runLowHpRecoveryAvailable) out.push(`<span class="status-chip">绝境回复 x${p.buffs.runLowHpRecoveryAvailable}</span>`);
+    if(p.buffs.runMovePenaltyActive) out.push(`<span class="status-chip">移动 -${p.buffs.runMovePenaltyActive}</span>`);
     if(p.buffs.basicTransform) out.push(`<span class="status-chip">普攻变身中</span>`);
     if(p.marked) out.push(`<span class="status-chip">${I18N().t('status_marked','标记')}</span>`); return out.join('') || `<span class="status-chip">${I18N().t('status_none','无状态')}</span>`;
   }
@@ -4221,7 +5680,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     const g = addSvg(layer, 'g', { class:'map-component black-hole-component', transform:`translate(${x} ${y})` });
     addSvg(g, 'ellipse', { cx:0, cy:19, rx:39, ry:12, class:'map-component-shadow center-trap-shadow' });
     appendNativeSprite(g, {
-      file: MAP_ASSETS.centerTrap,
+      file: MAP_ASSETS.blackHole,
       frameWidth: 64,
       frameHeight: 64,
       frames: 6,
@@ -4230,8 +5689,8 @@ async function applyRewardList(player, rewards, labelPrefix){
       loop: true,
       x: -45,
       y: -54,
-      className: 'sprite-frame-svg center-trap-frame',
-      imageClass: 'sprite-sheet-image center-trap-image'
+      className: 'sprite-frame-svg black-hole-frame',
+      imageClass: 'sprite-sheet-image black-hole-image'
     });
     return g;
   }
@@ -4251,6 +5710,22 @@ async function applyRewardList(player, rewards, labelPrefix){
         y: y - 40,
         className: 'sprite-frame-svg arrow-trap-frame',
         imageClass: 'sprite-sheet-image arrow-trap-image'
+      });
+      return true;
+    }
+    if(mapTok.kind === 'battle_chest'){
+      appendNativeSprite(parent, {
+        file: MAP_ASSETS.chest,
+        frameWidth: 64,
+        frameHeight: 64,
+        frames: 1,
+        scale: 1.05,
+        duration: 1000,
+        loop: false,
+        x: x - 34,
+        y: y - 55,
+        className: 'sprite-frame-svg treasure-chest-frame',
+        imageClass: 'sprite-sheet-image treasure-chest-image'
       });
       return true;
     }
@@ -4853,12 +6328,14 @@ async function applyRewardList(player, rewards, labelPrefix){
 
   function render(){
     renderPlayerInfo();
+    renderBattlePortraits();
     renderPassiveButton();
     renderMoveConfirmButton();
     renderCancelButton();
     layoutActionButtons();
     renderBoard();
     renderHand();
+    maybeFinishRunBattle();
   }
 
   async function tileClick(tile){
@@ -4909,6 +6386,65 @@ async function applyRewardList(player, rewards, labelPrefix){
     return matched ? total : 0;
   }
 
+  function aiTileHazardPenalty(player, tile){
+    if(!tile || !state.boardMap.has(key(tile))) return 999;
+    const tileKey = key(tile);
+    const boardTile = state.boardMap.get(tileKey);
+    const token = getMapToken(tile);
+    let penalty = 0;
+    if(isSpikeDangerTile(tile)) penalty += 230;
+    if(isTokenDangerTile(tile)){
+      const source = token || neighbors(tile).map(getMapToken).find(tok => tok?.kind === 'permanent_pillar');
+      penalty += 180 + aiAverageDamage(resolvePlayerNotation(player, source?.damage || '2d8')) * 10;
+    }
+    if(isBlackHoleEnabled()){
+      const center = { q:0, r:0 };
+      if(boardTile?.type === 'center') penalty += 260;
+      else if(dist(tile, center) === 1) penalty += 115;
+      else if(dist(tile, center) === 2) penalty += 28;
+    }
+    const placedTrap = state.traps?.get(tileKey);
+    if(placedTrap && placedTrap.ownerId !== player?.id) penalty += 175;
+    if(token?.kind === 'trap_once_negative' && token.ownerId !== player?.id){
+      penalty += 150 + aiAverageDamage(resolvePlayerNotation(player, token.damage || '2d6')) * 8;
+    }
+    return penalty;
+  }
+
+  function aiCurrentDanger(player){
+    return aiTileHazardPenalty(player, player?.pos || null);
+  }
+
+  function aiMovementPathOptions(player){
+    if(player.turn.move || player.statuses.root > 0 || player.statuses.stun > 0) return [];
+    const maxMove = movementStepLimit(player);
+    const startKey = key(player.pos);
+    const best = new Map([[startKey, { tile:deep(player.pos), path:[], hazard:0, steps:0 }]]);
+    const queue = [{ tile:deep(player.pos), path:[], hazard:0, steps:0 }];
+    while(queue.length){
+      const cur = queue.shift();
+      if(cur.steps >= maxMove) continue;
+      for(const next of neighbors(cur.tile)){
+        const kk = key(next);
+        if(!state.boardMap.has(kk) || isBlockedTile(next)) continue;
+        const occ = getPlayerAt(next);
+        if(occ && occ.id !== player.id) continue;
+        const stepPenalty = aiTileHazardPenalty(player, next);
+        const candidate = {
+          tile: deep(next),
+          path: cur.path.concat([deep(next)]),
+          hazard: cur.hazard + stepPenalty,
+          steps: cur.steps + 1
+        };
+        const prev = best.get(kk);
+        if(prev && (prev.hazard < candidate.hazard || (prev.hazard === candidate.hazard && prev.steps <= candidate.steps))) continue;
+        best.set(kk, candidate);
+        queue.push(candidate);
+      }
+    }
+    return Array.from(best.values()).filter(option => key(option.tile) !== startKey);
+  }
+
   function aiCardDamageValue(player, cardDef, target){
     const cfg = cardDef?.config || {};
     let value = cfg.damage || cfg.baseDamage || 0;
@@ -4953,21 +6489,25 @@ async function applyRewardList(player, rewards, labelPrefix){
     return 0;
   }
 
-  function aiSelfCardScore(player, cardDef){
+  function aiSelfCardScore(player, cardDef, enemy){
     const cfg = cardDef?.config || {};
     let score = 0;
     if(cardDef.template === 'summon_token_into_self_deck') score += 72;
     if(cardDef.template === 'transform_basic_attack' && player.turn.basicSpent < 1 + (player.buffs.extraBasicCap || 0)) score += 68;
     if(cardDef.template === 'grant_multiple_buffs') score += 58;
     if(cardDef.template === 'self_buff'){
-      if(cfg.heal && player.hp < player.maxHp) score += 38 + Math.min(30, player.maxHp - player.hp);
-      if(cfg.block || cfg.gainBlock) score += 36;
-      if(cfg.buffBasic || cfg.bonusDie || cfg.basicAttackCapDelta) score += player.turn.basicSpent ? 18 : 54;
-      if(cfg.classSkillCapDelta || cfg.dodgeNext || cfg.counterDamage || cfg.healOnDamaged) score += 42;
+      const missingHp = Math.max(0, player.maxHp - player.hp);
+      const threatened = enemy && (canBasicTarget(enemy, player) || dist(enemy.pos, player.pos) <= 3);
+      const standingDanger = aiCurrentDanger(player);
+      if(cfg.heal && missingHp > 0) score += 24 + Math.min(46, missingHp * 2) + (player.hp <= player.maxHp * 0.35 ? 34 : 0);
+      if(cfg.block || cfg.gainBlock) score += threatened || standingDanger > 80 ? 34 + Math.min(30, aiAverageDamage(cfg.block || cfg.gainBlock) * 4) : 12;
+      if(cfg.buffBasic || cfg.bonusDie || cfg.basicAttackCapDelta) score += player.turn.basicSpent ? 10 : (canBasicTarget(player, enemy) ? 58 : 34);
+      if(cfg.classSkillCapDelta) score += aiCardEntries(player).some(entry => entry.handItem?.origin === 'class_skill') ? 40 : 18;
+      if(cfg.dodgeNext || cfg.counterDamage || cfg.healOnDamaged) score += threatened || player.hp <= player.maxHp * 0.5 ? 46 : 20;
     }
     if(cardDef.template === 'pay_life_draw_cards'){
       const cost = Number(cfg.lifeCost || 0);
-      if(player.hp > cost + 10) score += 48 + Math.max(0, 5 - player.hand.length) * 4;
+      if(player.hp > cost + 10 && aiCurrentDanger(player) < 120) score += 48 + Math.max(0, 5 - player.hand.length) * 4;
     }
     return score;
   }
@@ -4980,7 +6520,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       if(!withinTileRange(player, tile, cardDef)) continue;
       let score = 60 - dist(tile, enemy.pos) * 5;
       if(dist(tile, enemy.pos) <= 1) score += 35;
-      if(isSpikeDangerTile(tile) || isTokenDangerTile(tile)) score -= 80;
+      score -= aiTileHazardPenalty(player, tile);
       if(score > bestScore){ bestScore = score; best = tile; }
     }
     return best ? { tile: best, score: bestScore } : null;
@@ -4996,7 +6536,9 @@ async function applyRewardList(player, rewards, labelPrefix){
       const d = dist(tile, enemy.pos);
       let score = 20 - d * 3;
       if(d <= basicRange) score += 45;
-      if(isSpikeDangerTile(tile) || isTokenDangerTile(tile)) score -= 90;
+      if(aiCurrentDanger(player) > 90) score += Math.min(210, aiCurrentDanger(player));
+      if(isBattleChestTile(tile)) score += player.boss ? 135 : 105;
+      score -= aiTileHazardPenalty(player, tile);
       if(score > bestScore){ bestScore = score; best = tile; }
     }
     return best ? { tile: best, score: bestScore } : null;
@@ -5026,7 +6568,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         const move = aiTeleportTile(player, enemy, cardDef);
         if(move && move.score > 45 && (!best || move.score > best.score)) best = { type:'card', entry, tile: move.tile, score: move.score };
       } else if(['self_buff','grant_multiple_buffs','transform_basic_attack','summon_token_into_self_deck','pay_life_draw_cards'].includes(template)){
-        const score = aiSelfCardScore(player, cardDef);
+        const score = aiSelfCardScore(player, cardDef, enemy);
         if(score > 0 && (!best || score > best.score)) best = { type:'card', entry, score };
       }
     }
@@ -5038,11 +6580,12 @@ async function applyRewardList(player, rewards, labelPrefix){
     let best = null;
     const basic = getActiveBasicAttack(player);
     const entries = aiCardEntries(player).filter(entry => aiTargetTemplate(entry.cardDef.template) || entry.cardDef.template === 'aoe');
-    for(const kk of getReachableTiles(player)){
-      const [q,r] = kk.split(',').map(Number);
-      const tile = { q, r };
-      let score = 80 - dist(tile, enemy.pos) * 5;
-      if(isSpikeDangerTile(tile) || isTokenDangerTile(tile) || state.traps.has(key(tile))) score -= 90;
+    for(const option of aiMovementPathOptions(player)){
+      const tile = option.tile;
+      let score = 80 - dist(tile, enemy.pos) * 5 - option.path.length * 2;
+      score -= option.hazard;
+      if(aiCurrentDanger(player) > 90 && aiTileHazardPenalty(player, tile) < aiCurrentDanger(player)) score += Math.min(180, aiCurrentDanger(player));
+      if(isBattleChestTile(tile)) score += player.boss ? 160 : 130;
       const sim = Object.assign({}, player, { pos: tile });
       if(dist(tile, enemy.pos) <= Number(basic.range || 1) && (!basic.straight || straight(tile, enemy.pos))) score += 55;
       for(const entry of entries){
@@ -5052,7 +6595,22 @@ async function applyRewardList(player, rewards, labelPrefix){
           score += 52 + aiCardDamageValue(player, entry.cardDef, enemy) * 2;
         }
       }
-      if(!best || score > best.score) best = { type:'move', tile, score };
+      if(!best || score > best.score) best = { type:'move', tile, path: option.path, score };
+    }
+    return best;
+  }
+
+  function chooseAiEscapeAction(player, enemy){
+    if(player.turn.move || aiCurrentDanger(player) < 95) return null;
+    const move = chooseAiMove(player, enemy);
+    let best = move && aiTileHazardPenalty(player, move.tile) < aiCurrentDanger(player) ? move : null;
+    for(const entry of aiCardEntries(player)){
+      if(entry.cardDef.template !== 'teleport') continue;
+      const teleport = aiTeleportTile(player, enemy, entry.cardDef);
+      if(teleport && aiTileHazardPenalty(player, teleport.tile) < aiCurrentDanger(player)){
+        const action = { type:'card', entry, tile: teleport.tile, score: teleport.score + 45 };
+        if(!best || action.score > best.score) best = action;
+      }
     }
     return best;
   }
@@ -5071,8 +6629,13 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(action.type === 'move'){
       if(!beginActionResolving('move')) return false;
       p.turn.move = true;
-      p.turn.movedDistance = dist(p.pos, action.tile);
-      await movePlayerTo(p, action.tile, { duration: Math.min(640, Math.max(260, 160 * Math.max(1, dist(p.pos, action.tile)))), triggerDestinationEffects: true });
+      const path = Array.isArray(action.path) && action.path.length ? action.path.map(deep) : [deep(action.tile)];
+      p.turn.movedDistance = path.length;
+      for(const step of path){
+        await movePlayerTo(p, step, { duration: Math.min(420, Math.max(230, 150 * Math.max(1, dist(p.pos, step)))), triggerPathEffects: false });
+        await enterTileAnimated(p);
+        if(!p.alive || state.winner) break;
+      }
       await applyMovementTriggeredPassives(p);
       finishAfterAction();
       return true;
@@ -5087,7 +6650,13 @@ async function applyRewardList(player, rewards, labelPrefix){
       const enemy = enemyOf(actor);
       if(!actor?.alive || actor.type !== 'ai' || !enemy?.alive || state.winner || state.pending?.type === 'discard') return;
       let action = chooseAiCardAction(actor, enemy);
-      if(!action && actor.turn.basicSpent < 1 + (actor.buffs.extraBasicCap || 0) && canBasicTarget(actor, enemy)) action = { type:'basic', target: enemy, score: 80 + aiAverageDamage(resolvePlayerNotation(actor, getActiveBasicAttack(actor).damage)) * 3 };
+      const escape = chooseAiEscapeAction(actor, enemy);
+      if(escape && (!action || action.score < 600)) action = escape;
+      if(actor.turn.basicSpent < 1 + (actor.buffs.extraBasicCap || 0) && canBasicTarget(actor, enemy)){
+        const basicDamage = aiAverageDamage(resolvePlayerNotation(actor, getActiveBasicAttack(actor).damage));
+        const basicAction = { type:'basic', target: enemy, score: 82 + basicDamage * 4 + (enemy.hp <= basicDamage ? 620 : 0) };
+        if(!action || basicAction.score > action.score) action = basicAction;
+      }
       if(!action) action = chooseAiMove(actor, enemy);
       if(!action) break;
       const acted = await executeAiAction(action);
@@ -5193,7 +6762,10 @@ async function applyRewardList(player, rewards, labelPrefix){
       sel.onfocus = () => showDeckTooltip(sel);
       sel.onmouseleave = hideDeckTooltip;
       sel.onblur = hideDeckTooltip;
-      sel.onchange = () => { if(!$('deck-tooltip')?.classList.contains('hidden')) showDeckTooltip(sel); };
+      sel.onchange = () => {
+        if(id === 'p1-profession' || id === 'p2-profession') renderSetupPortraits();
+        if(!$('deck-tooltip')?.classList.contains('hidden')) showDeckTooltip(sel);
+      };
     });
     window.addEventListener('resize', hideDeckTooltip);
     window.addEventListener('scroll', hideDeckTooltip, true);
@@ -5399,6 +6971,18 @@ async function applyRewardList(player, rewards, labelPrefix){
   }
 
   function populateSetup(preferredRulesetId){
+    const prev = {
+      p1Profession: $('p1-profession')?.value,
+      p1Weapon: $('p1-weapon')?.value,
+      p1Accessory: $('p1-accessory')?.value,
+      p2Profession: $('p2-profession')?.value,
+      p2Weapon: $('p2-weapon')?.value,
+      p2Accessory: $('p2-accessory')?.value,
+      blackHole: $('black-hole-enabled')?.value,
+      chest: $('chest-enabled')?.value,
+      drawOpening: $('draw-opening')?.value,
+      drawPerTurn: $('draw-per-turn')?.value,
+    };
     const rulesets = STUDIO_RUNTIME.loadRulesets(); const rsSel = $('ruleset-select'); rsSel.innerHTML='';
     rulesets.forEach(rs=>{ const o=document.createElement('option'); o.value=rs.id; o.textContent=rs.name; rsSel.appendChild(o); });
     const selectedId = preferredRulesetId || rsSel.value || STUDIO_RUNTIME.getActiveRulesetId();
@@ -5411,16 +6995,20 @@ async function applyRewardList(player, rewards, labelPrefix){
     fillSetupSelect('p2-weapon', data.weaponLibrary, 'weapon');
     fillSetupSelect('p1-accessory', data.accessoryLibrary, 'accessory', true);
     fillSetupSelect('p2-accessory', data.accessoryLibrary, 'accessory', true);
-    setSetupValue('p1-profession','warrior'); setSetupValue('p1-weapon','greatsword'); setSetupValue('p1-accessory','trapbag');
-    setSetupValue('p2-profession','mage'); setSetupValue('p2-weapon','longbow'); setSetupValue('p2-accessory','lincoln');
+    setSetupValue('p1-profession', prev.p1Profession || 'warrior'); setSetupValue('p1-weapon', prev.p1Weapon || 'greatsword'); setSetupValue('p1-accessory', prev.p1Accessory || 'trapbag');
+    setSetupValue('p2-profession', prev.p2Profession || 'mage'); setSetupValue('p2-weapon', prev.p2Weapon || 'longbow'); setSetupValue('p2-accessory', prev.p2Accessory || 'lincoln');
     const defaults = data.ruleDefaults || {};
-    if($('black-hole-enabled')) $('black-hole-enabled').value = 'true';
-    if($('draw-opening')) $('draw-opening').value = clampInt(defaults.drawOpening ?? DEFAULT_MATCH_OPTIONS.drawOpening, DEFAULT_MATCH_OPTIONS.drawOpening);
-    if($('draw-per-turn')) $('draw-per-turn').value = clampInt(defaults.drawPerTurn ?? DEFAULT_MATCH_OPTIONS.drawPerTurn, DEFAULT_MATCH_OPTIONS.drawPerTurn);
+    if($('black-hole-enabled')) $('black-hole-enabled').value = prev.blackHole || 'true';
+    if($('chest-enabled')) $('chest-enabled').value = prev.chest || 'true';
+    if($('draw-opening')) $('draw-opening').value = prev.drawOpening ?? clampInt(defaults.drawOpening ?? DEFAULT_MATCH_OPTIONS.drawOpening, DEFAULT_MATCH_OPTIONS.drawOpening);
+    if($('draw-per-turn')) $('draw-per-turn').value = prev.drawPerTurn ?? clampInt(defaults.drawPerTurn ?? DEFAULT_MATCH_OPTIONS.drawPerTurn, DEFAULT_MATCH_OPTIONS.drawPerTurn);
+    renderSetupPortraits();
   }
 
   function bind(){
     $('start-game').onclick = startGame;
+    if($('start-arena-run')) $('start-arena-run').onclick = startNewArenaRun;
+    if($('continue-arena-run')) $('continue-arena-run').onclick = continueArenaRun;
     $('btn-move').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending={type:'move', path:[]}; setMode('移动模式'); render(); setHint('请逐格点击绘制移动路线，再点确认移动。'); };
     if($('btn-confirm-move')) $('btn-confirm-move').onclick = confirmMovePath;
     $('btn-basic-attack').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending={type:'basic'}; setMode('普通攻击'); render(); setHint('请选择普通攻击目标。'); };
@@ -5439,6 +7027,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     bindActionTooltips();
     initAudioSettings();
     bindMenuLogic();
+    updateRunResumeButton();
   }
 
   function bindMenuLogic(){

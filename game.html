@@ -26,12 +26,21 @@
       <label><span data-i18n="p2_weapon">玩家 2 武器</span><select id="p2-weapon"></select></label>
       <label><span data-i18n="p2_accessory">玩家 2 饰品</span><select id="p2-accessory"></select></label>
       <label><span>黑洞</span><select id="black-hole-enabled"><option value="true">开启</option><option value="false">关闭</option></select></label>
+      <label><span>宝箱</span><select id="chest-enabled"><option value="true">开启</option><option value="false">关闭</option></select></label>
       <label><span>开局抽牌数</span><input id="draw-opening" type="number" min="0" max="99" step="1" value="6" /></label>
       <label><span>每回合抽牌数</span><input id="draw-per-turn" type="number" min="0" max="99" step="1" value="2" /></label>
     </div>
-    <div class="flex" style="margin-top:12px"><button id="start-game" data-i18n="start_game">开始游戏</button><button class="secondary" onclick="location.href='index.html'" data-i18n="back_home">返回首页</button></div>
+    <div id="setup-portrait-stage" class="setup-portrait-stage" aria-live="polite"></div>
+    <div class="flex setup-actions" style="margin-top:12px">
+      <button id="start-arena-run" type="button">Start Arena Run</button>
+      <button id="continue-arena-run" class="secondary hidden" type="button">Continue Arena Run</button>
+      <button id="start-game" class="secondary" data-i18n="start_game">开始游戏</button>
+      <button class="secondary" onclick="location.href='index.html'" data-i18n="back_home">返回首页</button>
+    </div>
   </section>
   <section id="game-screen" class="hidden">
+    <div id="battle-portrait-stage" class="battle-portrait-stage" aria-hidden="true"></div>
+    <div id="ultimate-cutin-layer" class="ultimate-cutin-layer hidden" aria-hidden="true"></div>
     <div class="top-row">
       <section class="panel player-side-panel" id="player-info"></section>
       <section class="panel player-side-panel" id="player-info-rival"></section>
@@ -106,6 +115,9 @@
     <p>拖动各面板到合适位置后点击保存</p>
   </div>
   <div id="deck-tooltip" class="deck-tooltip hidden" role="tooltip"></div>
+  <div id="run-panel" class="run-panel hidden" role="dialog" aria-modal="true">
+    <div id="run-panel-body" class="run-panel-body"></div>
+  </div>
 </main>
 <div id="dice-overlay" class="dice-overlay hidden">
   <div class="dice-box">

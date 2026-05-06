@@ -9,14 +9,19 @@
 <body class="landing-page">
 <header class="landing-header">
   <div class="landing-chrome">
-    <div class="lang-bar">
-      <button data-lang-btn="zh">中文</button>
-      <button data-lang-btn="en">English</button>
-    </div>
     <div class="landing-brand">
-      <p class="eyebrow">Arena Studio</p>
       <h1 data-i18n="index_title">无限制角斗场 Studio v0.9.0</h1>
-      <p class="landing-lead" data-i18n="index_sub">从规则、卡组到实战，把一整套桌面式卡牌对战流程收拢到同一张桌面上。</p>
+      <p class="landing-lead" data-i18n="index_sub">管理规则副本、编辑卡组并启动本地对战。数据默认保存在当前浏览器，也可以切换到命名空间或本地文件夹。</p>
+    </div>
+    <div class="landing-topbar">
+      <div class="landing-status">
+        <span>当前规则</span>
+        <strong id="active-ruleset-name">读取中</strong>
+      </div>
+      <div class="lang-bar">
+        <button data-lang-btn="zh">中文</button>
+        <button data-lang-btn="en">English</button>
+      </div>
     </div>
   </div>
 </header>
@@ -24,24 +29,35 @@
 <main class="landing-shell">
   <section class="hero-panel panel">
     <div class="hero-copy">
-      <div class="hero-note">Card combat sandbox</div>
-      <p class="hero-lead">把规则、卡组和战斗节奏放到同一张牌桌上，像炉石一样清晰、热闹、可操作。</p>
+      <h2>开始一局测试</h2>
+      <p class="hero-lead">选择一个规则副本作为当前配置，然后进入对战验证；需要调整职业、卡牌、地图、饰品或卡组时，可以从这里直接进入对应编辑器。</p>
       <div class="hero-actions">
         <button id="go-game" type="button" data-i18n="enter_game">进入对战</button>
         <button id="go-editor" type="button" class="secondary" onclick="location.href='editor.html'" data-i18n="open_editor">打开规则编辑器</button>
         <button id="go-deck-editor" type="button" class="secondary" onclick="location.href='deck_editor.html'">打开卡组编辑器</button>
       </div>
-      <div class="hero-stats">
-        <div class="hero-stat"><span>Rulesets</span><strong>可复制</strong></div>
-        <div class="hero-stat"><span>Decks</span><strong>可构筑</strong></div>
-        <div class="hero-stat"><span>Battle</span><strong>桌面式</strong></div>
+      <div class="mode-dock">
+        <div class="mode-item"><span>规则副本</span><strong>启动前可切换</strong></div>
+        <div class="mode-item"><span>规则编辑</span><strong>职业 / 卡牌 / 地图</strong></div>
+        <div class="mode-item"><span>卡组编辑</span><strong>出牌池与构筑</strong></div>
       </div>
     </div>
     <aside class="hero-art">
       <div class="hero-card">
-        <div class="hero-card-corner">Table Top</div>
-        <div class="hero-card-emblem">✦</div>
-        <p>木质、金边、暖色烛光，把你的系统包装成一场桌面卡牌对决。</p>
+        <div class="duel-board" aria-hidden="true">
+          <div class="deck-stack deck-left">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="versus-mark">VS</div>
+          <div class="deck-stack deck-right">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="hero-queue">
+          <div><span>1</span><strong>选择当前规则副本</strong></div>
+          <div><span>2</span><strong>确认卡组与模板</strong></div>
+          <div><span>3</span><strong>进入游戏开始测试</strong></div>
+        </div>
       </div>
     </aside>
   </section>
@@ -119,6 +135,9 @@ function lang() {
 function renderRulesets() {
   const active = STUDIO_RUNTIME.getActiveRulesetId();
   const rulesets = STUDIO_RUNTIME.loadRulesets();
+  const activeRuleset = rulesets.find(rs => rs.id === active);
+  const activeName = document.getElementById('active-ruleset-name');
+  if (activeName) activeName.textContent = activeRuleset ? activeRuleset.name : (lang() === 'en' ? 'Not selected' : '未选择');
   list.innerHTML = '';
 
   rulesets.forEach(rs => {

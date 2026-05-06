@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Arena Studio Game v0.8.5</title>
   <link rel="stylesheet" href="shared.css" />
@@ -25,13 +26,21 @@
       <label><span data-i18n="p2_weapon">玩家 2 武器</span><select id="p2-weapon"></select></label>
       <label><span data-i18n="p2_accessory">玩家 2 饰品</span><select id="p2-accessory"></select></label>
       <label><span>黑洞</span><select id="black-hole-enabled"><option value="true">开启</option><option value="false">关闭</option></select></label>
+      <label><span>宝箱</span><select id="chest-enabled"><option value="true">开启</option><option value="false">关闭</option></select></label>
       <label><span>开局抽牌数</span><input id="draw-opening" type="number" min="0" max="99" step="1" value="6" /></label>
       <label><span>每回合抽牌数</span><input id="draw-per-turn" type="number" min="0" max="99" step="1" value="2" /></label>
     </div>
-    <div class="flex" style="margin-top:12px"><button id="start-game" data-i18n="start_game">开始游戏</button><button class="secondary" onclick="location.href='index.html'" data-i18n="back_home">返回首页</button></div>
-    <div id="deck-tooltip" class="deck-tooltip hidden" role="tooltip"></div>
+    <div id="setup-portrait-stage" class="setup-portrait-stage" aria-live="polite"></div>
+    <div class="flex setup-actions" style="margin-top:12px">
+      <button id="start-arena-run" type="button">Start Arena Run</button>
+      <button id="continue-arena-run" class="secondary hidden" type="button">Continue Arena Run</button>
+      <button id="start-game" class="secondary" data-i18n="start_game">开始游戏</button>
+      <button class="secondary" onclick="location.href='index.html'" data-i18n="back_home">返回首页</button>
+    </div>
   </section>
   <section id="game-screen" class="hidden">
+    <div id="battle-portrait-stage" class="battle-portrait-stage" aria-hidden="true"></div>
+    <div id="ultimate-cutin-layer" class="ultimate-cutin-layer hidden" aria-hidden="true"></div>
     <div class="top-row">
       <section class="panel player-side-panel" id="player-info"></section>
       <section class="panel player-side-panel" id="player-info-rival"></section>
@@ -63,6 +72,7 @@
             <button id="btn-mute" class="secondary" type="button" aria-pressed="false">静音选项</button>
             <button id="btn-export-battle-log" class="secondary">导出战斗日志</button>
             <button id="btn-export-debug-log" class="secondary">导出运行诊断</button>
+            <button id="btn-reset-layout" class="secondary">🔄 重置 UI 布局</button>
             <button class="secondary" onclick="location.href='index.html'" data-i18n="back_home">返回首页</button>
           </div>
           <div class="menu-section">
@@ -81,13 +91,14 @@
       </div>
 
       <!-- Bottom-Left Action Panel -->
+      <!-- Bottom-Left Action Panel -->
       <div id="action-panel" class="floating-ui">
-        <button id="btn-move" data-i18n="move_mode">移动模式</button>
-        <button id="btn-basic-attack" data-i18n="basic_attack">普通攻击</button>
-        <button id="btn-cancel" class="secondary" data-i18n="cancel" style="display:none">取消选择</button>
-        <button id="btn-end-turn" data-i18n="end_turn">结束回合</button>
-        <button id="btn-confirm-move" class="secondary" type="button" style="display:none">确认移动</button>
-        <button id="btn-passive" style="display:none">职业被动</button>
+        <button id="btn-move" title="移动模式"><span class="u-icon">🏃</span><span class="u-text" data-i18n="move_mode">移动模式</span></button>
+        <button id="btn-basic-attack" title="普通攻击"><span class="u-icon">⚔️</span><span class="u-text" data-i18n="basic_attack">普通攻击</span></button>
+        <button id="btn-cancel" class="secondary" style="display:none" title="取消选择"><span class="u-icon">❌</span><span class="u-text" data-i18n="cancel">取消选择</span></button>
+        <button id="btn-end-turn" title="结束回合"><span class="u-icon">⌛</span><span class="u-text" data-i18n="end_turn">结束回合</span></button>
+        <button id="btn-confirm-move" class="secondary" type="button" style="display:none" title="确认移动"><span class="u-icon">✅</span><span class="u-text" data-i18n="confirm_move">确认移动</span></button>
+        <button id="btn-passive" style="display:none" title="职业被动"><span class="u-icon">⚡</span><span class="u-text" data-i18n="passive_skill">职业被动</span></button>
       </div>
       <div class="board-wrap" id="board-wrap"><svg id="board" viewBox="-136 0 2100 1750"></svg></div>
     </section>
@@ -103,8 +114,23 @@
     <button id="btn-confirm-layout-inner">✅ 确定布局</button>
     <p>拖动各面板到合适位置后点击保存</p>
   </div>
+  <div id="deck-tooltip" class="deck-tooltip hidden" role="tooltip"></div>
+  <div id="run-panel" class="run-panel hidden" role="dialog" aria-modal="true">
+    <div id="run-panel-body" class="run-panel-body"></div>
+  </div>
 </main>
-<div id="dice-overlay" class="dice-overlay hidden"><div class="dice-box"><div class="dice-title" id="dice-title">Rolling…</div><div class="dice-notation" id="dice-notation"></div><div class="dice-value" id="dice-value">0</div></div></div>
+<div id="dice-overlay" class="dice-overlay hidden">
+  <div class="dice-box">
+    <div class="dice-title" id="dice-title">Rolling…</div>
+    <div class="dice-notation" id="dice-notation"></div>
+    <div id="dice-stage" class="dice-stage">
+      <div id="dice-box-host" class="dice-box-host"></div>
+      <div id="dice-token-stage" class="dice-token-stage"></div>
+    </div>
+    <div id="dice-summary" class="dice-summary hidden"></div>
+    <div class="dice-value" id="dice-value">0</div>
+  </div>
+</div>
 <script src="studio_data.js"></script>
 <script src="studio_patch_v080.js"></script>
 <script src="studio_patch_v081.js"></script>
@@ -132,6 +158,7 @@
 <script src="studio_patch_v111_default_ruleset.js"></script>
 <script src="runtime.js"></script>
 <script src="i18n_v081.js"></script>
+<script src="dice_box_bridge.js?v=20260423e"></script>
 <script src="game.js"></script>
 <script src="ui_layout.js"></script>
 </body>
