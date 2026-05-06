@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monk Sprite Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #15120f;
+      --panel: #221c18;
+      --panel-2: #2d241e;
+      --ink: #fff5e8;
+      --muted: #c9aa85;
+      --line: #4a3728;
+      --gold: #f2b84b;
+      --red: #c63e26;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 22% 16%, rgba(242,184,75,.14), transparent 30%),
+        radial-gradient(circle at 82% 22%, rgba(198,62,38,.12), transparent 28%),
+        var(--bg);
+      color: var(--ink);
+    }
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0;
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    h1 {
+      margin: 0 0 14px;
+      font-size: 20px;
+      font-weight: 750;
+      letter-spacing: 0;
+    }
+    .stage, .controls, .sheet {
+      border: 1px solid var(--line);
+      background: rgba(34,28,24,.9);
+      box-shadow: 0 18px 44px rgba(0,0,0,.26);
+    }
+    .stage { padding: 18px; }
+    .viewport {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(45deg, #241f1b 25%, transparent 25%),
+        linear-gradient(-45deg, #241f1b 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #241f1b 75%),
+        linear-gradient(-45deg, transparent 75%, #241f1b 75%),
+        #171411;
+      background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+      background-size: 24px 24px;
+      border: 1px solid var(--line);
+      image-rendering: pixelated;
+    }
+    canvas {
+      width: min(88%, 350px);
+      height: min(88%, 350px);
+      image-rendering: pixelated;
+    }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .controls {
+      margin-top: 14px;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--ink);
+      font: inherit;
+      cursor: pointer;
+    }
+    button.active {
+      border-color: var(--gold);
+      color: #1b1006;
+      background: linear-gradient(135deg, var(--gold), var(--red));
+      font-weight: 750;
+    }
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    input[type="range"] { width: 100%; }
+    .sheet {
+      padding: 14px;
+      overflow: hidden;
+    }
+    .sheet img {
+      display: block;
+      width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+      border: 1px solid var(--line);
+      margin-bottom: 12px;
+    }
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0;
+    }
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <div class="stage">
+        <h1>Red Elf Monk Sprite Preview</h1>
+        <div class="viewport">
+          <canvas id="preview" width="512" height="512" aria-label="monk animation preview"></canvas>
+        </div>
+        <div class="meta">
+          <span id="animName">idle</span>
+          <span id="frameInfo">frame 1 / 5</span>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="actions" id="actions"></div>
+        <label>
+          Speed <span id="fpsValue">8 FPS</span>
+          <input id="fps" type="range" min="2" max="18" value="8">
+        </label>
+        <label>
+          Zoom <span id="zoomValue">1.55x</span>
+          <input id="zoom" type="range" min="100" max="240" value="155">
+        </label>
+      </div>
+    </section>
+    <section class="sheet">
+      <img src="assets/sprites/monk-preview/monk-sheet-preview-v2.png" alt="monk generated concept sheet">
+      <img src="assets/sprites/monk-preview/monk-animation-contact-v2.png" alt="monk normalized animation contact sheet">
+      <p class="note">Regenerated from a high-contrast chroma-key source and normalized into fixed 320x208 transparent strips under assets/sprites/monk-new, matching the current priest/warlock model scale family.</p>
+    </section>
+  </main>
+  <script>
+    const frameW = 320;
+    const frameH = 208;
+    const animations = [
+      { key: "idle", label: "Idle", frames: 5, duration: 900 },
+      { key: "run", label: "Run", frames: 8, duration: 660 },
+      { key: "attack", label: "Attack", frames: 8, duration: 560 },
+      { key: "attack-heavy", label: "Heavy", frames: 7, duration: 660 },
+      { key: "cast", label: "Cast", frames: 7, duration: 760 },
+      { key: "hurt", label: "Hurt", frames: 3, duration: 320 },
+      { key: "death", label: "Death", frames: 4, duration: 620 }
+    ];
+    const images = {};
+    for (const anim of animations) {
+      const img = new Image();
+      img.src = `assets/sprites/monk-new/${anim.key}.png?v=monkV2Green5`;
+      images[anim.key] = img;
+    }
+    const canvas = document.getElementById("preview");
+    const ctx = canvas.getContext("2d");
+    const actionsEl = document.getElementById("actions");
+    const fpsInput = document.getElementById("fps");
+    const zoomInput = document.getElementById("zoom");
+    const fpsValue = document.getElementById("fpsValue");
+    const zoomValue = document.getElementById("zoomValue");
+    const animName = document.getElementById("animName");
+    const frameInfo = document.getElementById("frameInfo");
+    let current = animations[0];
+    let frame = 0;
+    let lastTick = 0;
+
+    function setAnimation(anim) {
+      current = anim;
+      frame = 0;
+      for (const button of actionsEl.querySelectorAll("button")) {
+        button.classList.toggle("active", button.dataset.key === anim.key);
+      }
+      draw();
+    }
+
+    for (const anim of animations) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = anim.label;
+      button.dataset.key = anim.key;
+      button.addEventListener("click", () => setAnimation(anim));
+      actionsEl.appendChild(button);
+    }
+
+    function draw() {
+      const img = images[current.key];
+      if (!img.complete || !img.naturalWidth) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = false;
+      const zoom = Number(zoomInput.value) / 100;
+      const drawW = frameW * zoom;
+      const drawH = frameH * zoom;
+      const dx = canvas.width / 2 - drawW / 2;
+      const dy = canvas.height * 0.72 - drawH;
+      ctx.drawImage(img, frame * frameW, 0, frameW, frameH, dx, dy, drawW, drawH);
+      animName.textContent = current.key;
+      frameInfo.textContent = `frame ${frame + 1} / ${current.frames}`;
+      fpsValue.textContent = `${fpsInput.value} FPS`;
+      zoomValue.textContent = `${zoom.toFixed(2)}x`;
+    }
+
+    function loop(now) {
+      const interval = 1000 / Number(fpsInput.value);
+      if (now - lastTick >= interval) {
+        frame = (frame + 1) % current.frames;
+        lastTick = now;
+        draw();
+      }
+      requestAnimationFrame(loop);
+    }
+
+    fpsInput.addEventListener("input", draw);
+    zoomInput.addEventListener("input", draw);
+    Promise.all(Object.values(images).map(img => img.complete ? Promise.resolve() : new Promise(resolve => img.addEventListener("load", resolve, { once: true })))).then(() => {
+      setAnimation(current);
+      requestAnimationFrame(loop);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+display_name: Pixel Sprite Pipeline
+short_description: Generate, normalize, preview, and tune 2D game sprite sheets.
+default_prompt: Create or refine a 2D game character sprite sheet with normalized frames, animation preview, projectile effects, and anchor calibration.

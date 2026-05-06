@@ -20,42 +20,42 @@
       scope: 'persistent',
       title: '普攻暴击',
       badge: '永久',
-      desc: '普通攻击时掷 1D6；掷出 6 时，额外造成 1D8 伤害。',
+      desc: '普通攻击时�?1D6；掷�?6 时，额外造成 1D8 伤害�?
     },
     {
       key: 'low_hp_recover',
       scope: 'persistent',
       title: '绝境回复',
-      badge: '每场一次',
-      desc: '每场战斗第一次生命低于 30% 时，立刻回复 1D10。',
+      badge: '每场一�?,
+      desc: '每场战斗第一次生命低�?30% 时，立刻回复 1D10�?
     },
     {
       key: 'special_tile_dodge',
       scope: 'persistent',
       title: '危险步伐',
       badge: '永久',
-      desc: '踩到宝箱、陷阱或特殊格后，获得一次闪避：下次受到伤害 -3。',
+      desc: '踩到宝箱、陷阱或特殊格后，获得一次闪避：下次受到伤害 -3�?
     },
     {
       key: 'next_battle_shield',
       scope: 'next_battle',
-      title: '开场护盾',
-      badge: '下一场',
-      desc: '下一场战斗开始时获得 1 次护盾：第一次受到伤害 -50%。',
+      title: '开场护�?,
+      badge: '下一�?,
+      desc: '下一场战斗开始时获得 1 次护盾：第一次受到伤�?-50%�?
     },
     {
       key: 'melee_pressure',
       scope: 'persistent',
       title: '近战压制',
       badge: '永久',
-      desc: '普通攻击命中后，敌人下回合移动 -1。',
+      desc: '普通攻击命中后，敌人下回合移动 -1�?
     },
     {
       key: 'risky_class_surge',
       scope: 'next_battle',
       title: '冒险专注',
-      badge: '下一场',
-      desc: '下一场战斗最大生命 -10，但每回合可以多使用 1 张职业卡。',
+      badge: '下一�?,
+      desc: '下一场战斗最大生�?-10，但每回合可以多使用 1 张职业卡�?
     }
   ];
   const BOARD_VIEW = { width: 2100, height: 1750 };
@@ -267,22 +267,22 @@
     sword_riposte: { self: 'shield-gold', anim: 'cast' },
     sword_shadowstep: { teleport: 'teleport-purple', self: 'teleport-purple', anim: 'cast' },
 
-    hunter_mark: { projectile: 'hunterArrow', hit: 'stun-gold', anim: 'attack' },
-    hunter_aimed: { projectile: 'hunterArrow', hit: 'slash-blue', anim: 'attack' },
+    hunter_mark: { projectile: 'arrow', hit: 'stun-gold', anim: 'attack' },
+    hunter_aimed: { projectile: 'arrow', hit: 'slash-blue', anim: 'attack' },
     hunter_arcane: { projectile: 'blue', hit: 'slash-blue', anim: 'attack' },
     hunter_disengage: { teleport: 'teleport-green', self: 'teleport-green', anim: 'cast' },
-    hunter_snare: { projectile: 'hunterArrow', hit: 'root-green', anim: 'attack' },
-    hunter_kill: { projectile: 'hunterArrow', hit: 'bleed-red', anim: 'attack' },
-    hunter_trap: { projectile: 'hunterArrow', hit: 'root-green', anim: 'attack' },
-    hunter_command: { projectile: 'hunterArrow', hit: 'slash-red', anim: 'attack' },
-    hunter_volley: { projectile: 'hunterArrow', hit: 'slash-blue', anim: 'attack' },
+    hunter_snare: { projectile: 'arrow', hit: 'root-green', anim: 'attack' },
+    hunter_kill: { projectile: 'arrow', hit: 'bleed-red', anim: 'attack' },
+    hunter_trap: { projectile: 'arrow', hit: 'root-green', anim: 'attack' },
+    hunter_command: { projectile: 'arrow', hit: 'slash-red', anim: 'attack' },
+    hunter_volley: { projectile: 'arrow', hit: 'slash-blue', anim: 'attack' },
     hunter_explosive: { projectile: 'fire', hit: 'explosion-red', anim: 'attack' },
-    hunter_tracking: { projectile: 'hunterArrow', hit: 'stun-gold', anim: 'attack' },
+    hunter_tracking: { projectile: 'arrow', hit: 'stun-gold', anim: 'attack' },
     hunter_camouflage: { self: 'wind-green', anim: 'cast' },
 
     '武僧_strike': { hit: 'stun-gold', anim: 'attack' },
     '黑虎掏心': { hit: 'bleed-red', anim: 'attackHeavy' },
-    'dragon_combo': { hit: 'stun-gold', anim: 'attackCombo' },
+    '降龙十八�?: { hit: 'stun-gold', anim: 'attackCombo' },
     '飞龙在天': { hit: 'stun-gold', anim: 'attackHeavy' },
     '闪电反射': { self: 'blue-lightning', anim: 'cast' }
   };
@@ -467,16 +467,16 @@
       }
     },
     warrior: {
-      frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
+      frameWidth: 96, frameHeight: 80, scale: 1.42, footOffset: 8, headOffset: 86,
       animations: {
-        idle: { file: 'assets/sprites/warrior-new/idle.png?v=warriorModelRuntime1', frames: 6, duration: 980, loop: true },
-        run: { file: 'assets/sprites/warrior-new/run.png?v=warriorModelRuntime1', frames: 7, duration: 660, loop: true },
-        attack: { file: 'assets/sprites/warrior-new/attack.png?v=warriorModelRuntime1', frames: 8, duration: 620 },
-        attackHeavy: { file: 'assets/sprites/warrior-new/attack-heavy.png?v=warriorModelRuntime1', frames: 8, duration: 700 },
-        attackCombo: { file: 'assets/sprites/warrior-new/attack-heavy.png?v=warriorModelRuntime1', frames: 8, duration: 740 },
-        cast: { file: 'assets/sprites/warrior-new/cast.png?v=warriorModelRuntime1', frames: 5, duration: 620 },
-        hurt: { file: 'assets/sprites/warrior-new/hurt.png?v=warriorModelRuntime1', frames: 2, duration: 320 },
-        death: { file: 'assets/sprites/warrior-new/death.png?v=warriorModelRuntime1', frames: 9, duration: 900 }
+        idle: { file: 'assets/sprites/warrior/idle.png', frames: 6, duration: 880, loop: true },
+        run: { file: 'assets/sprites/warrior/run.png', frames: 8, duration: 620, loop: true },
+        attack: { file: 'assets/sprites/warrior/attack.png', frames: 12, duration: 620 },
+        attackHeavy: { file: 'assets/sprites/warrior/attack-heavy.png', frames: 10, duration: 660 },
+        attackCombo: { file: 'assets/sprites/warrior/attack.png', frames: 12, duration: 720 },
+        cast: { file: 'assets/sprites/warrior/attack-heavy.png', frames: 10, duration: 660 },
+        hurt: { file: 'assets/sprites/warrior/hurt.png', frames: 4, duration: 320 },
+        death: { file: 'assets/sprites/warrior/death.png', frames: 11, duration: 900 }
       }
     },
     samurai: {
@@ -508,14 +508,14 @@
     'swordsman-new': {
       frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
       animations: {
-        idle: { file: 'assets/sprites/swordsman-new/idle.png?v=swordsmanNewRuntime3', frames: 6, duration: 980, loop: true },
-        run: { file: 'assets/sprites/swordsman-new/run.png?v=swordsmanNewRuntime3', frames: 7, duration: 660, loop: true },
-        attack: { file: 'assets/sprites/swordsman-new/attack.png?v=swordsmanNewRuntime3', frames: 8, duration: 620 },
-        attackHeavy: { file: 'assets/sprites/swordsman-new/attack-heavy.png?v=swordsmanNewRuntime3', frames: 8, duration: 700 },
-        attackCombo: { file: 'assets/sprites/swordsman-new/attack-heavy.png?v=swordsmanNewRuntime3', frames: 8, duration: 740 },
-        cast: { file: 'assets/sprites/swordsman-new/cast.png?v=swordsmanNewRuntime3', frames: 5, duration: 620 },
-        hurt: { file: 'assets/sprites/swordsman-new/hurt.png?v=swordsmanNewRuntime3', frames: 2, duration: 320 },
-        death: { file: 'assets/sprites/swordsman-new/death.png?v=swordsmanNewRuntime3', frames: 9, duration: 900 }
+        idle: { file: 'assets/sprites/swordsman-new/idle.png?v=swordsmanNewRuntime1', frames: 6, duration: 980, loop: true },
+        run: { file: 'assets/sprites/swordsman-new/run.png?v=swordsmanNewRuntime1', frames: 7, duration: 660, loop: true },
+        attack: { file: 'assets/sprites/swordsman-new/attack.png?v=swordsmanNewRuntime1', frames: 8, duration: 620 },
+        attackHeavy: { file: 'assets/sprites/swordsman-new/attack-heavy.png?v=swordsmanNewRuntime1', frames: 8, duration: 700 },
+        attackCombo: { file: 'assets/sprites/swordsman-new/attack-heavy.png?v=swordsmanNewRuntime1', frames: 8, duration: 740 },
+        cast: { file: 'assets/sprites/swordsman-new/cast.png?v=swordsmanNewRuntime1', frames: 5, duration: 620 },
+        hurt: { file: 'assets/sprites/swordsman-new/hurt.png?v=swordsmanNewRuntime1', frames: 2, duration: 320 },
+        death: { file: 'assets/sprites/swordsman-new/death.png?v=swordsmanNewRuntime1', frames: 9, duration: 900 }
       }
     },
     'severed-fang': {
@@ -674,19 +674,6 @@
         death: { file: 'assets/sprites/mage-new/death.png?v=mageNewRuntime1', frames: 9, duration: 900 }
       }
     },
-    'assassin-new': {
-      frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
-      animations: {
-        idle: { file: 'assets/sprites/assassin-new/idle.png?v=assassinRuntime1', frames: 6, duration: 980, loop: true },
-        run: { file: 'assets/sprites/assassin-new/run.png?v=assassinRuntime1', frames: 7, duration: 660, loop: true },
-        attack: { file: 'assets/sprites/assassin-new/attack.png?v=assassinRuntime1', frames: 8, duration: 620 },
-        attackHeavy: { file: 'assets/sprites/assassin-new/attack-heavy.png?v=assassinRuntime1', frames: 8, duration: 700 },
-        attackCombo: { file: 'assets/sprites/assassin-new/attack-heavy.png?v=assassinRuntime1', frames: 8, duration: 740 },
-        cast: { file: 'assets/sprites/assassin-new/cast.png?v=assassinRuntime1', frames: 5, duration: 620 },
-        hurt: { file: 'assets/sprites/assassin-new/hurt.png?v=assassinRuntime1', frames: 2, duration: 320 },
-        death: { file: 'assets/sprites/assassin-new/death.png?v=assassinRuntime1', frames: 9, duration: 900 }
-      }
-    },
     'battle-maid': {
       frameWidth: 128, frameHeight: 128, scale: 1.16, footOffset: 44,
       animations: {
@@ -763,19 +750,6 @@
         death: { file: 'assets/sprites/countess-vampire/death.png', frames: 8, duration: 860 }
       }
     },
-    'necro-new': {
-      frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
-      animations: {
-        idle: { file: 'assets/sprites/necro-new/idle.png?v=necroAi1', frames: 6, duration: 980, loop: true },
-        run: { file: 'assets/sprites/necro-new/run.png?v=necroAi1', frames: 7, duration: 660, loop: true },
-        attack: { file: 'assets/sprites/necro-new/attack.png?v=necroAi1', frames: 8, duration: 620 },
-        attackHeavy: { file: 'assets/sprites/necro-new/attack-heavy.png?v=necroAi1', frames: 8, duration: 700 },
-        attackCombo: { file: 'assets/sprites/necro-new/attack-heavy.png?v=necroAi1', frames: 8, duration: 740 },
-        cast: { file: 'assets/sprites/necro-new/cast.png?v=necroAi1', frames: 5, duration: 620 },
-        hurt: { file: 'assets/sprites/necro-new/hurt.png?v=necroAi1', frames: 2, duration: 320 },
-        death: { file: 'assets/sprites/necro-new/death.png?v=necroAi1', frames: 9, duration: 900 }
-      }
-    },
     'gothic-monk': {
       frameWidth: 82, frameHeight: 60, scale: 2.0, footOffset: 16,
       animations: {
@@ -792,24 +766,24 @@
     'red-elf-monk': {
       frameWidth: 320, frameHeight: 208, scale: 0.7, footOffset: 30, headOffset: 118,
       animations: {
-        idle: { file: 'assets/sprites/monk-new/idle.png?v=monkV2Green5', frames: 5, duration: 900, loop: true },
-        run: { file: 'assets/sprites/monk-new/run.png?v=monkV2Green5', frames: 8, duration: 620, loop: true },
-        attack: { file: 'assets/sprites/monk-new/attack.png?v=monkV2Green5', frames: 8, duration: 560 },
-        attackHeavy: { file: 'assets/sprites/monk-new/attack-heavy.png?v=monkV2Green5', frames: 7, duration: 620 },
-        attackCombo: { file: 'assets/sprites/monk-new/attack-heavy.png?v=monkV2Green5', frames: 7, duration: 660 },
-        cast: { file: 'assets/sprites/monk-new/cast.png?v=monkV2Green5', frames: 7, duration: 680 },
-        hurt: { file: 'assets/sprites/monk-new/hurt.png?v=monkV2Green5', frames: 3, duration: 320 },
-        death: { file: 'assets/sprites/monk-new/death.png?v=monkV2Green5', frames: 4, duration: 620 }
+        idle: { file: 'assets/sprites/monk-new/idle.png', frames: 5, duration: 900, loop: true },
+        run: { file: 'assets/sprites/monk-new/run.png', frames: 8, duration: 620, loop: true },
+        attack: { file: 'assets/sprites/monk-new/attack.png', frames: 8, duration: 560 },
+        attackHeavy: { file: 'assets/sprites/monk-new/attack-heavy.png', frames: 7, duration: 620 },
+        attackCombo: { file: 'assets/sprites/monk-new/attack-heavy.png', frames: 7, duration: 660 },
+        cast: { file: 'assets/sprites/monk-new/cast.png', frames: 7, duration: 680 },
+        hurt: { file: 'assets/sprites/monk-new/hurt.png', frames: 3, duration: 320 },
+        death: { file: 'assets/sprites/monk-new/death.png', frames: 4, duration: 620 }
       }
     }
   };
   const PROFESSION_SPRITE_PROFILES = {
     warrior: 'warrior',
     mage: 'mage-new',
-    rogue: 'assassin-new',
+    rogue: 'ninja',
     priest: 'paladin',
     shaman: 'shaman-new',
-    necro: 'necro-new',
+    necro: 'countess-vampire',
     warlock: 'elf-warlock',
     swordsman: 'swordsman-new',
     hunter: 'elf-hunter',
@@ -848,57 +822,57 @@
   const ULTIMATE_CALL_OUTS = {
     warrior: {
       voiceKey: 'ultWarrior',
-      zh: { introLine: '我的意志，绝不会倒下?', ultimateName: '破军裂地斩！', finalLine: '站起来，如果你还能的话?' },
+      zh: { introLine: '我的意志，绝不会倒下�?, ultimateName: '破军裂地斩！', finalLine: '站起来，如果你还能的话�? },
       en: { introLine: 'My will shall never break!', ultimateName: 'Earthshatter Cleave!', finalLine: 'Rise, if you still can.' }
     },
     mage: {
       voiceKey: 'ultMage',
-      zh: { introLine: '元素汇聚，世界将在此重塑?', ultimateName: '星界灭绝术！', finalLine: '魔力，才是真正的秩序?' },
+      zh: { introLine: '元素汇聚，世界将在此重塑�?, ultimateName: '星界灭绝术！', finalLine: '魔力，才是真正的秩序�? },
       en: { introLine: 'Elements converge. Reality bends to my will.', ultimateName: 'Astral Annihilation!', finalLine: 'Magic is the true order.' }
     },
     rogue: {
       voiceKey: 'ultRogue',
-      zh: { introLine: '你已经暴露在我的刀锋之下?', ultimateName: '影灭瞬杀?', finalLine: '死亡，从不发出声响?' },
+      zh: { introLine: '你已经暴露在我的刀锋之下�?, ultimateName: '影灭瞬杀�?, finalLine: '死亡，从不发出声响�? },
       en: { introLine: "You are already within my blade's reach.", ultimateName: 'Shadow Execution!', finalLine: 'Death makes no sound.' }
     },
     priest: {
       voiceKey: 'ultPriest',
-      zh: { introLine: '以圣光之名，审判降临?', ultimateName: '神圣断罪斩！', finalLine: '归于光明吧?' },
+      zh: { introLine: '以圣光之名，审判降临�?, ultimateName: '神圣断罪斩！', finalLine: '归于光明吧�? },
       en: { introLine: 'By the light, I shall end this.', ultimateName: 'Divine Severance!', finalLine: 'Be purified.' }
     },
     shaman: {
       voiceKey: 'ultShaman',
-      zh: { introLine: '古老的灵啊，回应我的召唤！', ultimateName: '万灵雷鸣祭！', finalLine: '这是自然的审判?' },
+      zh: { introLine: '古老的灵啊，回应我的召唤！', ultimateName: '万灵雷鸣祭！', finalLine: '这是自然的审判�? },
       en: { introLine: 'Ancient spirits, answer my call!', ultimateName: 'Thunder Rite of Spirits!', finalLine: "This is nature's judgment." }
     },
     necro: {
       voiceKey: 'ultNecro',
-      zh: { introLine: '亡者的低语，正在呼唤你?', ultimateName: '冥骨万魂葬！', finalLine: '欢迎，加入我的亡灵军团?' },
+      zh: { introLine: '亡者的低语，正在呼唤你�?, ultimateName: '冥骨万魂葬！', finalLine: '欢迎，加入我的亡灵军团�? },
       en: { introLine: 'The whispers of the dead call your name.', ultimateName: 'Graveborn Soul Burial!', finalLine: 'Welcome to my army of the dead.' }
     },
     warlock: {
       voiceKey: 'ultWarlock',
-      zh: { introLine: '深渊已经注视着你?', ultimateName: '黑焰终末契约?', finalLine: '你的灵魂，归我了?' },
+      zh: { introLine: '深渊已经注视着你�?, ultimateName: '黑焰终末契约�?, finalLine: '你的灵魂，归我了�? },
       en: { introLine: 'The abyss has set its gaze upon you.', ultimateName: 'Darkflame Covenant!', finalLine: 'Your soul belongs to me.' }
     },
     swordsman: {
       voiceKey: 'ultSwordsman',
-      zh: { introLine: '此刃，只为斩断命运?', ultimateName: '天燕一文字?', finalLine: '胜负已分?' },
+      zh: { introLine: '此刃，只为斩断命运�?, ultimateName: '天燕一文字�?, finalLine: '胜负已分�? },
       en: { introLine: 'This blade shall sever fate itself.', ultimateName: 'Heavenly Ichi-Monji!', finalLine: 'The duel is over.' }
     },
     hunter: {
       voiceKey: 'ultHunter',
-      zh: { introLine: '目标锁定，猎杀开始?', ultimateName: '星陨贯魂箭！', finalLine: '猎物，终将倒下?' },
+      zh: { introLine: '目标锁定，猎杀开始�?, ultimateName: '星陨贯魂箭！', finalLine: '猎物，终将倒下�? },
       en: { introLine: 'Target locked. The hunt begins.', ultimateName: 'Starfall Piercing Shot!', finalLine: 'All prey must fall.' }
     },
     monk: {
       voiceKey: 'ultMonk',
-      zh: { introLine: '心若止水，拳破山河?', ultimateName: '金刚灭世拳！', finalLine: '你的执念，太弱了?' },
+      zh: { introLine: '心若止水，拳破山河�?, ultimateName: '金刚灭世拳！', finalLine: '你的执念，太弱了�? },
       en: { introLine: 'Still mind. Unbreakable fist.', ultimateName: 'Vajra Worldbreaker Fist!', finalLine: 'Your resolve was weak.' }
     },
-    monk_alt: {
+    '姝﹀�?: {
       voiceKey: 'ultMonk',
-      zh: { introLine: '心若止水，拳破山河?', ultimateName: '金刚灭世拳！', finalLine: '你的执念，太弱了?' },
+      zh: { introLine: '心若止水，拳破山河�?, ultimateName: '金刚灭世拳！', finalLine: '你的执念，太弱了�? },
       en: { introLine: 'Still mind. Unbreakable fist.', ultimateName: 'Vajra Worldbreaker Fist!', finalLine: 'Your resolve was weak.' }
     }
   };
@@ -1289,7 +1263,7 @@
     if(!detail.rolls || detail.rolls.length===0) return `${detail.notation} = ${detail.total}`;
     const body = `[${detail.rolls.join(', ')}]`;
     const mod = detail.modifier ? (detail.modifier>0 ? ` + ${detail.modifier}` : ` - ${Math.abs(detail.modifier)}`) : '';
-    return `${detail.notation} → ${body}${mod} = ${detail.total}`;
+    return `${detail.notation} �?${body}${mod} = ${detail.total}`;
   }
   const DICE_BOX_SIDES = new Set([4, 6, 8, 10, 12, 20, 100]);
   function parseDiceBoxNotation(notation){
@@ -1464,13 +1438,13 @@
     const reason = ev.reason && (ev.reason.stack || ev.reason.message || String(ev.reason));
     pushDebug('window.unhandledrejection', { reason });
   });
-  function loggedRoll(label, notation){ const detail = rollDetail(notation); log(`🎲 ${label}：${formatRollDetail(detail)}`); return detail.total; }
+  function loggedRoll(label, notation){ const detail = rollDetail(notation); log(`🎲 ${label}�?{formatRollDetail(detail)}`); return detail.total; }
   function loggedRollBatch(label, notation, count){
     if(!count) return 0;
     const details = [];
     let total = 0;
     for(let i=0;i<count;i++){ const detail = rollDetail(notation); details.push(formatRollDetail(detail)); total += detail.total; }
-    log(`🎲 ${label}：${details.join('；')} → 合计 ${total}`);
+    log(`🎲 ${label}�?{details.join('�?)} �?合计 ${total}`);
     return total;
   }
   function canAnimateRollNotation(notation){
@@ -2041,10 +2015,10 @@
       summary.classList.add('hidden');
     }
     val.classList.remove('is-visible');
-    log(`🎲 ${title}：${formatRollDetail(detail)}`);
+    log(`🎲 ${title}�?{formatRollDetail(detail)}`);
     return detail.total;
   }
-  function setMode(text){ $('mode-indicator').textContent = `当前模式：${text}`; }
+  function setMode(text){ $('mode-indicator').textContent = `当前模式�?{text}`; }
   function setHint(text){ $('selection-hint').textContent = text; }
   function current(){ return state.players[state.current]; }
   function enemyOf(p){ return state.players.find(x=>x.id!==p.id && x.alive); }
@@ -2447,7 +2421,7 @@
         <span class="badge">Arena Run</span>
         <h2>选择奖励</h2>
       </div>
-      <p class="muted">Choose one reward before the next battle.</p>
+      <p class="muted">在下一场战斗前选择一个本轮增益�?/p>
       <div class="run-reward-grid">${cards}</div>
     `);
     document.querySelectorAll('#run-panel .run-reward-card').forEach(btn => {
@@ -2476,7 +2450,7 @@
   function showRunResult(won){
     const completed = state.run.battleResults.filter(x => x.won).length;
     const turns = state.run.battleResults.reduce((sum, x) => sum + Number(x.turns || 0), 0);
-    const rewards = state.run.rewardHistory.map(x => `<li>${escapeHtml(runRewardName(x))}</li>`).join('') || '<li>None</li>';
+    const rewards = state.run.rewardHistory.map(x => `<li>${escapeHtml(runRewardName(x))}</li>`).join('') || '<li>�?/li>';
     showRunPanel(`
       <div class="run-panel-head">
         <span class="badge">${won ? 'Victory' : 'Defeat'}</span>
@@ -2487,7 +2461,7 @@
         <div><strong>${turns}</strong><span>Total turns</span></div>
         <div><strong>${state.run.runDeck.length}</strong><span>牌库张数</span></div>
       </div>
-      <h3>Rewards gained</h3>
+      <h3>已获得奖�?/h3>
       <ul class="run-reward-history">${rewards}</ul>
       <div class="run-actions">
         <button id="run-restart" type="button">Restart Arena Run</button>
@@ -2588,7 +2562,6 @@
     if(layer){
       layer.classList.add('hidden');
       layer.innerHTML = '';
-      layer.removeAttribute('style');
     }
   }
 
@@ -2601,7 +2574,7 @@
   }
 
   function ultimateCalloutFor(professionKey){
-    const data = ULTIMATE_CALL_OUTS_SAFE[professionKey] || (professionKey === 'monk' ? ULTIMATE_CALL_OUTS_SAFE.monk : null);
+    const data = ULTIMATE_CALL_OUTS_SAFE[professionKey] || (professionKey === '姝﹀�? ? ULTIMATE_CALL_OUTS_SAFE.monk : null);
     if(!data) return null;
     const lang = String(I18N().getLang?.() || 'zh').toLowerCase().startsWith('en') ? 'en' : 'zh';
     const lines = data[lang] || data.zh || data.en || {};
@@ -2636,48 +2609,73 @@
   }
 
   function playUltimateCutIn(characterPortrait, options = {}){
-    const layer = $('ultimate-cutin-layer');
-    if(!layer || !characterPortrait?.src || ultimateCutInTimer) return;
+        const layer = $('ultimate-cutin-layer');
+    if(!layer || !characterPortrait?.src || ultimateCutInTimer) {
+            return;
+    }
     const config = { ...ULTIMATE_CUTIN_DEFAULTS, ...options };
     const side = characterPortrait.side === 'right' ? 'right' : 'left';
     const name = characterPortrait.name || '';
     const damage = Number(characterPortrait.damage || 0);
     const callout = characterPortrait.callout || null;
+    
     const introLine = callout?.introLine || '';
     const ultimateName = callout?.ultimateName || name;
     const voiceDurationMs = Number(callout?.voiceDurationMs || 0);
-    const classKey = String(characterPortrait.classId || characterPortrait.professionKey || name || 'default')
-      .toLowerCase()
-      .replace(/[^a-z0-9_-]/g, '') || 'default';
+  
+    // STAGE 1 TIMING
+    // 动态计算前置时长，最�?500ms
     const preIntroDuration = Math.max(1500, voiceDurationMs - config.duration + 400);
+  
+    // STAGE 2 TIMING
+    // 语音剩余时长（因为第一阶段已经播了 preIntroDuration 的语音）
     const remainingVoiceDuration = Math.max(0, voiceDurationMs - preIntroDuration);
     const stage2Duration = Math.max(config.duration, remainingVoiceDuration + 650);
+  
     const titleTextDuration = Math.max(2300, stage2Duration - config.titleDelay - 520);
+  
     const particles = ultimateParticles(config.particleCount, 'particle');
     const shards = ultimateParticles(Math.max(18, Math.round(config.particleCount * 0.75)), 'shard');
-    layer.className = `ultimate-cutin-layer side-${side} class-${classKey}`;
+  
+    layer.className = `ultimate-cutin-layer side-${side} class-${callout?.voiceKey?.replace("-ult", "") || "warrior"}`;
+    
+    // ============================================
+    // STAGE 1: Black Screen + Intro Line + Effects
+    // ============================================
     layer.style.setProperty('--ultimate-intro-text-duration', `${preIntroDuration}ms`);
+    
     layer.innerHTML = `
       <div class="ultimate-black-bg"></div>
       <div class="ultimate-pre-glow"></div>
       <div class="ultimate-pre-embers"></div>
       <div class="ultimate-intro-container">
         <div class="ultimate-callout ultimate-intro-line is-active">${escapeHtml(introLine)}</div>
-      </div>`;
+      </div>
+    `;
+    
     document.body.classList.add('ultimate-hitstop');
     setTimeout(() => document.body.classList.remove('ultimate-hitstop'), config.hitStop);
+    
+    // Play Voice Immediately
     playUltimateVoice(callout);
+  
+    // Disable layer animation for Stage 1 so it doesn't shake or fade out
     layer.style.animation = 'none';
     layer.style.opacity = '1';
-    ultimateCutInTimer = setTimeout(() => {
-      clearUltimateCutIn();
-    }, preIntroDuration + stage2Duration);
+  
+    // ============================================
+    // STAGE 2: Main Cut-in (Triggered later)
+    // ============================================
     queueUltimateCutIn(preIntroDuration, () => {
+      // 设置 Stage 2 �?CSS 变量
       layer.style.setProperty('--ultimate-duration', `${stage2Duration}ms`);
       layer.style.setProperty('--ultimate-title-text-duration', `${titleTextDuration}ms`);
+      
+      // Restart the layer animation for Stage 2
       layer.style.animation = 'none';
-      void layer.offsetWidth;
+      void layer.offsetWidth; // trigger reflow
       layer.style.animation = '';
+  
       layer.style.setProperty('--ultimate-shake', `${config.shakeIntensity}px`);
       layer.style.setProperty('--ultimate-shake-a', `${config.shakeIntensity * -0.4}px`);
       layer.style.setProperty('--ultimate-shake-b', `${config.shakeIntensity * 0.65}px`);
@@ -2692,57 +2690,67 @@
       layer.style.setProperty('--ultimate-crack-angle', `${config.crackAngle}deg`);
       layer.style.setProperty('--ultimate-shockwave-size', String(config.shockwaveSize));
       layer.style.setProperty('--ultimate-shockwave-end-size', String(config.shockwaveSize * 1.35));
-      layer.innerHTML = `
-      <div class="ultimate-dim"></div>
-      <div class="ultimate-crack-layer">
-        <div class="ultimate-crack">
-          <span class="ultimate-crack-core"></span>
-          <span class="ultimate-crack-edge edge-a"></span>
-          <span class="ultimate-crack-edge edge-b"></span>
-          <span class="ultimate-crack-branch branch-a"></span>
-          <span class="ultimate-crack-branch branch-b"></span>
-          <span class="ultimate-crack-branch branch-c"></span>
-          <span class="ultimate-crack-branch branch-d"></span>
+  
+      // 覆盖 innerHTML 触发全新的动画流（并且不再含�?introLine�?    layer.innerHTML = `
+        <div class="ultimate-dim"></div>
+        <div class="ultimate-crack-layer">
+          <div class="ultimate-crack">
+            <span class="ultimate-crack-core"></span>
+            <span class="ultimate-crack-edge edge-a"></span>
+            <span class="ultimate-crack-edge edge-b"></span>
+            <span class="ultimate-crack-branch branch-a"></span>
+            <span class="ultimate-crack-branch branch-b"></span>
+            <span class="ultimate-crack-branch branch-c"></span>
+            <span class="ultimate-crack-branch branch-d"></span>
+          </div>
         </div>
-      </div>
-      <div class="ultimate-fx-layer">
-        <div class="ultimate-energy-bloom"></div>
-        <div class="ultimate-shockwave"></div>
-        <div class="ultimate-shockwave secondary"></div>
-        <div class="ultimate-sparks">${particles}</div>
-        <div class="ultimate-shards">${shards}</div>
-      </div>
-      <figure class="ultimate-cutin-afterimage afterimage-a">
-        <img src="${escapeHtml(characterPortrait.src)}" alt="">
-      </figure>
-      <figure class="ultimate-cutin-afterimage afterimage-b">
-        <img src="${escapeHtml(characterPortrait.src)}" alt="">
-      </figure>
-      <figure class="ultimate-cutin-art">
-        <img src="${escapeHtml(characterPortrait.src)}" alt="${escapeHtml(name)} ultimate">
-      </figure>
-      <div class="ultimate-callout ultimate-intro-line">${escapeHtml(introLine)}</div>
-      <div class="ultimate-title-burst">
-        <span class="ultimate-title-shadow">${escapeHtml(ultimateName)}</span>
-        <strong>${escapeHtml(ultimateName)}</strong>
-      </div>
-      <div class="ultimate-cutin-copy">
-        <span>${escapeHtml(name)}</span>
-        ${damage > 0 ? `<strong>${Math.round(damage)}</strong>` : ''}
-      </div>
-      <div class="ultimate-speed-layer"></div>
-      <div class="ultimate-impact-frame"></div>
-      <div class="ultimate-flash"></div>`;
-      queueUltimateCutIn(config.titleDelay, () => activateUltimateText(layer, '.ultimate-title-burst'));
+        <div class="ultimate-fx-layer">
+          <div class="ultimate-energy-bloom"></div>
+          <div class="ultimate-shockwave"></div>
+          <div class="ultimate-shockwave secondary"></div>
+          <div class="ultimate-sparks">${particles}</div>
+          <div class="ultimate-shards">${shards}</div>
+        </div>
+        <figure class="ultimate-cutin-afterimage afterimage-a">
+          <img src="${escapeHtml(characterPortrait.src)}" alt="">
+        </figure>
+        <figure class="ultimate-cutin-afterimage afterimage-b">
+          <img src="${escapeHtml(characterPortrait.src)}" alt="">
+        </figure>
+        <figure class="ultimate-cutin-art">
+          <img src="${escapeHtml(characterPortrait.src)}" alt="${escapeHtml(name)} ultimate">
+        </figure>
+        
+        <div class="ultimate-title-burst">
+          <span class="ultimate-title-shadow">${escapeHtml(ultimateName)}</span>
+          <strong>${escapeHtml(ultimateName)}</strong>
+        </div>
+        
+        <div class="ultimate-cutin-copy">
+          <span>${escapeHtml(name)}</span>
+          ${damage > 0 ? `<strong>${Math.round(damage)}</strong>` : ''}
+        </div>
+        <div class="ultimate-speed-layer"></div>
+        <div class="ultimate-impact-frame"></div>
+        <div class="ultimate-flash"></div>
+      `;
+  
+      // 重新排布后面的动画出现时�?    queueUltimateCutIn(config.titleDelay, () => activateUltimateText(layer, '.ultimate-title-burst'));
+  
+      // 设置清理定时�?    ultimateCutInTimer = setTimeout(() => {
+        clearUltimateCutIn();
+      }, stage2Duration);
     });
+  }, actualDuration);
   }
+
   function triggerUltimateCutIn(attacker, finalDamage){
     if(!attacker || finalDamage <= 10 || ultimateCutInTimer) return;
     const art = professionArtFor(attacker.professionKey);
     if(!art?.ultimate) return;
     const side = attacker.id === 2 ? 'right' : 'left';
     const name = I18N().entity('profession', attacker.professionKey, attacker.profession?.name || attacker.professionKey);
-    playUltimateCutIn({ src: art.ultimate, name, damage: finalDamage, side, professionKey: attacker.professionKey, callout: ultimateCalloutFor(attacker.professionKey) });
+    playUltimateCutIn({ src: art.ultimate, name, damage: finalDamage, side, callout: ultimateCalloutFor(attacker.professionKey) });
   }
 
   function setupRulesetData(){
@@ -2802,16 +2810,16 @@
 
     pushFromCounts(
       deckCountsFor('profession', profession),
-      '职业技能'
+      '职业技�?
     );
     pushFromCounts(
       deckCountsFor('weapon', weapon),
-      '武器技能'
+      '武器技�?
     );
     if(accessory){
       pushFromCounts(
         deckCountsFor('accessory', accessory),
-        '饰品技能'
+        '饰品技�?
       );
     }
 
@@ -3089,7 +3097,7 @@
       priest: { projectile: 'holy', hit: 'holy-gold', self: 'heal-green' },
       shaman: { projectile: 'nature', hit: 'blue-lightning', self: 'nature-green', teleport: 'teleport-green' },
       necro: { projectile: 'shadow', hit: 'dark-skull', self: 'bone-white' },
-      warlock: { projectile: 'shadow', hit: 'shadow-purple', self: 'buff-red', teleport: 'teleport-purple' },
+      warlock: { projectile: 'elfWarlock', hit: 'shadow-purple', self: 'buff-red', teleport: 'teleport-purple' },
       swordsman: { hit: 'slash-blue', self: 'buff-gold', teleport: 'teleport-blue' },
       hunter: { projectile: 'hunterArrow', hit: 'slash-blue', self: 'wind-green', teleport: 'teleport-green' },
       monk: { hit: 'stun-gold', self: 'buff-gold' },
@@ -3240,7 +3248,7 @@
     if(Array.from(state.mapTokens.values()).some(isBattleChestToken)) return;
     const candidates = battleChestCandidates();
     if(!candidates.length){
-      log('No safe tile was found for the chest.');
+      log('没有找到可生成宝箱的安全格�?);
       return;
     }
     const tile = deep(randItem(candidates));
@@ -3288,7 +3296,7 @@
     } else {
       target.statuses.dot = dot;
     }
-    log(`${target.label} 获得 ${sourceName}：每回合 ${dot.damagePerTick}，持�?${dot.durationTurns} 回合。`);
+    log(`${target.label} 获得 ${sourceName}：每回合 ${dot.damagePerTick}，持�?${dot.durationTurns} 回合。`);
   }
 
   function applyControlStatus(target, controlType, duration, sourceName = '控制'){
@@ -3300,7 +3308,7 @@
     else if(controlType === 'burn') target.statuses.burn = Math.max(target.statuses.burn || 0, dur);
     else if(controlType === 'stun') target.statuses.stun = Math.max(target.statuses.stun || 0, dur);
     else if(controlType === 'root') target.statuses.root = Math.max(target.statuses.root || 0, dur);
-    log(`${target.label} 受到 ${sourceName}:${controlType} ${dur} 回合。`);
+    log(`${target.label} 受到 ${sourceName}�?{controlType} ${dur} 回合。`);
   }
 
   function applyStatusConfig(target, cfg = {}, sourceName = '效果'){
@@ -3422,9 +3430,9 @@
     const cnt = Number(insertCount || 1);
     if (!insertCardKey || cnt <= 0) return;
     for(let i=0;i<cnt;i++){
-      targetPlayer.deck.splice(Math.floor(Math.random()*(targetPlayer.deck.length+1)),0,{cardKey:insertCardKey, origin:'负面牌'});
+      targetPlayer.deck.splice(Math.floor(Math.random()*(targetPlayer.deck.length+1)),0,{cardKey:insertCardKey, origin:'负面�?});
     }
-    log(`${targetPlayer.label} 的牌库被加入了 ${cnt} 张负面牌。`);
+    log(`${targetPlayer.label} 的牌库被加入�?${cnt} 张负面牌。`);
   }
 
   async function triggerMapTokenOnEnter(player, pos = player.pos){
@@ -3440,7 +3448,7 @@
       if (tok.damage) {
         const dmg = loggedRoll(`${player.label} ${tok.name || '陷阱'}伤害`, resolvePlayerNotation(player, tok.damage));
         takePureDamage(player, dmg);
-        log(`${player.label} 触发 ${tok.name || '陷阱'}，受到 ${dmg} 伤害。`);
+        log(`${player.label} 触发 ${tok.name || '陷阱'}，受�?${dmg} 伤害。`);
       }
       if (tok.insertCardKey) insertNegativeCardsToDeck(player, tok.insertCardKey, tok.insertCount || 1);
       applyTokenControl(player, tok);
@@ -3472,7 +3480,7 @@
               if (target.hp <= 0) finalizePlayerState(target);
               else playUnitAnim(target, 'hurt', spriteAnimDuration(target, 'hurt', 460));
             }
-            log(`${tok.name || '炮塔'} 命中 ${target.label}，原始伤害 ${dmg}，目标当前生命 ${target.hp}，格挡 ${target.block}。`);
+            log(`${tok.name || '炮塔'} 命中 ${target.label}，原始伤�?${dmg}，目标当前生�?${target.hp}，格�?${target.block}。`);
           }
           if (tok.insertCardKey) insertNegativeCardsToDeck(target, tok.insertCardKey, tok.insertCount || 1);
           applyTokenControl(target, tok);
@@ -3509,21 +3517,21 @@
       blocking: cfg.blocking !== false && (cfg.tokenKind === 'permanent_pillar')
     };
     state.mapTokens.set(key(tile), token);
-    log(`${player.label} 在 ${tile.q},${tile.r} 放置了 ${token.name}。`);
+    log(`${player.label} �?${tile.q},${tile.r} 放置�?${token.name}。`);
   }
 
   function chestRewardDefinitions(){
     return [
-      { key: 'heal', title: '战地补给', dice: '2D10', desc: '立刻回复 2D10 生命，不能超过最大生命。' },
-      { key: 'basic_bonus', title: '淬刃强攻', dice: '+1D8', desc: '本场战斗中，普通攻击额外造成 1D8 伤害。' },
-      { key: 'direct_damage', title: '宝箱爆破', dice: '2D8', desc: '立刻对敌人造成 2D8 伤害，可直接结束战斗。' }
+      { key: 'heal', title: '生命补给', dice: '2d10', desc: '回复 2D10 生命值�? },
+      { key: 'basic_bonus', title: '锐化打击', dice: '1d8', desc: '本场战斗普通攻击额外造成 1D8 伤害�? },
+      { key: 'direct_damage', title: '奥术爆破', dice: '2d8', desc: '立刻对敌人造成 2D8 伤害�? }
     ];
   }
 
   function chooseAutoChestReward(player){
     const enemy = enemyOf(player);
     if(player.hp < player.maxHp * 0.5) return 'heal';
-    if(enemy && Number(enemy.hp || 0) + Number(enemy.block || 0) <= 9) return 'direct_damage';
+    if(enemy && enemy.hp <= 9) return 'direct_damage';
     return 'basic_bonus';
   }
 
@@ -3540,7 +3548,7 @@
         <span class="badge">宝箱</span>
         <h2>选择奖励</h2>
       </div>
-      <p class="muted">${escapeHtml(player.label)} 打开了宝箱，选择一个本场即时奖励。</p>
+      <p class="muted">${escapeHtml(player.label)} 打开了一个宝箱�?/p>
       <div class="run-reward-grid">${buttons}</div>
     `);
     document.querySelectorAll('#run-panel [data-chest-reward]').forEach(btn => {
@@ -3562,31 +3570,29 @@
   async function applyBattleChestReward(player, rewardKey, animated = true){
     if(!player?.alive) return;
     if(rewardKey === 'heal'){
-      const amount = animated ? await animatedRoll(`${player.label} 宝箱治疗`, '2d10') : loggedRoll(`${player.label} 宝箱治疗`, '2d10');
-      const before = Number(player.hp || 0);
+      const amount = animated ? await animatedRoll(`${player.label} chest healing`, '2d10') : loggedRoll(`${player.label} chest healing`, '2d10');
       player.hp = Math.min(player.maxHp, player.hp + amount);
       triggerSkillTileFx('heal-green', player.pos);
-      log(`${player.label} 从宝箱中获得战地补给，回复 ${player.hp - before}/${amount} 生命。`);
+      log(`${player.label} 从宝箱中恢复 ${amount} 生命。`);
       return;
     }
     if(rewardKey === 'basic_bonus'){
       player.buffs.runChestBasicBonusDie = '1d8';
       triggerSkillTileFx('buff-gold', player.pos);
-      log(`${player.label} 获得淬刃强攻：本场战斗普通攻击额外 +1D8。`);
+      log(`${player.label} 本场战斗的普通攻击获�?+1D8。`);
       return;
     }
     if(rewardKey === 'direct_damage'){
       const enemy = enemyOf(player);
       if(!enemy) return;
-      const dmg = animated ? await animatedRoll(`${player.label} 宝箱爆破`, '2d8') : loggedRoll(`${player.label} 宝箱爆破`, '2d8');
+      const dmg = animated ? await animatedRoll(`${player.label} chest blast`, '2d8') : loggedRoll(`${player.label} chest blast`, '2d8');
       triggerSkillTileFx('holy-gold', enemy.pos);
-      const result = dealDamage(player, enemy, dmg, { sourceName: '宝箱爆破', spell: true, anim: 'cast' });
+      dealDamage(player, enemy, dmg, { sourceName: '宝箱', spell: true, anim: 'cast' });
       if(enemy.hp <= 0){
         finalizePlayerState(enemy);
         state.winner = player.id;
-        setHint(`${player.label} 获胜！`);
       }
-      log(`${player.label} 触发宝箱爆破，对 ${enemy.label} 掷出 ${dmg} 点伤害，实际造成 ${result.finalDamage} 点。`);
+      log(`${player.label} 用宝箱爆破对 ${enemy.label} 造成 ${dmg} 伤害。`);
     }
   }
 
@@ -3600,14 +3606,10 @@
     log(`${player.label} 打开了宝箱。`);
     grantRunSpecialTileDodge(player, '宝箱');
     if(player.type === 'ai'){
-      const rewardKey = chooseAutoChestReward(player);
-      const reward = chestRewardDefinitions().find(x => x.key === rewardKey);
-      log(`${player.label} 自动选择宝箱奖励：${reward?.title || '未知奖励'}。`);
-      await applyBattleChestReward(player, rewardKey, animated);
+      await applyBattleChestReward(player, chooseAutoChestReward(player), animated);
       render();
     } else {
       showBattleChestRewards(player);
-      setHint('宝箱已打开，请选择一个奖励。');
     }
     return true;
   }
@@ -3625,23 +3627,6 @@
 
   function weaponAttackAnim(player){
     return weaponPresentation(player).anim || 'attack';
-  }
-
-  function basicAttackRange(player){
-    return Number(getActiveBasicAttack(player)?.range || 1);
-  }
-
-  function basicAttackAnimForDamage(player, target, damage){
-    const targetDistance = player?.pos && target?.pos ? dist(player.pos, target.pos) : basicAttackRange(player);
-    if(basicAttackRange(player) > 1 && targetDistance > 1) return 'cast';
-    return Number(damage || 0) >= 6 ? 'attackHeavy' : 'attack';
-  }
-
-  function explicitCardRange(cardDef){
-    const cfg = cardDef?.config || {};
-    if(Object.prototype.hasOwnProperty.call(cfg, 'range')) return Number(cfg.range || 0);
-    if(Object.prototype.hasOwnProperty.call(cfg, 'baseRange')) return Number(cfg.baseRange || 0);
-    return null;
   }
 
   function basicProjectileFor(player){
@@ -3672,14 +3657,12 @@
 
   function isWeaponOrigin(origin){
     const raw = String(origin || '');
-    return raw.includes('武器') || raw.includes('姝﹀櫒');
+    return raw.includes('武器') || raw.includes('姝﹀�?);
   }
 
   function cardActionAnim(player, handItem, cardDef){
-    const explicitRange = explicitCardRange(cardDef);
-    if(explicitRange === 1) return 'attackHeavy';
-    if(basicAttackRange(player) > 1) return 'cast';
-    if(explicitRange !== null && explicitRange > 1) return 'cast';
+    const visual = visualProfileForCard(handItem?.cardKey, cardDef, player);
+    if(visual?.anim && hasSpriteAnim(player, visual.anim)) return visual.anim;
     if(['self_buff','grant_multiple_buffs','transform_basic_attack','summon_token_into_self_deck','teleport','create_map_token'].includes(cardDef?.template)) return castOrRangedAnim(player);
     if(cardDef?.config?.spell && Number(cardDef?.config?.range || 1) > 1) return castOrRangedAnim(player);
     if(isWeaponOrigin(cardActionSource(handItem, cardDef))) return weaponAttackAnim(player);
@@ -3784,8 +3767,8 @@
   function grantCardToHand(player, cardKey, origin){
     if (!cardKey) return;
     const def = getCardDef(cardKey);
-    player.hand.push({ cardKey, origin: origin || def?.source || '职业技能' });
-    log(`${player.label} 获得了 ${def?.name || cardKey}。`);
+    player.hand.push({ cardKey, origin: origin || def?.source || '职业技�? });
+    log(`${player.label} 获得�?${def?.name || cardKey}。`);
   }
 
 
@@ -3880,7 +3863,7 @@ function attemptReactiveMove(player, triggerLabel){
   }
   const from = key(player.pos);
   movePlayerTo(player, dst, { duration: 260, triggerDestinationEffects: true });
-  log(`${player.label} 因 ${triggerLabel || '反应位移'} 随机移动：${from} → ${key(dst)}。`);
+  log(`${player.label} �?${triggerLabel || '反应位移'} 随机移动�?{from} �?${key(dst)}。`);
   return true;
 }
 
@@ -3900,7 +3883,7 @@ function maybeTriggerReactiveMoveOnTargeted(attacker, target, source, sourceName
   const moved = attemptReactiveMove(target, `${sourceName || '被选为目标'}时`);
   if (!moved) return { moved:false, evaded:false };
   if (!attackStillValid(attacker, target, source)) {
-    log(`${target.label} 脱离了 ${sourceName || '该攻击'} 的有效范围，本次攻击落空。`);
+    log(`${target.label} 脱离�?${sourceName || '该攻�?} 的有效范围，本次攻击落空。`);
     return { moved:true, evaded:true };
   }
   return { moved:true, evaded:false };
@@ -4052,7 +4035,7 @@ function applyRewardListSync(player, rewards, labelPrefix){
     } else if (reward.type === 'buff_basic' || reward.type === 'buffBasic') {
       const v = Number(reward.value || 0);
       player.buffs.nextBasicFlat = (player.buffs.nextBasicFlat || 0) + v;
-      log(`${player.label} 的下次普攻 +${v}。`);
+      log(`${player.label} 的下次普�?+${v}。`);
     }
   }
 }
@@ -4083,7 +4066,7 @@ function applyDamageTakenTriggeredPassives(player, finalDamage, sourceName){
         player.turn.passiveOnceTriggered = player.turn.passiveOnceTriggered || {};
         player.turn.passiveOnceTriggered[passiveKey] = true;
       }
-      log(`${player.label} 的被动 ${passive.name || passiveKey} 因受到 ${finalDamage} 伤害触发。`);
+      log(`${player.label} 的被�?${passive.name || passiveKey} 因受�?${finalDamage} 伤害触发。`);
     }
   }
 }
@@ -4096,7 +4079,7 @@ function applyHealOnDamaged(player, finalDamage){
   if (heal > 0) {
     player.hp = Math.min(player.maxHp, player.hp + heal);
     playVoiceLine('voiceHealed', 0.68, 900);
-    log(`${player.label} 受伤后立即恢复 ${heal} 生命。`);
+    log(`${player.label} 受伤后立即恢�?${heal} 生命。`);
   }
 }
 
@@ -4106,13 +4089,13 @@ function applyRunIncomingDamageModifiers(target, rawDamage, sourceName){
   if(Number(target.buffs.runShieldHalfCharges || 0) > 0){
     target.buffs.runShieldHalfCharges = 0;
     const reduced = Math.max(0, Math.ceil(damage / 2));
-    log(`${target.label} 的开场护盾将 ${sourceName || '伤害'} �?${damage} 降至 ${reduced}。`);
+    log(`${target.label} 的开场护盾将 ${sourceName || '伤害'} �?${damage} 降至 ${reduced}。`);
     damage = reduced;
   }
   if(damage > 0 && Number(target.buffs.runDodgeReductionCharges || 0) > 0){
     target.buffs.runDodgeReductionCharges = 0;
     const reduced = Math.max(0, damage - 3);
-    log(`${target.label} 的危险步伐将 ${sourceName || '伤害'} �?${damage} 降至 ${reduced}。`);
+    log(`${target.label} 的危险步伐将 ${sourceName || '伤害'} �?${damage} 降至 ${reduced}。`);
     damage = reduced;
   }
   return damage;
@@ -4125,7 +4108,7 @@ function maybeTriggerRunLowHpRecovery(player){
   const heal = rollOrValue(`${player.label} 绝境回复`, '1d10');
   player.hp = Math.min(player.maxHp, player.hp + heal);
   triggerSkillTileFx('heal-green', player.pos);
-  log(`${player.label} 的绝境回复恢�?${heal} 生命。`);
+  log(`${player.label} 的绝境回复恢�?${heal} 生命。`);
 }
 
 function grantRunSpecialTileDodge(player, reason){
@@ -4133,7 +4116,7 @@ function grantRunSpecialTileDodge(player, reason){
   if(Number(player.buffs.runDodgeReductionCharges || 0) > 0) return;
   player.buffs.runDodgeReductionCharges = 1;
   triggerSkillTileFx('buff-gold', player.pos);
-  log(`${player.label} �?${reason || '特殊地格'} 获得危险步伐：下次受到伤�?-3。`);
+  log(`${player.label} �?${reason || '特殊地格'} 获得危险步伐：下次受到伤�?-3。`);
 }
 
 function takePureDamage(player, rawDamage){
@@ -4165,7 +4148,7 @@ function dealDamage(attacker, target, rawDamage, meta){
 
   if (damage > 0 && (target.buffs?.dodgeNextDamage || 0) > 0) {
     target.buffs.dodgeNextDamage = Math.max(0, Number(target.buffs.dodgeNextDamage || 0) - 1);
-    log(`${target.label} 的闪避生效，完全闪避了 ${sourceName}。`);
+    log(`${target.label} 的闪避生效，完全闪避�?${sourceName}。`);
     return { rawDamage: damage, blocked: 0, finalDamage: 0, dodged: true };
   }
 
@@ -4187,7 +4170,7 @@ function dealDamage(attacker, target, rawDamage, meta){
     if (attacker && attacker.alive && (target.buffs?.disarmAttackerCharges || 0) > 0 && Number(target.buffs?.disarmAttackerOnHit || 0) > 0) {
       target.buffs.disarmAttackerCharges = Math.max(0, Number(target.buffs.disarmAttackerCharges || 0) - 1);
       attacker.statuses.disarm = Math.max(Number(attacker.statuses.disarm || 0), Number(target.buffs.disarmAttackerOnHit || 1));
-      log(`${target.label} 的反制生效，${attacker.label} 被缴械 ${Number(target.buffs.disarmAttackerOnHit || 1)} 回合。`);
+      log(`${target.label} 的反制生效，${attacker.label} 被缴�?${Number(target.buffs.disarmAttackerOnHit || 1)} 回合。`);
     }
 
     if (attacker && attacker.alive && (target.buffs?.counterCharges || 0) > 0 && (target.buffs?.counterUseTakenDamage || target.buffs?.counterDamage)) {
@@ -4203,7 +4186,7 @@ function dealDamage(attacker, target, rawDamage, meta){
 
     if (target.alive && target.buffs?.reactiveMoveTrigger === 'on_damaged' && (target.buffs?.reactiveMoveCharges || 0) > 0) {
       target.buffs.reactiveMoveCharges = Math.max(0, Number(target.buffs.reactiveMoveCharges || 0) - 1);
-      attemptReactiveMove(target, '受伤后');
+      attemptReactiveMove(target, '受伤�?);
     }
   }
   if(!healOnDamagedApplied) applyHealOnDamaged(target, finalDamage);
@@ -4238,10 +4221,10 @@ async function applyRewardList(player, rewards, labelPrefix){
       } else if (reward.type === 'buff_basic' || reward.type === 'buffBasic') {
         const v = Number(reward.value || 0);
         player.buffs.nextBasicFlat = (player.buffs.nextBasicFlat || 0) + v;
-      log(`${player.label} 的下次普攻 +${v}。`);
+        log(`${player.label} 的下次普�?+${v}。`);
       } else if (reward.type === 'bonus_die' || reward.type === 'bonusDie') {
         player.buffs.nextBasicDie = reward.value;
-        log(`${player.label} 获得额外�?${reward.value}。`);
+        log(`${player.label} 获得额外�?${reward.value}。`);
       } else if (reward.type === 'draw') {
         drawCards(player, Number(reward.value || 1));
       } else if (reward.type === 'extra_basic_cap') {
@@ -4252,7 +4235,7 @@ async function applyRewardList(player, rewards, labelPrefix){
           player.turn.basicSpent = Math.max(0, player.turn.basicSpent - refunded);
           log(`${player.label} 立即返还 ${refunded} 次普通攻击次数。`);
         } else {
-          log(`${player.label} 本回合额外获�?${v} 次普攻容量。`);
+          log(`${player.label} 本回合额外获�?${v} 次普攻容量。`);
         }
       } else if (reward.type === 'spell_immune') {
         player.buffs.spellImmune = true;
@@ -4263,7 +4246,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       } else if (reward.type === 'extra_class_card_use') {
         const v = Number(reward.value || 1);
         player.buffs.extraClassCardUses = (player.buffs.extraClassCardUses || 0) + v;
-        log(`${player.label} 本回合额外获�?${v} 次职业卡使用次数。`);
+        log(`${player.label} 本回合额外获�?${v} 次职业卡使用次数。`);
       } else if (reward.type === 'card') {
         grantCardToHand(player, reward.cardKey || reward.value, reward.origin);
       }
@@ -4301,14 +4284,14 @@ async function applyRewardList(player, rewards, labelPrefix){
         if(normalizedType !== 'dealt_damage') continue;
         const passed = rawDamage >= thresholdValue;
         pushDebug('threshold_reward_once_per_turn.check', { player: player.label, passiveKey, thresholdType: normalizedType, rawDamage, thresholdValue, passed, config: passive.config || {} });
-        log(`${player.label} 检查被动 ${passive.name || passiveKey}：类型 ${normalizedType}，本次伤害 ${rawDamage}，阈值 ${thresholdValue}，结果 ${passed ? '通过' : '未通过'}。`);
+        log(`${player.label} 检查被�?${passive.name || passiveKey}：类�?${normalizedType}，本次伤�?${rawDamage}，阈�?${thresholdValue}，结�?${passed ? '通过' : '未通过'}。`);
         if(passed){
           await applyRewardList(player, passive.config?.rewardList || [], passive.name || sourceName || '被动');
           if(passive.config?.oncePerTurn){
             player.turn.passiveOnceTriggered = player.turn.passiveOnceTriggered || {};
             player.turn.passiveOnceTriggered[passiveKey] = true;
           }
-          log(`${player.label} 的被动 ${passive.name || ''} 达到阈值并触发。`);
+          log(`${player.label} 的被�?${passive.name || ''} 达到阈值并触发。`);
         }
       }
 
@@ -4320,7 +4303,7 @@ async function applyRewardList(player, rewards, labelPrefix){
             player.turn.passiveOnceTriggered = player.turn.passiveOnceTriggered || {};
             player.turn.passiveOnceTriggered[passiveKey] = true;
           }
-          log(`${player.label} 的被�?${passive.name || ''} 在造成伤害后触发多重增益。`);
+          log(`${player.label} 的被�?${passive.name || ''} 在造成伤害后触发多重增益。`);
         }
       }
     }
@@ -4354,7 +4337,7 @@ async function applyRewardList(player, rewards, labelPrefix){
           player.turn.passiveOnceTriggered = player.turn.passiveOnceTriggered || {};
           player.turn.passiveOnceTriggered[passiveKey] = true;
         }
-        log(`${player.label} 的被动 ${passive.name || passiveKey} 因移动 ${moved} 格触发。`);
+        log(`${player.label} 的被�?${passive.name || passiveKey} 因移�?${moved} 格触发。`);
       }
     }
   }
@@ -4373,7 +4356,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         const [drop] = player.hand.splice(idx,1);
         player.discard.push(drop);
         const def = getCardDef(drop.cardKey);
-        log(`${player.label} 弃掉了 ${def?.name || drop.cardKey}。`);
+        log(`${player.label} 弃掉�?${def?.name || drop.cardKey}。`);
       }
       return false;
     }
@@ -4382,7 +4365,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     state.dualModeCard = null;
     $('choice-panel').innerHTML='';
     setMode('弃牌');
-    setHint(`手牌超过上限，请弃牌至 ${limit} 张。`);
+    setHint(`手牌超过上限，请弃牌�?${limit} 张。`);
     return true;
   }
 
@@ -4392,13 +4375,13 @@ async function applyRewardList(player, rewards, labelPrefix){
     const [drop] = p.hand.splice(index,1);
     p.discard.push(drop);
     const def = getCardDef(drop.cardKey);
-    log(`${p.label} 弃掉了 ${def?.name || drop.cardKey}。`);
+    log(`${p.label} 弃掉�?${def?.name || drop.cardKey}。`);
     if(p.hand.length <= handLimit()){
       state.pending = null;
       setMode('待机');
-      setHint('请选择移动、普通攻击，或打出一张牌。');
+      setHint('请选择移动、普通攻击，或打出一张牌�?);
     } else {
-      setHint(`仍需弃牌至 ${handLimit()} 张，当前 ${p.hand.length} 张。`);
+      setHint(`仍需弃牌�?${handLimit()} 张，当前 ${p.hand.length} 张。`);
     }
     render();
   }
@@ -4498,7 +4481,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     spawnBattleChest();
     state.players.forEach(p=>drawCards(p, state.matchOptions.drawOpening + Number(p.drawOpeningBonus || 0)));
     state.players.forEach(p=>ensureHandLimit(p));
-    log(isBlackHoleEnabled() ? '对局开始。黑洞每回合将所有单位向中心牵引 1 格。' : '对局开始。黑洞已关闭。');
+    log(isBlackHoleEnabled() ? '对局开始。黑洞每回合将所有单位向中心牵引 1 格�? : '对局开始。黑洞已关闭�?);
     startTurn();
     setTimeout(fitBoardZoom, 0);
   }
@@ -4550,7 +4533,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     drawCards(p, state.matchOptions.drawPerTurn + Number(p.drawPerTurnBonus || 0));
     if(ensureHandLimit(p)){ render(); return; }
     setMode('待机');
-    setHint('选择移动、普通攻击，或打出一张牌。');
+    setHint('选择移动、普通攻击，或打出一张牌�?);
     render();
     if(p.type==='ai') setTimeout(runAiTurn, 450);
   }
@@ -4659,17 +4642,17 @@ async function applyRewardList(player, rewards, labelPrefix){
       takePureDamage(player, dmg);
       log(`${player.label} 触碰飞行方尖碑危险区域，受到 ${dmg} 伤害。`);
       if(!player.alive) return;
-      grantRunSpecialTileDodge(player, 'spike hazard');
+      grantRunSpecialTileDodge(player, '尖刺危险�?);
     }
     if(isTokenDangerTile(tilePos)){
       const tok = getMapToken(tilePos) || neighbors(tilePos).map(getMapToken).find(Boolean);
       const expr = tok?.damage || '2d8';
       playSfx('trap', 0.55);
-      const dmg = loggedRoll(`${player.label} ${tok?.name || '危险区'}伤害`, resolvePlayerNotation(player, expr));
+      const dmg = loggedRoll(`${player.label} ${tok?.name || '危险�?}伤害`, resolvePlayerNotation(player, expr));
       takePureDamage(player, dmg);
-      log(`${player.label} touched ${tok?.name || 'hazard'} and took ${dmg} damage.`);
+      log(`${player.label} 触碰 ${tok?.name || '危险�?}，受�?${dmg} 伤害。`);
       if(!player.alive) return;
-      grantRunSpecialTileDodge(player, tok?.name || 'hazard');
+      grantRunSpecialTileDodge(player, tok?.name || '危险�?);
     }
     if(isBlackHoleEnabled() && t.type==='center'){
       playSfx('trap', 0.55);
@@ -4683,7 +4666,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(trap && trap.ownerId !== player.id){
       playSfx('trap', 0.55);
       const dmg = loggedRoll(`${player.label} 陷阱伤害`, '2d6'); takePureDamage(player, dmg); player.statuses.slow = 1;
-      log(`${player.label} triggered a trap and took ${dmg} damage.`);
+      log(`${player.label} 触发陷阱，受�?${dmg} 伤害并减速。`);
       state.traps.delete(tileKey);
       if(!player.alive) return;
       grantRunSpecialTileDodge(player, '陷阱');
@@ -4857,7 +4840,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       const lifeCost = Number(passive.config?.lifeCost || 0);
       const drawCount = Number(passive.config?.drawCount || 1);
       p.hp = Math.max(0, p.hp - lifeCost);
-      log(`${p.label} 发动 ${passive.name || '职业被动'}，支付 ${lifeCost} 点生命。`);
+      log(`${p.label} 发动 ${passive.name || '职业被动'}，支�?${lifeCost} 点生命。`);
       if (p.hp <= 0){
         finalizePlayerState(p);
         state.winner = enemyOf(p)?.id || 1;
@@ -4876,14 +4859,14 @@ async function applyRewardList(player, rewards, labelPrefix){
   }
 
   function isKnownActionSource(source){
-    return source === '职业技能' || source === '守护神技能' || source === '武器技能' || source === '饰品技能';
+    return source === '职业技�? || source === '守护神技�? || source === '武器技�? || source === '饰品技�?;
   }
 
   function cardActionSource(handItem, cardDef){
     const origin = String(handItem?.origin || '').trim();
     const source = String(cardDef?.source || '').trim();
-    const cardDefinesEquipmentBucket = source === '武器技能' || source === '饰品技能';
-    if(origin === '职业技能' && cardDefinesEquipmentBucket) return source;
+    const cardDefinesEquipmentBucket = source === '武器技�? || source === '饰品技�?;
+    if(origin === '职业技�? && cardDefinesEquipmentBucket) return source;
     if(isKnownActionSource(origin)) return origin;
     return source || origin;
   }
@@ -4892,8 +4875,8 @@ async function applyRewardList(player, rewards, labelPrefix){
     const origin = cardActionSource(card, cardDef);
     if(origin === 'weapon_skill' || origin === 'accessory_skill') return 'weapon_or_accessory';
     if(origin === 'class_skill' || origin === 'guardian_skill') return 'class_or_guardian';
-    if(origin==='职业技能' || origin==='守护神技能') return 'class_or_guardian';
-    if(origin==='武器技能' || origin==='饰品技能') return 'weapon_or_accessory';
+    if(origin==='职业技�? || origin==='守护神技�?) return 'class_or_guardian';
+    if(origin==='武器技�? || origin==='饰品技�?) return 'weapon_or_accessory';
     return 'class_or_guardian';
   }
 
@@ -4902,7 +4885,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     const bucket = actionBucketFor(handItem, cardDef);
     if(bucket==='class_or_guardian' && p.turn.classOrGuardianUsed){
       const extraClassUses = Number(p.buffs?.extraClassCardUses || 0);
-      if(!((source === '\u804c\u4e1a\u6280\u80fd' || source === 'class_skill') && extraClassUses > 0)) return false;
+      if(!((source === '职业技�? || source === 'class_skill') && extraClassUses > 0)) return false;
     }
     if(bucket==='weapon_or_accessory' && p.turn.weaponOrAccessoryUsed) return false;
     return true;
@@ -4985,7 +4968,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     const p = current();
     const path = currentMovePath().map(deep);
     if(!p || state.pending?.type !== 'move' || !path.length) {
-      setHint('请先逐格选择移动路线。');
+      setHint('请先逐格选择移动路线�?);
       return;
     }
     if(!beginActionResolving('move')) return;
@@ -5015,11 +4998,11 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(kk === key(p.pos)){
       resetMovePath();
       render();
-      setHint('已清空移动路线，请重新逐格选择。');
+      setHint('已清空移动路线，请重新逐格选择�?);
       return;
     }
     if(!canStepToMoveTile(p, tile)){
-      setHint('请选择路线末端相邻、未被占用的合法地块。');
+      setHint('请选择路线末端相邻、未被占用的合法地块�?);
       return;
     }
     state.pending.path = path.concat([deep(tile)]);
@@ -5086,42 +5069,41 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.turn.basicSpent >= 1 + (p.buffs.extraBasicCap||0)) return;
     if(!beginActionResolving('basic')) return;
     const b = getActiveBasicAttack(p);
-    const reactive = maybeTriggerReactiveMoveOnTargeted(p, target, b, b.name || '普通攻击');
+    const reactive = maybeTriggerReactiveMoveOnTargeted(p, target, b, b.name || '普通攻�?);
     if (reactive.evaded) {
       p.turn.basicSpent += 1;
       p.buffs.nextBasicFlat = 0; p.buffs.nextBasicDie = null; p.buffs.swordBonusStored = false;
       if(p.buffs.basicTransform && p.buffs.basicTransform.consumeOn === 'next_basic_attack') p.buffs.basicTransform = null;
-      log(`${p.label} 的 ${b.name || '普通攻击'} 被 ${target.label} 闪开。`);
+      log(`${p.label} �?${b.name || '普通攻�?} �?${target.label} 闪开。`);
       finishAfterAction();
       return;
     }
     playVoiceLine('voiceAttack', 0.72, 800);
     let dmg = await showDice(`${b.name || p.weapon.name + ' 普攻'}`, resolvePlayerNotation(p, b.damage));
     dmg += Number(p.buffs.nextBasicFlat || 0);
-    if(p.buffs.nextBasicDie) dmg += await showDice('额外骰', resolvePlayerNotation(p, p.buffs.nextBasicDie));
-    if(p.buffs.runChestBasicBonusDie) dmg += await showDice('宝箱普攻追加', resolvePlayerNotation(p, p.buffs.runChestBasicBonusDie));
+    if(p.buffs.nextBasicDie) dmg += await showDice('额外�?, resolvePlayerNotation(p, p.buffs.nextBasicDie));
+    if(p.buffs.runChestBasicBonusDie) dmg += await showDice('Treasure strike', resolvePlayerNotation(p, p.buffs.runChestBasicBonusDie));
     if(hasRunReward(p, 'basic_crit')){
-      const critCheck = await showDice('普攻暴击检', '1d6');
+      const critCheck = await showDice('普攻暴击检�?, '1d6');
       if(critCheck >= 6){
         const critDamage = await showDice('普攻暴击', '1d8');
         dmg += critDamage;
-        log(`${p.label} 的普攻暴击追�?${critDamage} 伤害。`);
+        log(`${p.label} 的普攻暴击追�?${critDamage} 伤害。`);
       }
     }
     if(p.professionKey==='rogue' && isControlled(target)) dmg += await showDice('盗贼被动', '1d4');
     triggerBasicAttackVisual(p, target);
-    const basicAnim = basicAttackAnimForDamage(p, target, dmg);
-    const damageResult = dealDamage(p, target, dmg, { sourceName: b.name || '普通攻击', anim: basicAnim, spell: basicAnim === 'cast' || weaponPresentation(p).kind === 'wand' });
-    if(!damageResult.dodged) applySourceOnHitEffects(p, target, b, b.name || '普通攻击', { includeBasicPassive: true });
+    const damageResult = dealDamage(p, target, dmg, { sourceName: b.name || '普通攻�?, anim: weaponAttackAnim(p), spell: weaponPresentation(p).kind === 'wand' });
+    if(!damageResult.dodged) applySourceOnHitEffects(p, target, b, b.name || '普通攻�?, { includeBasicPassive: true });
     if(!damageResult.dodged && hasRunReward(p, 'melee_pressure') && target?.alive){
       target.buffs.runMovePenaltyNext = Math.max(Number(target.buffs.runMovePenaltyNext || 0), 1);
-      log(`${p.label} 的近战压制使 ${target.label} 下回合移�?-1。`);
+      log(`${p.label} 的近战压制使 ${target.label} 下回合移�?-1。`);
     }
     p.turn.basicSpent += 1;
     p.buffs.nextBasicFlat = 0; p.buffs.nextBasicDie = null; p.buffs.swordBonusStored = false;
     if(p.buffs.basicTransform && p.buffs.basicTransform.consumeOn === 'next_basic_attack') p.buffs.basicTransform = null;
-    await applyDamageTriggeredPassives(p, damageResult.finalDamage, target, b.name || '普通攻击');
-    log(`${p.label} 使用 ${b.name} 命中 ${target.label}，原始伤害 ${dmg}，实际伤害 ${damageResult.finalDamage}，目标当前生命 ${target.hp}，格挡 ${target.block}。`);
+    await applyDamageTriggeredPassives(p, damageResult.finalDamage, target, b.name || '普通攻�?);
+    log(`${p.label} 使用 ${b.name} 命中 ${target.label}，原始伤�?${dmg}，实际伤�?${damageResult.finalDamage}，目标当前生�?${target.hp}，格�?${target.block}。`);
     finishAfterAction();
   }
 
@@ -5132,7 +5114,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     const handItem = p.hand[index];
     const cardDef = getCardDef(handItem.cardKey);
     if(!cardDef) return;
-    if(!cardCanBePlayed(p, handItem, cardDef)) { setHint('当前行动桶已用尽。'); return; }
+    if(!cardCanBePlayed(p, handItem, cardDef)) { setHint('当前行动桶已用尽�?); return; }
     state.selectedCardIndex = index;
     if(cardDef.template==='dual_mode'){
       state.dualModeCard = { index, handItem, cardDef };
@@ -5141,13 +5123,13 @@ async function applyRewardList(player, rewards, labelPrefix){
       return;
     }
     state.pending = { type:'card', index, handItem, cardDef };
-    setMode(`卡牌：${cardDef.name}`);
+    setMode(`卡牌�?{cardDef.name}`);
     render();
     if(cardDef.template==='self_buff' || cardDef.template==='summon_token_into_self_deck' || cardDef.template==='grant_multiple_buffs' || cardDef.template==='transform_basic_attack' || cardDef.template==='pay_life_draw_cards'){
       await resolveCard(index, handItem, cardDef, null, null);
       return;
     }
-    setHint('请点击合法目标或地块。');
+    setHint('请点击合法目标或地块�?);
   }
 
   function renderChoicePanel(modes){
@@ -5179,16 +5161,16 @@ async function applyRewardList(player, rewards, labelPrefix){
     }
     state.pending = { type:'card', index: info.index, handItem: info.handItem, cardDef: virtualCard };
     state.dualModeCard = null;
-    setMode(`模式：${virtualCard.name}`);
+    setMode(`模式�?{virtualCard.name}`);
     render();
-    setHint('请点击模式对应的合法目标。');
+    setHint('请点击模式对应的合法目标�?);
   }
 
   function consumeBucket(p, handItem, cardDef){
     const source = cardActionSource(handItem, cardDef);
     const bucket = actionBucketFor(handItem, cardDef);
     if(bucket==='class_or_guardian'){
-      if(p.turn.classOrGuardianUsed && (source === '\u804c\u4e1a\u6280\u80fd' || source === 'class_skill') && (p.buffs.extraClassCardUses || 0) > 0){
+      if(p.turn.classOrGuardianUsed && (source === '职业技�? || source === 'class_skill') && (p.buffs.extraClassCardUses || 0) > 0){
         p.buffs.extraClassCardUses = Math.max(0, Number(p.buffs.extraClassCardUses || 0) - 1);
       } else {
         p.turn.classOrGuardianUsed = true;
@@ -5214,7 +5196,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       p.summons[token] = (p.summons[token] || 0) + n;
       addSummonIndicators(p, token, n);
       const tokenName = token==='bone_dragon' ? '骨龙' : '骷髅';
-      log(`${p.label} 使用了 ${cardDef.name}，召唤 ${n} 个${tokenName}，当前骷髅 ${p.summons.skeleton||0} / 骨龙 ${p.summons.bone_dragon||0}。`);
+      log(`${p.label} 使用�?${cardDef.name}，召�?${n} �?{tokenName}，当前骷�?${p.summons.skeleton||0} / 骨龙 ${p.summons.bone_dragon||0}。`);
       finishAfterAction();
       return;
     }
@@ -5227,7 +5209,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         const heal = typeof cardDef.config.heal==='string' && cardDef.config.heal.includes('d') ? await showDice('治疗', cardDef.config.heal) : Number(cardDef.config.heal||0);
         p.hp = Math.min(p.maxHp, p.hp + heal);
         if(heal > 0) playVoiceLine('voiceHealed', 0.68, 900);
-        if(p.professionKey==='priest'){ p.counters.heal_count += 1; if(p.counters.heal_count % 4 === 0){ const bonus = await showDice('牧师被动', '1d6'); p.hp = Math.min(p.maxHp, p.hp + bonus); log(`${p.label} 的牧师被动额外恢复 ${bonus}。`); } }
+        if(p.professionKey==='priest'){ p.counters.heal_count += 1; if(p.counters.heal_count % 4 === 0){ const bonus = await showDice('牧师被动', '1d6'); p.hp = Math.min(p.maxHp, p.hp + bonus); log(`${p.label} 的牧师被动额外恢�?${bonus}。`); } }
       }
       if(cardDef.config.block){ const block = typeof cardDef.config.block==='string' && cardDef.config.block.includes('d') ? await showDice('格挡', cardDef.config.block) : Number(cardDef.config.block||0); p.block += block; }
       if(cardDef.config.buffBasic) p.buffs.nextBasicFlat = (p.buffs.nextBasicFlat||0) + Number(cardDef.config.buffBasic||0);
@@ -5254,7 +5236,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         p.buffs.disarmAttackerCharges = (p.buffs.disarmAttackerCharges||0) + 1;
       }
       if(cardDef.name.includes('法术无效') || cardDef.config.consumeOn==='next_spell_hit') p.buffs.spellImmune = true;
-      log(`${p.label} 使用�?${cardDef.name}，当前生�?${p.hp}，格�?${p.block}。`);
+      log(`${p.label} 使用�?${cardDef.name}，当前生�?${p.hp}，格�?${p.block}。`);
       finishAfterAction();
       return;
     }
@@ -5265,7 +5247,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       triggerSelfCardVisual(handItem.cardKey, cardDef, p);
       await applyRewardList(p, cardDef.config.rewardList || [], cardDef.name);
       if(cardDef.config.consumeOn === 'next_spell_hit') p.buffs.spellImmune = true;
-      log(`${p.label} 使用�?${cardDef.name}，直接获得多个增益。当前生�?${p.hp}，格�?${p.block}。`);
+      log(`${p.label} 使用�?${cardDef.name}，直接获得多个增益。当前生�?${p.hp}，格�?${p.block}。`);
       finishAfterAction();
       return;
     }
@@ -5288,7 +5270,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         }
       };
       if(cardDef.config.block){ p.block += (typeof cardDef.config.block==='string' && cardDef.config.block.includes('d')) ? await showDice('格挡', cardDef.config.block) : Number(cardDef.config.block||0); }
-      log(`${p.label} 使用了 ${cardDef.name}，其普通攻击已被改变。`);
+      log(`${p.label} 使用�?${cardDef.name}，其普通攻击已被改变。`);
       finishAfterAction();
       return;
     }
@@ -5300,7 +5282,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       const lifeCost = Number(cardDef.config?.lifeCost || 0);
       const drawCount = Number(cardDef.config?.drawCount || 1);
       p.hp = Math.max(0, p.hp - lifeCost);
-      log(`${p.label} 使用 ${cardDef.name}，支付 ${lifeCost} 生命并抽 ${drawCount} 张牌。`);
+      log(`${p.label} 使用 ${cardDef.name}，支�?${lifeCost} 生命并抽 ${drawCount} 张牌。`);
       if(p.hp <= 0){
         finalizePlayerState(p);
         finishAfterAction();
@@ -5343,7 +5325,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       }
       const reactive = maybeTriggerReactiveMoveOnTargeted(p, target, cardDef, cardDef.name);
       if (reactive.evaded){
-        log(`${p.label} 的 ${cardDef.name} 被 ${target.label} 闪开。`);
+        log(`${p.label} �?${cardDef.name} �?${target.label} 闪开。`);
         finishAfterAction();
         return;
       }
@@ -5357,7 +5339,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         triggerCardVisual(handItem.cardKey, cardDef, p, target);
         target.marked = true;
         applySourceOnHitEffects(p, target, cardDef.config || {}, cardDef.name);
-        log(`${p.label} 使用 ${cardDef.name} 标记了 ${target.label}。`);
+        log(`${p.label} 使用 ${cardDef.name} 标记�?${target.label}。`);
         finishAfterAction();
         return;
       }
@@ -5399,9 +5381,9 @@ async function applyRewardList(player, rewards, labelPrefix){
         const threshold = Number(cardDef.config.threshold || 0);
         if(damageResult.finalDamage >= threshold){
           await applyRewardList(p, cardDef.config.rewardList || [], cardDef.name);
-          log(`${cardDef.name} 达到阈值 ${threshold}，获得后续增益。`);
+          log(`${cardDef.name} 达到阈�?${threshold}，获得后续增益。`);
         } else {
-          log(`${cardDef.name} 未达到阈�?${threshold}，不获得后续增益。`);
+          log(`${cardDef.name} 未达到阈�?${threshold}，不获得后续增益。`);
         }
       }
       if(cardDef.template==='damage_roll_grant_card'){
@@ -5411,18 +5393,18 @@ async function applyRewardList(player, rewards, labelPrefix){
           if(cardDef.config.refundBucket === 'class_or_guardian') p.turn.classOrGuardianUsed = false;
           if(cardDef.config.refundBucket === 'weapon_or_accessory') p.turn.weaponOrAccessoryUsed = false;
           if(cardDef.config.refundBucket === 'basic_attack') p.turn.basicSpent = Math.max(0, (p.turn.basicSpent || 0) - 1);
-          log(`${p.label} �?${cardDef.name} 触发成功，可以再次行动。`);
+          log(`${p.label} �?${cardDef.name} 触发成功，可以再次行动。`);
         } else {
-          log(`${p.label} �?${cardDef.name} 未触发追加效果。`);
+          log(`${p.label} �?${cardDef.name} 未触发追加效果。`);
         }
       }
       await applyDamageTriggeredPassives(p, damageResult.finalDamage, target, cardDef.name);
       if(cardDef.template==='insert_negative_card_into_target_deck'){
         const cnt = Number(cardDef.config.insertCount || 1);
-        for(let i=0;i<cnt;i++) target.deck.splice(Math.floor(Math.random()*(target.deck.length+1)),0,{cardKey:cardDef.config.insertCardKey, origin:'负面牌'});
-        log(`${target.label} 的牌库被加入了 ${cnt} 张负面牌。`);
+        for(let i=0;i<cnt;i++) target.deck.splice(Math.floor(Math.random()*(target.deck.length+1)),0,{cardKey:cardDef.config.insertCardKey, origin:'负面�?});
+        log(`${target.label} 的牌库被加入�?${cnt} 张负面牌。`);
       }
-      log(`${p.label} 使用 ${cardDef.name} 对 ${target.label} 结算，原始伤害 ${dmg}，实际伤害 ${damageResult.finalDamage}，目标当前生命 ${target.hp}，格挡 ${target.block}。`);
+      log(`${p.label} 使用 ${cardDef.name} �?${target.label} 结算，原始伤�?${dmg}，实际伤�?${damageResult.finalDamage}，目标当前生�?${target.hp}，格�?${target.block}。`);
       finishAfterAction();
       return;
     }
@@ -5436,7 +5418,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         let dmg = await showDice(cardDef.name, resolvePlayerNotation(p, cardDef.config.damage));
         const damageResult = dealDamage(p, target, dmg, { sourceName: cardDef.name, anim: cardAnim, spell: !!cardDef.config?.spell });
         if(!damageResult.dodged) applySourceOnHitEffects(p, target, cardDef.config || {}, cardDef.name);
-        log(`${p.label} �?${cardDef.name} 命中 ${target.label}，原始伤�?${dmg}，实际伤�?${damageResult.finalDamage}，目标当前生�?${target.hp}，格�?${target.block}。`);
+        log(`${p.label} �?${cardDef.name} 命中 ${target.label}，原始伤�?${dmg}，实际伤�?${damageResult.finalDamage}，目标当前生�?${target.hp}，格�?${target.block}。`);
       }
       log(`${p.label} 使用 ${cardDef.name} 对范围内目标结算完成。`);
       finishAfterAction();
@@ -5453,22 +5435,22 @@ async function applyRewardList(player, rewards, labelPrefix){
     let totalDamage = 0;
     if (tpl === 'direct_damage' || tpl === 'negative_direct_damage') {
       totalDamage = loggedRoll(`${player.label} 负面牌伤害`, cfg.damage || '2d6');
-      dealDamage(null, player, totalDamage, { sourceName: def.name || '负面牌' });
+      dealDamage(null, player, totalDamage, { sourceName: def.name || '负面�? });
     }
     if (tpl === 'negative_dot' || tpl === 'negative_mixed') {
       if (cfg.damagePerTick) {
-        applyDotEffect(player, cfg, def.name || '负面牌');
+        applyDotEffect(player, cfg, def.name || '负面�?);
       }
     }
     if (tpl === 'negative_control' || tpl === 'negative_mixed') {
       const ctl = cfg.controlType || 'slow';
       const dur = Number(cfg.controlDuration || cfg.durationTurns || 1);
-      applyControlStatus(player, ctl, dur, def.name || '负面牌');
+      applyControlStatus(player, ctl, dur, def.name || '负面�?);
     }
     if (tpl === 'negative_mixed' && cfg.damage) {
       const extraDamage = loggedRoll(`${player.label} 负面牌额外伤害`, cfg.damage);
       totalDamage += extraDamage;
-      dealDamage(null, player, extraDamage, { sourceName: `${def.name || '负面牌'} 追加伤害` });
+      dealDamage(null, player, extraDamage, { sourceName: `${def.name || '负面�?} 追加伤害` });
     }
     if (player.hp < 0) player.hp = 0;
     log(`${player.label} 抽到 ${def.name} 并触发负面效果，当前生命 ${player.hp}。`);
@@ -5489,10 +5471,10 @@ async function applyRewardList(player, rewards, labelPrefix){
 
   function renderPlayerInfo(){
     const active=current();
-    $('player-info').innerHTML = `<h2>${I18N().t('role_status','角色状态')}</h2><div class="info-grid">${state.players.map(p=>{
+    $('player-info').innerHTML = `<h2>${I18N().t('role_status','角色状�?)}</h2><div class="info-grid">${state.players.map(p=>{
       const hpPct = Math.max(0, Math.min(100, p.hp/p.maxHp*100));
       const blockPct = Math.max(0, Math.min(100, p.block*10));
-      const accessoryName = p.accessory ? I18N().entity('accessory', p.accessoryKey, p.accessory.name) : I18N().t('no_accessory','无饰品');
+      const accessoryName = p.accessory ? I18N().entity('accessory', p.accessoryKey, p.accessory.name) : I18N().t('no_accessory','无饰�?);
       return `<div class="player-box${p.id===active.id?' active':''}">
         <div class="player-title"><strong>${p.label}${p.boss ? ' [BOSS]' : ''}</strong><span>${I18N().entity('profession', p.professionKey, p.profession.name)} / ${I18N().entity('weapon', p.weaponKey, p.weapon.name)} / ${accessoryName}</span></div>
         <div class="hud-metrics">
@@ -5504,7 +5486,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         </div>
         <div class="hp-bar"><div class="hp-fill" style="width:${hpPct}%"></div></div>
         <div class="block-bar"><div class="block-fill" style="width:${blockPct}%"></div></div>
-        <div class="stat-line action-line">${I18N().t('action','行动')}：职 ${p.turn.classOrGuardianUsed?'✓':'○'}${(p.buffs.extraClassCardUses||0)>0?`+${p.buffs.extraClassCardUses}`:''} / 武 ${p.turn.weaponOrAccessoryUsed?'✓':'○'} / 移 ${p.turn.move?'✓':'○'} / 普 ${p.turn.basicSpent}/${1 + (p.buffs.extraBasicCap||0)} / 格 ${p.turn.autoBlockTriggered?'✓':'○'}</div>
+        <div class="stat-line action-line">${I18N().t('action','行动')}：职 ${p.turn.classOrGuardianUsed?'�?:'�?}${(p.buffs.extraClassCardUses||0)>0?`+${p.buffs.extraClassCardUses}`:''} / �?${p.turn.weaponOrAccessoryUsed?'�?:'�?} / �?${p.turn.move?'�?:'�?} / �?${p.turn.basicSpent}/${1 + (p.buffs.extraBasicCap||0)} / �?${p.turn.autoBlockTriggered?'�?:'�?}</div>
         <div class="status-row">${formatStatuses(p)}</div>
       </div>`;
     }).join('')}</div>`;
@@ -5513,7 +5495,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(rivalHost){
       const infoHost = $('player-info');
       const boxes = Array.from(infoHost.querySelectorAll('.player-box'));
-      const title = `<h2>${I18N().t('role_status','角色状态')}</h2>`;
+      const title = `<h2>${I18N().t('role_status','角色状�?)}</h2>`;
       if(boxes[0]) infoHost.innerHTML = `${title}<div class="info-grid">${boxes[0].outerHTML}</div>`;
       if(boxes[1]) rivalHost.innerHTML = `${title}<div class="info-grid">${boxes[1].outerHTML}</div>`;
     }
@@ -5524,7 +5506,7 @@ async function applyRewardList(player, rewards, labelPrefix){
   function formatStatuses(p){
     const out=[];
     if(p.statuses.burn>0) out.push(`<span class="status-chip">${I18N().t('status_burn','点燃')} ${p.statuses.burn}</span>`);
-    if(p.statuses.slow>0) out.push(`<span class="status-chip">${I18N().t('status_slow','减速')}</span>`);
+    if(p.statuses.slow>0) out.push(`<span class="status-chip">${I18N().t('status_slow','减�?)}</span>`);
     if(p.statuses.disarm>0) out.push(`<span class="status-chip">${I18N().t('status_disarm','缴械')}</span>`);
     if(p.statuses.sheep>0) out.push(`<span class="status-chip">${I18N().t('status_sheep','变羊')}</span>`);
     if(p.statuses.stun>0) out.push(`<span class="status-chip">眩晕 ${p.statuses.stun}</span>`);
@@ -5534,19 +5516,19 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.buffs.spellImmune) out.push(`<span class="status-chip">${I18N().t('status_spell_immune','法术无效')}</span>`);
     if(p.buffs.dodgeNextDamage) out.push(`<span class="status-chip">闪避 x${p.buffs.dodgeNextDamage}</span>`);
     if(p.buffs.counterCharges) out.push(`<span class="status-chip">反击待命</span>`);
-    if(p.buffs.extraClassCardUses) out.push(`<span class="status-chip">额外职业卡 +${p.buffs.extraClassCardUses}</span>`);
+    if(p.buffs.extraClassCardUses) out.push(`<span class="status-chip">额外职业�?+${p.buffs.extraClassCardUses}</span>`);
     if(p.buffs.reactiveMoveCharges && p.buffs.reactiveMoveTrigger) out.push(`<span class="status-chip">随机位移 ${p.buffs.reactiveMoveTrigger}</span>`);
     if(p.buffs.healOnDamagedCharges && p.buffs.healOnDamaged) out.push(`<span class="status-chip">受伤自疗 ${p.buffs.healOnDamaged}</span>`);
     if(p.buffs.disarmAttackerCharges && p.buffs.disarmAttackerOnHit) out.push(`<span class="status-chip">受击缴械 ${p.buffs.disarmAttackerOnHit}</span>`);
     if(p.buffs.nextBasicFlat) out.push(`<span class="status-chip">下次普攻 +${p.buffs.nextBasicFlat}</span>`);
     if(p.buffs.nextBasicDie) out.push(`<span class="status-chip">下次普攻 +${p.buffs.nextBasicDie}</span>`);
     if(p.buffs.runChestBasicBonusDie) out.push(`<span class="status-chip">宝箱普攻 +${p.buffs.runChestBasicBonusDie}</span>`);
-    if(p.buffs.runShieldHalfCharges) out.push(`<span class="status-chip">开场护�?x${p.buffs.runShieldHalfCharges}</span>`);
+    if(p.buffs.runShieldHalfCharges) out.push(`<span class="status-chip">开场护�?x${p.buffs.runShieldHalfCharges}</span>`);
     if(p.buffs.runDodgeReductionCharges) out.push(`<span class="status-chip">危险步伐 -3 x${p.buffs.runDodgeReductionCharges}</span>`);
     if(p.buffs.runLowHpRecoveryAvailable) out.push(`<span class="status-chip">绝境回复 x${p.buffs.runLowHpRecoveryAvailable}</span>`);
     if(p.buffs.runMovePenaltyActive) out.push(`<span class="status-chip">移动 -${p.buffs.runMovePenaltyActive}</span>`);
-    if(p.buffs.basicTransform) out.push(`<span class="status-chip">普攻变身中</span>`);
-    if(p.marked) out.push(`<span class="status-chip">${I18N().t('status_marked','标记')}</span>`); return out.join('') || `<span class="status-chip">${I18N().t('status_none','无状态')}</span>`;
+    if(p.buffs.basicTransform) out.push(`<span class="status-chip">普攻变身�?/span>`);
+    if(p.marked) out.push(`<span class="status-chip">${I18N().t('status_marked','标记')}</span>`); return out.join('') || `<span class="status-chip">${I18N().t('status_none','无状�?)}</span>`;
   }
 
   function tileHighlights(){
@@ -6027,7 +6009,7 @@ async function applyRewardList(player, rewards, labelPrefix){
 
     const plate = document.createElementNS(svgNS, 'text');
     setSvgAttrs(plate, { x, y: hpY + 22, 'text-anchor': 'middle', class: 'unit-hpplate' });
-    plate.textContent = `护 ${p.block}`;
+    plate.textContent = `�?${p.block}`;
     g.appendChild(plate);
   }
 
@@ -6257,7 +6239,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         b.style.zIndex = String(20 + idx);
       }
       b.innerHTML=`<div class="card-name">${I18N().entity('card', item.cardKey, def.name)}</div>
-        <div class="card-meta">${I18N().t('source','来源')}：${I18N().entity('origin', item.origin, item.origin)} · ${I18N().t('template','模板')}：${I18N().entity('template', def.template, def.template)}</div>
+        <div class="card-meta">${I18N().t('source','来源')}�?{I18N().entity('origin', item.origin, item.origin)} · ${I18N().t('template','模板')}�?{I18N().entity('template', def.template, def.template)}</div>
         <div class="card-text">${def.text || ''}</div>`;
       b.onclick = ()=>playCardFromHand(idx);
       hand.appendChild(b);
@@ -6298,7 +6280,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if (passive && passive.template === 'life_for_card_draw_once_per_turn'){
       btn.style.display = '';
       const text = btn.querySelector('.u-text') || btn;
-      text.textContent = `${passive.name || '职业被动'}（-${passive.config?.lifeCost || 0} 生命 / +${passive.config?.drawCount || 1} 抽）`;
+      text.textContent = `${passive.name || '职业被动'}�?${passive.config?.lifeCost || 0} 生命 / +${passive.config?.drawCount || 1} 抽）`;
       btn.disabled = !!p.turn?.passiveOnceTriggered?.[passiveKey] || !p.alive;
     }
   }
@@ -6703,7 +6685,7 @@ async function applyRewardList(player, rewards, labelPrefix){
   function endTurn(){
     const p=current();
     if(isActionResolving()) return;
-    if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; }
+    if(state.pending?.type==='discard'){ setHint(`请先弃牌�?${handLimit()} 张。`); return; }
     if(p.professionKey==='swordsman' && p.turn.basicSpent===0) p.buffs.nextBasicFlat = Math.max(p.buffs.nextBasicFlat||0, 5);
     if(p.buffs.extraBasicCap) p.buffs.extraBasicCap = 0;
     if(p.buffs.extraClassCardUses) p.buffs.extraClassCardUses = 0;
@@ -6734,15 +6716,15 @@ async function applyRewardList(player, rewards, labelPrefix){
     const value = select.value;
     const data = setupRulesetData();
     if(kind === 'accessory' && isNoAccessory(value)){
-      return `<div class="deck-tooltip-title">${escapeHtml(I18N().t('no_accessory','无饰品'))}</div><div class="deck-tooltip-meta">${escapeHtml('不会加入饰品牌。')}</div>`;
+      return `<div class="deck-tooltip-title">${escapeHtml(I18N().t('no_accessory','无饰�?))}</div><div class="deck-tooltip-meta">${escapeHtml('不会加入饰品牌�?)}</div>`;
     }
     const entity = setupEntityFor(kind, value, data);
-    if(!entity) return `<div class="deck-tooltip-title">${escapeHtml(select.selectedOptions?.[0]?.textContent || '未选择')}</div><div class="deck-tooltip-meta">${escapeHtml('没有可显示的卡组信息。')}</div>`;
+    if(!entity) return `<div class="deck-tooltip-title">${escapeHtml(select.selectedOptions?.[0]?.textContent || '未选择')}</div><div class="deck-tooltip-meta">${escapeHtml('没有可显示的卡组信息�?)}</div>`;
     const title = select.selectedOptions?.[0]?.textContent || entity.name || value;
     const meta = kind === 'profession'
       ? `生命 ${entity.hp ?? '-'} / 移动 ${entity.move ?? '-'} / ${entity.movePreset || 'melee'}`
       : kind === 'weapon'
-        ? `${entity.basic?.name || '普攻'}：${entity.basic?.damage || '-'} / 距离 ${entity.basic?.range ?? '-'} / ${entity.basic?.type || '-'}`
+        ? `${entity.basic?.name || '普攻'}�?{entity.basic?.damage || '-'} / 距离 ${entity.basic?.range ?? '-'} / ${entity.basic?.type || '-'}`
         : (entity.name || title);
     const counts = deckCountsFor(kind, entity);
     const rows = Object.entries(counts).map(([cardKey, count]) => {
@@ -6754,7 +6736,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     const total = rows.reduce((sum, row) => sum + row.count, 0);
     const list = rows.length
       ? rows.map(row => `<div class="deck-tooltip-card"><span><strong>${escapeHtml(row.card.name || row.cardKey)}</strong><br>${escapeHtml(row.cardKey)} · ${escapeHtml(row.card.template || '-')}</span><span>x${row.count}</span></div>`).join('')
-      : `<div class="deck-tooltip-card"><span>${escapeHtml('没有卡牌进入卡组。')}</span><span>x0</span></div>`;
+      : `<div class="deck-tooltip-card"><span>${escapeHtml('没有卡牌进入卡组�?)}</span><span>x0</span></div>`;
     return `<div class="deck-tooltip-title">${escapeHtml(title)}</div><div class="deck-tooltip-meta">${escapeHtml(meta)}</div><div class="deck-tooltip-total">总卡数：${total}</div><div class="deck-tooltip-list">${list}</div>`;
   }
 
@@ -6805,12 +6787,12 @@ async function applyRewardList(player, rewards, labelPrefix){
 
   function bindActionTooltips(){
     const actions = [
-      { id: 'btn-move', title: '移动模式', desc: '进入移动模式，点击棋盘规划路径。' },
-      { id: 'btn-basic-attack', title: '普通攻击', desc: '对攻击范围内的敌人发起一次基础武器攻击。' },
-      { id: 'btn-cancel', title: '取消选择', desc: '放弃当前选择的动作或卡牌。' },
-      { id: 'btn-end-turn', title: '结束回合', desc: '结束你的回合，轮到对手行动。' },
-      { id: 'btn-passive', title: '职业被动', desc: '术士专属被动：通过消耗生命值来抽取额外的卡牌。' },
-      { id: 'btn-confirm-move', title: '确认移动', desc: '确认并执行当前规划的移动路径。' }
+      { id: 'btn-move', title: '移动模式', desc: '进入移动模式，点击棋盘规划路径�? },
+      { id: 'btn-basic-attack', title: '普通攻�?, desc: '对攻击范围内的敌人发起一次基础武器攻击�? },
+      { id: 'btn-cancel', title: '取消选择', desc: '放弃当前选择的动作或卡牌�? },
+      { id: 'btn-end-turn', title: '结束回合', desc: '结束你的回合，轮到对手行动�? },
+      { id: 'btn-passive', title: '职业被动', desc: '术士专属被动：通过消耗生命值来抽取额外的卡牌�? },
+      { id: 'btn-confirm-move', title: '确认移动', desc: '确认并执行当前规划的移动路径�? }
     ];
 
     const show = (el, title, desc) => {
@@ -6984,7 +6966,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(includeNone){
       const none=document.createElement('option');
       none.value=NO_ACCESSORY;
-      none.textContent=I18N().t('no_accessory','无饰品');
+      none.textContent=I18N().t('no_accessory','无饰�?);
       sel.appendChild(none);
     }
     Object.entries(obj || {}).forEach(([k,v])=>{
@@ -7041,11 +7023,11 @@ async function applyRewardList(player, rewards, labelPrefix){
     $('start-game').onclick = startGame;
     if($('start-arena-run')) $('start-arena-run').onclick = startNewArenaRun;
     if($('continue-arena-run')) $('continue-arena-run').onclick = continueArenaRun;
-    $('btn-move').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending={type:'move', path:[]}; setMode('移动模式'); render(); setHint('请逐格点击绘制移动路线，再点确认移动。'); };
+    $('btn-move').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌�?${handLimit()} 张。`); return; } state.pending={type:'move', path:[]}; setMode('移动模式'); render(); setHint('请逐格点击绘制移动路线，再点确认移动�?); };
     if($('btn-confirm-move')) $('btn-confirm-move').onclick = confirmMovePath;
-    $('btn-basic-attack').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending={type:'basic'}; setMode('普通攻击'); render(); setHint('请选择普通攻击目标。'); };
-    $('btn-passive').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } useProfessionPassive(); };
-    $('btn-cancel').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending=null; state.selectedCardIndex=null; $('choice-panel').innerHTML=''; setMode('待机'); render(); setHint('已取消当前选择。'); };
+    $('btn-basic-attack').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌�?${handLimit()} 张。`); return; } state.pending={type:'basic'}; setMode('普通攻�?); render(); setHint('请选择普通攻击目标�?); };
+    $('btn-passive').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌�?${handLimit()} 张。`); return; } useProfessionPassive(); };
+    $('btn-cancel').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌�?${handLimit()} 张。`); return; } state.pending=null; state.selectedCardIndex=null; $('choice-panel').innerHTML=''; setMode('待机'); render(); setHint('已取消当前选择�?); };
     $('btn-end-turn').onclick = ()=>{ if(isActionResolving()) return; endTurn(); };
     $('btn-restart').onclick = ()=>location.reload();
     if ($('btn-export-battle-log')) $('btn-export-battle-log').onclick = exportBattleLog;
@@ -7083,3 +7065,4 @@ async function applyRewardList(player, rewards, labelPrefix){
     window.addEventListener('studio-language-changed', () => { populateSetup($('ruleset-select').value); if(state.players.length) render(); if(window.STUDIO_I18N) STUDIO_I18N.applyPage(); });
   })();
 })();
+

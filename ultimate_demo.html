@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ultimate Animation Demo</title>
+  <link rel="stylesheet" href="demo_ultimate.css">
+  <style>
+    .controls {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 10000;
+      background: rgba(0,0,0,0.8);
+      padding: 20px;
+      border-radius: 8px;
+      color: white;
+      font-family: sans-serif;
+    }
+    button {
+      display: block;
+      margin-bottom: 10px;
+      padding: 10px 20px;
+      background: #ffb347;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover { background: #ff7b25; }
+  </style>
+</head>
+<body>
+  
+  <div class="controls">
+    <h3>Ultimate Animation Demo (10 Classes)</h3>
+    <div id="error-log" style="color: red; background: black; padding: 10px; display: none;"></div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-height: 80vh; overflow-y: auto;">
+      <button onclick="testClass('warrior', 'Warrior', 6000)">Test Warrior (Red)</button>
+      <button onclick="testClass('mage', 'Mage', 9000)">Test Mage (Purple)</button>
+      <button onclick="testClass('rogue', 'Rogue', 7000)">Test Rogue (Cyan)</button>
+      <button onclick="testClass('priest', 'Priest', 5000)">Test Priest (Gold)</button>
+      <button onclick="testClass('shaman', 'Shaman', 8000)">Test Shaman (Blue)</button>
+      <button onclick="testClass('necro', 'Necro', 7000)">Test Necro (Green)</button>
+      <button onclick="testClass('warlock', 'Warlock', 7000)">Test Warlock (Magenta)</button>
+      <button onclick="testClass('swordsman', 'Swordsman', 7000)">Test Swordsman (Silver)</button>
+      <button onclick="testClass('hunter', 'Hunter', 6000)">Test Hunter (Forest)</button>
+      <button onclick="testClass('monk', 'Monk', 6000)">Test Monk (Golden)</button>
+    </div>
+  </div>
+
+  <div id="game-screen"></div>
+  <div id="ultimate-cutin-layer" class="hidden"></div>
+
+  <script>
+    window.onerror = function(msg, url, line, col, error) {
+      const log = document.getElementById('error-log');
+      log.style.display = 'block';
+      log.innerHTML += msg + ' (Line ' + line + ')<br>';
+    };
+  </script>
+  <script src="demo_ultimate.js"></script>
+  <script>
+    // Mock callouts from game.js
+    const CALLOUTS = {
+      warrior: { voiceKey: 'warrior-ult', voiceDurationMs: 6000, introLine: '我的意志，绝不会倒下！', ultimateName: '破军裂地斩！' },
+      mage: { voiceKey: 'mage-ult', voiceDurationMs: 9000, introLine: '元素汇聚，世界将在此重塑。', ultimateName: '星界灭绝术！' },
+      rogue: { voiceKey: 'rogue-ult', voiceDurationMs: 7000, introLine: '你已经暴露在我的刀锋之下。', ultimateName: '影灭瞬杀！' },
+      priest: { voiceKey: 'priest-ult', voiceDurationMs: 5000, introLine: '以圣光之名，审判降临。', ultimateName: '神圣断罪斩！' },
+      shaman: { voiceKey: 'shaman-ult', voiceDurationMs: 8000, introLine: '古老的灵啊，回应我的召唤！', ultimateName: '万灵雷鸣祭！' },
+      necro: { voiceKey: 'necro-ult', voiceDurationMs: 7000, introLine: '亡者的低语，正在呼唤你。', ultimateName: '冥骨万魂葬！' },
+      warlock: { voiceKey: 'warlock-ult', voiceDurationMs: 7000, introLine: '深渊已经注视着你。', ultimateName: '黑焰终末契约！' },
+      swordsman: { voiceKey: 'swordsman-ult', voiceDurationMs: 7000, introLine: '此刃，只为斩断命运。', ultimateName: '天燕一文字！' },
+      hunter: { voiceKey: 'hunter-ult', voiceDurationMs: 6000, introLine: '目标锁定，猎杀开始。', ultimateName: '星陨贯魂箭！' },
+      monk: { voiceKey: 'monk-ult', voiceDurationMs: 6000, introLine: '心若止水，拳破山河。', ultimateName: '金刚灭世拳！' }
+    };
+
+    function testClass(classId, className, damage) {
+      document.getElementById('error-log').style.display = 'none';
+      playUltimateCutIn({
+        src: `assets/portraits/${classId}-ultimate.png`,
+        name: className,
+        damage: damage,
+        side: Math.random() > 0.5 ? 'right' : 'left',
+        callout: CALLOUTS[classId]
+      });
+    }
+  </script>
+</body>
+</html>

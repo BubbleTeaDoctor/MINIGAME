@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Assassin New Sprite Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101217;
+      --panel: #171a22;
+      --panel2: #222630;
+      --ink: #f2f5f0;
+      --muted: #aeb8aa;
+      --line: #394136;
+      --gold: #d0a05c;
+      --green: #57b889;
+      --violet: #a45cff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    main {
+      width: min(1240px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0;
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    h1 { margin: 0 0 14px; font-size: 20px; font-weight: 750; letter-spacing: 0; }
+    .stage, .controls, .sheet {
+      border: 1px solid var(--line);
+      background: rgba(23, 26, 34, .94);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, .28);
+    }
+    .stage { padding: 18px; }
+    .viewport {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(45deg, #232833 25%, transparent 25%),
+        linear-gradient(-45deg, #232833 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #232833 75%),
+        linear-gradient(-45deg, transparent 75%, #232833 75%),
+        #151922;
+      background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+      background-size: 24px 24px;
+      border: 1px solid var(--line);
+      image-rendering: pixelated;
+    }
+    canvas {
+      display: block;
+      width: min(94%, 520px);
+      height: auto;
+      image-rendering: pixelated;
+    }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .controls {
+      margin-top: 14px;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      background: var(--panel2);
+      color: var(--ink);
+      font: inherit;
+      cursor: pointer;
+    }
+    button.active {
+      border-color: var(--violet);
+      background: linear-gradient(135deg, var(--violet), var(--green), var(--gold));
+      color: #101217;
+      font-weight: 750;
+    }
+    label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; }
+    input[type="range"] { width: 100%; }
+    .sheet { padding: 14px; overflow: hidden; }
+    .sheet img {
+      display: block;
+      width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+      border: 1px solid var(--line);
+      margin-bottom: 12px;
+    }
+    .note { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0; }
+    @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <div class="stage">
+        <h1>Shadow Assassin Preview</h1>
+        <div class="viewport">
+          <canvas id="preview" width="640" height="416" aria-label="assassin animation preview"></canvas>
+        </div>
+        <div class="meta">
+          <span id="animName">idle</span>
+          <span id="frameInfo">frame 1 / 6</span>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="actions" id="actions"></div>
+        <label>
+          Speed <span id="fpsValue">8 FPS</span>
+          <input id="fps" type="range" min="2" max="18" value="8">
+        </label>
+        <label>
+          Zoom <span id="zoomValue">1.00x</span>
+          <input id="zoom" type="range" min="70" max="160" value="100">
+        </label>
+      </div>
+    </section>
+    <section class="sheet">
+      <img src="assets/sprites/assassin-new-preview/assassin-contact.png?v=assassinPreview4" alt="assassin-new contact sheet">
+      <img src="assets/sprites/assassin-new-preview/assassin-concept-sheet.png?v=assassinPreview4" alt="assassin concept sheet">
+      <p class="note">Preview only. Assets are normalized as fixed 320x208 transparent strips under assets/sprites/assassin-new and are not wired into game.js yet.</p>
+    </section>
+  </main>
+  <script>
+    const frameW = 320;
+    const frameH = 208;
+    const animations = [
+      { key: "idle", label: "Idle", frames: 6, duration: 980 },
+      { key: "run", label: "Run", frames: 7, duration: 660 },
+      { key: "attack", label: "Attack", frames: 8, duration: 620 },
+      { key: "attack-heavy", label: "Attack Heavy", frames: 8, duration: 700 },
+      { key: "cast", label: "Cast", frames: 5, duration: 620 },
+      { key: "hurt", label: "Hurt", frames: 2, duration: 320 },
+      { key: "death", label: "Death", frames: 9, duration: 900 }
+    ];
+    const images = {};
+    for (const anim of animations) {
+      const img = new Image();
+      img.src = `assets/sprites/assassin-new/${anim.key}.png?v=assassinPreview4`;
+      images[anim.key] = img;
+    }
+    const canvas = document.getElementById("preview");
+    const ctx = canvas.getContext("2d");
+    const actionsEl = document.getElementById("actions");
+    const fpsInput = document.getElementById("fps");
+    const zoomInput = document.getElementById("zoom");
+    const fpsValue = document.getElementById("fpsValue");
+    const zoomValue = document.getElementById("zoomValue");
+    const animName = document.getElementById("animName");
+    const frameInfo = document.getElementById("frameInfo");
+    let current = animations[0];
+    let frame = 0;
+    let lastTick = 0;
+
+    function setAnimation(anim) {
+      current = anim;
+      frame = 0;
+      for (const button of actionsEl.querySelectorAll("button")) {
+        button.classList.toggle("active", button.dataset.key === anim.key);
+      }
+      draw();
+    }
+
+    for (const anim of animations) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = anim.label;
+      button.dataset.key = anim.key;
+      button.addEventListener("click", () => setAnimation(anim));
+      actionsEl.appendChild(button);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = false;
+      const img = images[current.key];
+      const zoom = Number(zoomInput.value) / 100;
+      const dw = frameW * zoom;
+      const dh = frameH * zoom;
+      const dx = Math.round((canvas.width - dw) / 2);
+      const dy = Math.round((canvas.height - dh) / 2);
+      if (img.complete) {
+        ctx.drawImage(img, frame * frameW, 0, frameW, frameH, dx, dy, dw, dh);
+      }
+      animName.textContent = current.key;
+      frameInfo.textContent = `frame ${frame + 1} / ${current.frames}`;
+    }
+
+    function tick(now) {
+      const fps = Number(fpsInput.value);
+      const step = 1000 / fps;
+      if (now - lastTick >= step) {
+        lastTick = now;
+        frame = (frame + 1) % current.frames;
+        draw();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    fpsInput.addEventListener("input", () => {
+      fpsValue.textContent = `${fpsInput.value} FPS`;
+    });
+    zoomInput.addEventListener("input", () => {
+      zoomValue.textContent = `${(Number(zoomInput.value) / 100).toFixed(2)}x`;
+      draw();
+    });
+    Promise.all(Object.values(images).map(img => new Promise(resolve => {
+      if (img.complete) resolve();
+      else img.addEventListener("load", resolve, { once: true });
+    }))).then(draw);
+    setAnimation(animations[0]);
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
