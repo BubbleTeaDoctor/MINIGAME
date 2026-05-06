@@ -829,6 +829,22 @@
     monk: { select: 'assets/portraits/monk-select.png', ultimate: 'assets/portraits/monk-ultimate.png' },
     '武僧': { select: 'assets/portraits/monk-select.png', ultimate: 'assets/portraits/monk-ultimate.png' }
   };
+  const PROFESSION_KEY_ALIASES = {
+    战士: 'warrior',
+    法师: 'mage',
+    盗贼: 'rogue',
+    牧师: 'priest',
+    萨满: 'shaman',
+    死灵法师: 'necro',
+    术士: 'warlock',
+    剑客: 'swordsman',
+    猎人: 'hunter',
+    武僧: 'monk',
+    monk_alt: 'monk'
+  };
+  function normalizeProfessionKey(professionKey){
+    return PROFESSION_KEY_ALIASES[professionKey] || professionKey;
+  }
   const ULTIMATE_CUTIN_DEFAULTS = {
     duration: 2850,
     hitStop: 250,
@@ -1292,6 +1308,39 @@
     return `${detail.notation} → ${body}${mod} = ${detail.total}`;
   }
   const DICE_BOX_SIDES = new Set([4, 6, 8, 10, 12, 20, 100]);
+  const DICE_BOX_ROLL_TIMEOUT_MS = 1800;
+  function sanitizeDebugValues(values){
+    return values.map(value => Number.isFinite(value) ? value : String(value));
+  }
+  function withDiceBoxRollTimeout(promise, title, notation){
+    let timer = null;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`Dice Box roll timed out after ${DICE_BOX_ROLL_TIMEOUT_MS}ms: ${title} ${notation}`)), DICE_BOX_ROLL_TIMEOUT_MS);
+    });
+    return Promise.race([promise, timeout]).finally(() => {
+      if(timer) clearTimeout(timer);
+    });
+  }
+  async function showProgramRollResult(detail, wait = 520){
+    const summary = $('dice-summary');
+    const value = $('dice-value');
+    const stageWrap = $('dice-stage');
+    const tokenStage = $('dice-token-stage');
+    if(stageWrap) stageWrap.classList.remove('is-custom', 'is-dice-box');
+    if(tokenStage){
+      tokenStage.classList.remove('is-crowded');
+      tokenStage.innerHTML = '';
+    }
+    if(summary){
+      summary.textContent = diceSummaryText(detail);
+      summary.classList.toggle('hidden', !summary.textContent);
+    }
+    if(value){
+      value.textContent = formatRollVisualValue(detail.total);
+      requestAnimationFrame(() => value.classList.add('is-visible'));
+    }
+    await waitMs(wait);
+  }
   function parseDiceBoxNotation(notation){
     const raw = String(notation ?? '').trim().toLowerCase();
     const match = raw.match(/^(\d+)d(\d+)([+-]\d+)?$/);
@@ -1309,10 +1358,21 @@
     };
   }
   function diceBoxDetailFromResults(parsed, results){
-    const rolls = (Array.isArray(results) ? results : [])
-      .map(entry => Number(entry?.value))
-      .filter(Number.isFinite);
-    if(!rolls.length) return null;
+    const rawValues = (Array.isArray(results) ? results : []).map(entry => Number(entry?.value));
+    const rolls = rawValues.filter(Number.isFinite);
+    const invalidRolls = rolls.length !== parsed.count || rolls.some(value => (
+      !Number.isInteger(value) || value < 1 || value > parsed.sides
+    ));
+    if(!rolls.length || invalidRolls){
+      pushDebug('dicebox.roll.invalid_result', {
+        notation: parsed.notation,
+        expectedCount: parsed.count,
+        sides: parsed.sides,
+        resultCount: Array.isArray(results) ? results.length : null,
+        rawValues: sanitizeDebugValues(rawValues)
+      });
+      return null;
+    }
     return {
       notation: parsed.notation,
       rolls,
@@ -1338,10 +1398,21 @@
     };
   }
   function diceBoxChoiceDetailFromResults(parsed, results){
-    const sourceRolls = (Array.isArray(results) ? results : [])
-      .map(entry => Number(entry?.value))
-      .filter(Number.isFinite);
-    if(!sourceRolls.length) return null;
+    const rawValues = (Array.isArray(results) ? results : []).map(entry => Number(entry?.value));
+    const sourceRolls = rawValues.filter(Number.isFinite);
+    const invalidRolls = sourceRolls.length !== parsed.count || sourceRolls.some(value => (
+      !Number.isInteger(value) || value < 1 || value > 4
+    ));
+    if(!sourceRolls.length || invalidRolls){
+      pushDebug('dicebox.roll.choice_invalid_result', {
+        notation: parsed.notation,
+        diceNotation: parsed.diceNotation,
+        expectedCount: parsed.count,
+        resultCount: Array.isArray(results) ? results.length : null,
+        rawValues: sanitizeDebugValues(rawValues)
+      });
+      return null;
+    }
     const rolls = sourceRolls.map(value => value <= 2 ? parsed.choices[0] : parsed.choices[1]);
     return {
       notation: parsed.notation,
@@ -1364,7 +1435,7 @@
       return null;
     }
     try {
-      const results = await bridge.roll(parsed.notation, { title });
+      const results = await withDiceBoxRollTimeout(bridge.roll(parsed.notation, { title }), title, parsed.notation);
       const detail = diceBoxDetailFromResults(parsed, results);
       if(!detail){
         log(`[Dice Box fallback] ${title}: empty result${bridge?.lastInfo ? ` (${bridge.lastInfo})` : ''}`);
@@ -1392,7 +1463,7 @@
       return null;
     }
     try {
-      const results = await bridge.roll(parsed.diceNotation, { title });
+      const results = await withDiceBoxRollTimeout(bridge.roll(parsed.diceNotation, { title }), title, parsed.diceNotation);
       const detail = diceBoxChoiceDetailFromResults(parsed, results);
       if(!detail){
         log(`[Dice Box fallback] ${title}: empty choice result${bridge?.lastInfo ? ` (${bridge.lastInfo})` : ''}`);
@@ -2004,7 +2075,8 @@
     let detail = null;
     const parsed = parseDiceBoxNotation(notation);
     const parsedChoice = parsed ? null : parseDiceBoxChoiceNotation(notation);
-    if(parsed || parsedChoice){
+    const triedDiceBox = !!(parsed || parsedChoice);
+    if(triedDiceBox){
       if(stageWrap) stageWrap.classList.add('is-dice-box');
       detail = parsed
         ? await playDiceBoxRoll(title, parsed)
@@ -2023,7 +2095,8 @@
     }
     if(!detail){
       detail = rollDetail(notation);
-      await playRollAnimation(detail);
+      if(triedDiceBox) await showProgramRollResult(detail);
+      else await playRollAnimation(detail);
       val.textContent = formatRollVisualValue(detail.total);
       await waitMs(180);
     }
@@ -2525,7 +2598,7 @@
   }
 
   function professionArtFor(professionKey){
-    return PROFESSION_ART[professionKey] || (professionKey === '武僧' ? PROFESSION_ART.monk : null);
+    return PROFESSION_ART[professionKey] || PROFESSION_ART[normalizeProfessionKey(professionKey)] || null;
   }
 
   function professionDisplayName(professionKey, fallback = ''){
@@ -2601,7 +2674,8 @@
   }
 
   function ultimateCalloutFor(professionKey){
-    const data = ULTIMATE_CALL_OUTS_SAFE[professionKey] || (professionKey === 'monk' ? ULTIMATE_CALL_OUTS_SAFE.monk : null);
+    const normalizedKey = normalizeProfessionKey(professionKey);
+    const data = ULTIMATE_CALL_OUTS_SAFE[normalizedKey] || null;
     if(!data) return null;
     const lang = String(I18N().getLang?.() || 'zh').toLowerCase().startsWith('en') ? 'en' : 'zh';
     const lines = data[lang] || data.zh || data.en || {};
@@ -3082,6 +3156,7 @@
   }
 
   function profDefaultFx(profKey){
+    const normalizedKey = normalizeProfessionKey(profKey);
     const map = {
       warrior: { hit: 'slash-red', self: 'buff-red' },
       mage: { projectile: 'mageSpell', hit: 'mageImpact', self: 'teleport-blue' },
@@ -3095,7 +3170,7 @@
       monk: { hit: 'stun-gold', self: 'buff-gold' },
       '武僧': { hit: 'stun-gold', self: 'buff-gold' }
     };
-    return map[profKey] || { hit: 'slash-red', self: 'buff-gold' };
+    return map[profKey] || map[normalizedKey] || { hit: 'slash-red', self: 'buff-gold' };
   }
 
   function controlFxFromCard(cardDef){
@@ -3689,7 +3764,9 @@
   }
 
   function spriteProfileKeyFor(player){
+    const normalizedKey = normalizeProfessionKey(player?.professionKey);
     if (PROFESSION_SPRITE_PROFILES[player?.professionKey]) return PROFESSION_SPRITE_PROFILES[player.professionKey];
+    if (PROFESSION_SPRITE_PROFILES[normalizedKey]) return PROFESSION_SPRITE_PROFILES[normalizedKey];
     return player?.id === 2 ? 'knight-rose' : 'knight-blue';
   }
 
@@ -5883,7 +5960,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       '武僧': ['#e8c28f','#a74833','#f0d06d','#251710','#fff7d0'],
     };
     const fallback = player.id === 1 ? ['#f2d0a1','#3f6f8f','#8ec5ff','#132432','#f8fbff'] : ['#eac09f','#8e4056','#ff8aa8','#32151f','#fff4f7'];
-    return map[player.professionKey] || fallback;
+    return map[player.professionKey] || map[normalizeProfessionKey(player.professionKey)] || fallback;
   }
 
   function addPixelRect(g, px, py, w, h, color, opacity = 1){
