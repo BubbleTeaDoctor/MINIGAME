@@ -829,6 +829,44 @@
     monk: { select: 'assets/portraits/monk-select.png', ultimate: 'assets/portraits/monk-ultimate.png' },
     '武僧': { select: 'assets/portraits/monk-select.png', ultimate: 'assets/portraits/monk-ultimate.png' }
   };
+  const DYNAMIC_PORTRAIT_BASE = 'assets/portraits/dynamic';
+  const DYNAMIC_PORTRAIT_PROFESSION_PRESETS = {
+    warrior: 'warrior',
+    mage: 'mage',
+    rogue: 'assassin',
+    priest: 'priest',
+    shaman: 'shaman',
+    necro: 'necromancer',
+    warlock: 'warlock',
+    swordsman: 'samurai',
+    hunter: 'hunter',
+    monk: 'monk',
+    '武僧': 'monk'
+  };
+  const DYNAMIC_PORTRAIT_ASSETS = {
+    hunter: { bg: `${DYNAMIC_PORTRAIT_BASE}/background/hunter.png`, open: `${DYNAMIC_PORTRAIT_BASE}/openeyes/hunter.png`, close: `${DYNAMIC_PORTRAIT_BASE}/closeyes/hunter.png` },
+    mage: { bg: `${DYNAMIC_PORTRAIT_BASE}/background/mage.png`, open: `${DYNAMIC_PORTRAIT_BASE}/openeyes/mage.png`, close: `${DYNAMIC_PORTRAIT_BASE}/closeyes/mage.png` },
+    priest: { bg: `${DYNAMIC_PORTRAIT_BASE}/background/priest.png`, open: `${DYNAMIC_PORTRAIT_BASE}/openeyes/priest.png`, close: `${DYNAMIC_PORTRAIT_BASE}/closeyes/priest.png` },
+    monk: { bg: `${DYNAMIC_PORTRAIT_BASE}/background/monk.png`, open: `${DYNAMIC_PORTRAIT_BASE}/openeyes/monk.png`, close: `${DYNAMIC_PORTRAIT_BASE}/closeyes/monk.png` },
+    assassin: { bg: `${DYNAMIC_PORTRAIT_BASE}/background/assassin.png`, open: `${DYNAMIC_PORTRAIT_BASE}/openeyes/assassin.png`, close: `${DYNAMIC_PORTRAIT_BASE}/closeyes/assassin.png` },
+    samurai: { bg: `${DYNAMIC_PORTRAIT_BASE}/background/samurai.png`, open: `${DYNAMIC_PORTRAIT_BASE}/openeyes/samurai.png`, close: `${DYNAMIC_PORTRAIT_BASE}/closeyes/samurai.png` },
+    warrior: { bg: `${DYNAMIC_PORTRAIT_BASE}/background/warrior.png`, open: `${DYNAMIC_PORTRAIT_BASE}/openeyes/warrior.png`, close: `${DYNAMIC_PORTRAIT_BASE}/closeyes/warrior.png` },
+    shaman: { bg: `${DYNAMIC_PORTRAIT_BASE}/background/shaman.png`, open: `${DYNAMIC_PORTRAIT_BASE}/openeyes/shaman.png`, close: `${DYNAMIC_PORTRAIT_BASE}/closeyes/shaman.png` },
+    necromancer: { bg: `${DYNAMIC_PORTRAIT_BASE}/background/necromancer.png`, open: `${DYNAMIC_PORTRAIT_BASE}/openeyes/necromancer.png`, close: `${DYNAMIC_PORTRAIT_BASE}/closeyes/necromancer.png` },
+    warlock: { bg: `${DYNAMIC_PORTRAIT_BASE}/background/warlock.png`, open: `${DYNAMIC_PORTRAIT_BASE}/openeyes/warlock.png`, close: `${DYNAMIC_PORTRAIT_BASE}/closeyes/warlock.png` }
+  };
+  const DYNAMIC_PORTRAIT_PARTICLES = {
+    hunter: '135,245,140',
+    mage: '110,170,255',
+    priest: '255,245,210',
+    monk: '255,204,120',
+    assassin: '125,150,255',
+    samurai: '255,110,130',
+    warrior: '255,115,70',
+    shaman: '105,255,220',
+    necromancer: '115,255,145',
+    warlock: '170,90,255'
+  };
   const PROFESSION_KEY_ALIASES = {
     战士: 'warrior',
     法师: 'mage',
@@ -992,6 +1030,8 @@
   };
   let ultimateCutInTimer = null;
   let ultimateCutInTimers = [];
+  let ultimateCutInPromise = null;
+  let ultimateCutInResolve = null;
   const state = {
     ruleset: null,
     players: [],
@@ -1013,6 +1053,9 @@
     turnCount: 0,
     turnSerial: 0,
     turnStartKey: '',
+    blackHolePullKey: '',
+    turnAdvanceKey: '',
+    aiTurnRunKey: '',
     matchOptions: { ...DEFAULT_MATCH_OPTIONS },
     run: {
       active: false,
@@ -1308,18 +1351,49 @@
     return `${detail.notation} → ${body}${mod} = ${detail.total}`;
   }
   const DICE_BOX_SIDES = new Set([4, 6, 8, 10, 12, 20, 100]);
-  const DICE_BOX_ROLL_TIMEOUT_MS = 1800;
+  const DICE_BOX_START_TIMEOUT_MS = 2600;
   function sanitizeDebugValues(values){
     return values.map(value => Number.isFinite(value) ? value : String(value));
   }
-  function withDiceBoxRollTimeout(promise, title, notation){
-    let timer = null;
-    const timeout = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error(`Dice Box roll timed out after ${DICE_BOX_ROLL_TIMEOUT_MS}ms: ${title} ${notation}`)), DICE_BOX_ROLL_TIMEOUT_MS);
+  async function waitForDiceBoxRoll(bridge, title, notation){
+    let started = false;
+    let canceled = false;
+    let resolveStarted = null;
+    const startedSignal = new Promise(resolve => { resolveStarted = resolve; });
+    const rollPromise = bridge.roll(notation, {
+      title,
+      isCanceled: () => canceled,
+      onStarted: () => {
+        if(started) return;
+        started = true;
+        if(resolveStarted) resolveStarted();
+      }
     });
-    return Promise.race([promise, timeout]).finally(() => {
-      if(timer) clearTimeout(timer);
-    });
+    const settledSignal = rollPromise.then(
+      results => ({ type: 'settled', results }),
+      error => ({ type: 'error', error })
+    );
+    const startTimeoutSignal = waitMs(DICE_BOX_START_TIMEOUT_MS).then(() => ({ type: 'start-timeout' }));
+    const first = await Promise.race([
+      settledSignal,
+      startedSignal.then(() => ({ type: 'started' })),
+      startTimeoutSignal
+    ]);
+    if(first.type === 'start-timeout'){
+      canceled = true;
+      pushDebug('dicebox.roll.start_timeout', {
+        title,
+        notation,
+        timeoutMs: DICE_BOX_START_TIMEOUT_MS,
+        bridgeInfo: bridge?.lastInfo || null
+      });
+      return null;
+    }
+    if(first.type === 'settled') return first.results;
+    if(first.type === 'error') throw first.error;
+    const settled = await settledSignal;
+    if(settled.type === 'error') throw settled.error;
+    return settled.results;
   }
   async function showProgramRollResult(detail, wait = 520){
     const summary = $('dice-summary');
@@ -1435,10 +1509,10 @@
       return null;
     }
     try {
-      const results = await withDiceBoxRollTimeout(bridge.roll(parsed.notation, { title }), title, parsed.notation);
+      const results = await waitForDiceBoxRoll(bridge, title, parsed.notation);
       const detail = diceBoxDetailFromResults(parsed, results);
       if(!detail){
-        log(`[Dice Box fallback] ${title}: empty result${bridge?.lastInfo ? ` (${bridge.lastInfo})` : ''}`);
+        log(`[Dice Box fallback] ${title}: no valid Dice Box result${bridge?.lastInfo ? ` (${bridge.lastInfo})` : ''}`);
       }
       return detail;
     } catch (error) {
@@ -1463,10 +1537,10 @@
       return null;
     }
     try {
-      const results = await withDiceBoxRollTimeout(bridge.roll(parsed.diceNotation, { title }), title, parsed.diceNotation);
+      const results = await waitForDiceBoxRoll(bridge, title, parsed.diceNotation);
       const detail = diceBoxChoiceDetailFromResults(parsed, results);
       if(!detail){
-        log(`[Dice Box fallback] ${title}: empty choice result${bridge?.lastInfo ? ` (${bridge.lastInfo})` : ''}`);
+        log(`[Dice Box fallback] ${title}: no valid choice Dice Box result${bridge?.lastInfo ? ` (${bridge.lastInfo})` : ''}`);
       }
       return detail;
     } catch (error) {
@@ -1519,7 +1593,7 @@
       rulesetName: state.ruleset?.name || null,
       currentPlayer: state.players?.[state.current]?.label || null,
       players: state.players.map(p => ({
-        id: p.id, label: p.label, professionKey: p.professionKey, weaponKey: p.weaponKey, accessoryKey: p.accessoryKey,
+        id: p.id, label: p.label, professionKey: p.professionKey, weaponKey: p.weaponKey, accessoryKey: p.accessoryKey, armorKey: p.armorKey, bootsKey: p.bootsKey, relicKey: p.relicKey,
         hp: p.hp, maxHp: p.maxHp, block: p.block, turn: p.turn, buffs: p.buffs,
         passives: p.profession?.passives || {},
       })),
@@ -2133,6 +2207,99 @@
     return !accessoryKey || accessoryKey === NO_ACCESSORY;
   }
 
+  function defaultArmorKey(data){
+    return fallbackKey(data?.armorLibrary, 'medium_armor', 0);
+  }
+
+  function defaultBootsKey(data){
+    return fallbackKey(data?.bootsLibrary, 'trail_boots', 0);
+  }
+
+  function defaultRelicKey(data){
+    return fallbackKey(data?.relicLibrary, 'blood_pact_relic', 0);
+  }
+
+  function equipmentValue(player, field, fallback = 0){
+    const armor = player?.armor || {};
+    const boots = player?.boots || {};
+    const relic = player?.relic || {};
+    return Number(armor[field] ?? boots[field] ?? relic[field] ?? fallback);
+  }
+
+  function equipmentStatSum(player, field){
+    const armorValue = Number(player?.armor?.[field] || 0);
+    const bootsValue = Number(player?.boots?.[field] || 0);
+    const relicValue = Number(player?.relic?.[field] || 0);
+    return Math.max(0, armorValue) + Math.max(0, bootsValue) + Math.max(0, relicValue);
+  }
+
+  function armorFlatDamageReduction(armor){
+    if(!armor) return 0;
+    const raw = armor.damageReductionFlat ?? armor.incomingDamageFlatReduction ?? 0;
+    return Math.max(0, Number(raw || 0));
+  }
+
+  function equipmentAttackFailChance(player){
+    return Math.max(0, Math.min(95, equipmentStatSum(player, 'outgoingAttackFailChance')));
+  }
+
+  function shouldEquipmentAttackFail(player, actionName){
+    const chance = equipmentAttackFailChance(player);
+    if(chance <= 0) return false;
+    const roll = Math.random() * 100;
+    if(roll >= chance) return false;
+    const sources = [player?.armor, player?.boots, player?.relic]
+      .filter(item => Number(item?.outgoingAttackFailChance || 0) > 0)
+      .map(item => item.name || item.key || '装备')
+      .join(' + ');
+    log(`${player.label} 的${sources || '装备'}让 ${actionName || '攻击'} 失误（${Math.ceil(roll)} / ${chance}%）。`);
+    return true;
+  }
+
+  function shouldNegativeActionFail(player, actionName, actionKind){
+    const chance = Math.max(0, Number(player?.buffs?.clumsyFailChance || 0));
+    if(chance <= 0) return false;
+    const scope = String(player.buffs.clumsyScope || 'any');
+    const kind = String(actionKind || 'skill');
+    if(scope === 'attack' && kind !== 'attack') return false;
+    if(scope === 'skill' && kind !== 'skill') return false;
+    const roll = Math.random() * 100;
+    const failed = roll < chance;
+    if(!player.buffs.clumsyPermanent){
+      player.buffs.clumsyFailChance = 0;
+      player.buffs.clumsyScope = 'any';
+    }
+    if(!failed) return false;
+    log(`${player.label} 因笨拙导致 ${actionName || '行动'} 失败（${Math.ceil(roll)} / ${chance}%）。`);
+    return true;
+  }
+
+  function maybeRedirectChaosTarget(attacker, target, actionName){
+    if(!attacker?.buffs || Number(attacker.buffs.chaosDamageCharges || 0) <= 0) return target;
+    attacker.buffs.chaosDamageCharges = Math.max(0, Number(attacker.buffs.chaosDamageCharges || 0) - 1);
+    log(`${attacker.label} 的混乱触发，${actionName || '下一次伤害'} 改为攻击自己。`);
+    return attacker;
+  }
+
+  function cardCanEquipmentMisfire(cardDef){
+    return [
+      'direct_damage',
+      'dash_hit',
+      'insert_negative_card_into_target_deck',
+      'mark_target_for_bonus',
+      'bonus_if_target_marked',
+      'consume_all_activated_tokens_for_burst',
+      'damage_then_multi_buff',
+      'damage_roll_grant_card',
+      'aoe'
+    ].includes(cardDef?.template);
+  }
+
+  function isHazardDamageSource(sourceName){
+    const raw = String(sourceName || '').toLowerCase();
+    return raw.includes('hazard') || raw.includes('trap') || raw.includes('spike') || raw.includes('black hole') || raw.includes('center') || raw.includes('陷阱') || raw.includes('黑洞') || raw.includes('尖刺') || raw.includes('地形');
+  }
+
   function isBlackHoleEnabled(){
     return state.matchOptions?.blackHoleEnabled !== false;
   }
@@ -2184,13 +2351,19 @@
     const profession = data.professions?.[loadout.professionKey];
     const weapon = data.weaponLibrary?.[loadout.weaponKey];
     const accessory = isNoAccessory(loadout.accessoryKey) ? null : data.accessoryLibrary?.[loadout.accessoryKey];
+    const armor = data.armorLibrary?.[loadout.armorKey] || data.armorLibrary?.[defaultArmorKey(data)];
+    const boots = data.bootsLibrary?.[loadout.bootsKey] || data.bootsLibrary?.[defaultBootsKey(data)];
+    const relic = data.relicLibrary?.[loadout.relicKey] || data.relicLibrary?.[defaultRelicKey(data)];
     const split = accessory
-      ? { profession: 10, weapon: 5, accessory: 5 }
-      : { profession: 14, weapon: 6, accessory: 0 };
+      ? { profession: 8, weapon: 5, accessory: 2, armor: 2, boots: 2, relic: 1 }
+      : { profession: 9, weapon: 6, accessory: 0, armor: 2, boots: 2, relic: 1 };
     const deck = [
       ...sourceDeckEntries('profession', profession, 'class_skill', split.profession),
       ...sourceDeckEntries('weapon', weapon, 'weapon_skill', split.weapon),
       ...sourceDeckEntries('accessory', accessory, 'accessory_skill', split.accessory),
+      ...sourceDeckEntries('armor', armor, 'armor_skill', split.armor),
+      ...sourceDeckEntries('boots', boots, 'boots_skill', split.boots),
+      ...sourceDeckEntries('relic', relic, 'relic_skill', split.relic),
     ];
     return shuffle(deck).slice(0, RUN_DECK_TARGET);
   }
@@ -2314,17 +2487,26 @@
       professionKey: $('p1-profession').value,
       weaponKey: $('p1-weapon').value,
       accessoryKey: $('p1-accessory').value,
+      armorKey: $('p1-armor')?.value,
+      bootsKey: $('p1-boots')?.value,
+      relicKey: $('p1-relic')?.value,
     };
   }
 
   function sanitizeLoadout(loadout){
     const data = state.ruleset?.data || {};
+    const armorKey = data.armorLibrary?.[loadout?.armorKey] ? loadout.armorKey : defaultArmorKey(data);
+    const bootsKey = data.bootsLibrary?.[loadout?.bootsKey] ? loadout.bootsKey : defaultBootsKey(data);
+    const relicKey = data.relicLibrary?.[loadout?.relicKey] ? loadout.relicKey : defaultRelicKey(data);
     return {
       professionKey: data.professions?.[loadout?.professionKey] ? loadout.professionKey : fallbackKey(data.professions, 'warrior', 0),
       weaponKey: data.weaponLibrary?.[loadout?.weaponKey] ? loadout.weaponKey : fallbackKey(data.weaponLibrary, 'greatsword', 0),
       accessoryKey: isNoAccessory(loadout?.accessoryKey) || data.accessoryLibrary?.[loadout?.accessoryKey]
         ? (loadout?.accessoryKey || NO_ACCESSORY)
         : NO_ACCESSORY,
+      armorKey,
+      bootsKey,
+      relicKey,
     };
   }
 
@@ -2339,10 +2521,16 @@
     const profs = ['mage', 'rogue', 'necro'];
     const weapons = ['longbow', 'dagger', 'greatsword'];
     const accessories = ['lincoln', 'trapbag', 'hope'];
+    const armors = ['light_armor', 'medium_armor', 'heavy_armor'];
+    const boots = ['swift_boots', 'trail_boots', 'anchor_boots'];
+    const relics = ['blood_pact_relic', 'chaos_relic', 'sunder_relic'];
     return {
       professionKey: fallbackKey(data.professions, profs[stageIndex], 0),
       weaponKey: fallbackKey(data.weaponLibrary, weapons[stageIndex], 0),
       accessoryKey: fallbackKey(data.accessoryLibrary, accessories[stageIndex], 0),
+      armorKey: fallbackKey(data.armorLibrary, armors[stageIndex], 0),
+      bootsKey: fallbackKey(data.bootsLibrary, boots[stageIndex], 0),
+      relicKey: fallbackKey(data.relicLibrary, relics[stageIndex], 0),
     };
   }
 
@@ -2373,6 +2561,9 @@
     state.turnCount = 0;
     state.turnSerial = 0;
     state.turnStartKey = '';
+    state.blackHolePullKey = '';
+    state.turnAdvanceKey = '';
+    state.aiTurnRunKey = '';
     if($('choice-panel')) $('choice-panel').innerHTML = '';
     if($('log')) $('log').innerHTML = '';
   }
@@ -2448,11 +2639,11 @@
     resetBattleRuntime();
     const enemy = stageEnemyLoadout(stageIndex);
     state.players = [
-      buildPlayer(1, state.run.playerLoadout.professionKey, state.run.playerLoadout.weaponKey, state.run.playerLoadout.accessoryKey, 'human', {q:-R,r:0}, {
+      buildPlayer(1, state.run.playerLoadout.professionKey, state.run.playerLoadout.weaponKey, state.run.playerLoadout.accessoryKey, state.run.playerLoadout.armorKey, state.run.playerLoadout.bootsKey, state.run.playerLoadout.relicKey, 'human', {q:-R,r:0}, {
         deckOverride: state.run.runDeck,
         labelOverride: 'Runner',
       }),
-      buildPlayer(2, enemy.professionKey, enemy.weaponKey, enemy.accessoryKey, 'ai', {q:R,r:0}, {
+      buildPlayer(2, enemy.professionKey, enemy.weaponKey, enemy.accessoryKey, enemy.armorKey, enemy.bootsKey, enemy.relicKey, 'ai', {q:R,r:0}, {
         hpBonus: stage.hpBonus,
         drawOpeningBonus: stage.drawOpeningBonus,
         drawPerTurnBonus: stage.drawPerTurnBonus,
@@ -2601,6 +2792,168 @@
     return PROFESSION_ART[professionKey] || PROFESSION_ART[normalizeProfessionKey(professionKey)] || null;
   }
 
+  function dynamicPortraitPresetFor(professionKey){
+    const normalized = normalizeProfessionKey(professionKey);
+    return DYNAMIC_PORTRAIT_PROFESSION_PRESETS[professionKey] || DYNAMIC_PORTRAIT_PROFESSION_PRESETS[normalized] || null;
+  }
+
+  function dynamicPortraitConfigFor(professionKey){
+    const preset = dynamicPortraitPresetFor(professionKey);
+    return preset ? window.DYNAMIC_PORTRAIT_CONFIGS?.[preset] || null : null;
+  }
+
+  function dynamicPortraitAssetsFor(professionKey){
+    const preset = dynamicPortraitPresetFor(professionKey);
+    return preset ? DYNAMIC_PORTRAIT_ASSETS[preset] || null : null;
+  }
+
+  function dynamicPortraitRectVars(prefix, rect){
+    if(!rect) return '';
+    const x = Number(rect.x) || 0;
+    const y = Number(rect.y) || 0;
+    const w = Number(rect.w) || 0;
+    const h = Number(rect.h) || 0;
+    return `--${prefix}-x:${(x + w / 2).toFixed(2)}%;--${prefix}-y:${(y + h / 2).toFixed(2)}%;--${prefix}-w:${(w / 2).toFixed(2)}%;--${prefix}-h:${(h / 2).toFixed(2)}%;`;
+  }
+
+  function dynamicPortraitNumber(value, fallback){
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  function dynamicPortraitStyleVars(preset, config){
+    const alignX = dynamicPortraitNumber(config.alignX, 0);
+    const alignY = dynamicPortraitNumber(config.alignY, 0);
+    const alignScale = dynamicPortraitNumber(config.alignScale, 1);
+    const brightness = dynamicPortraitNumber(config.colorBrightness, 1);
+    const contrast = dynamicPortraitNumber(config.colorContrast, 1);
+    const saturate = dynamicPortraitNumber(config.colorSaturate, 1);
+    const hue = dynamicPortraitNumber(config.colorHue, 0);
+    return [
+      `--particle-rgb:${DYNAMIC_PORTRAIT_PARTICLES[preset] || '255,216,120'}`,
+      '--speed:1',
+      '--float-amount:5px',
+      '--breath-scale:0.006',
+      '--sway-amount:0.75px',
+      `--blink-shake:${dynamicPortraitNumber(config.blinkShake, 0.25).toFixed(2)}px`,
+      `--blink-offset-x:${(alignX / 512 * 100).toFixed(4)}%`,
+      `--blink-offset-y:${(alignY / 768 * 100).toFixed(4)}%`,
+      `--blink-scale:${alignScale}`,
+      `--blink-brightness:${brightness}`,
+      `--blink-contrast:${contrast}`,
+      `--blink-saturate:${saturate}`,
+      `--blink-hue:${hue}deg`,
+      '--chest-opacity:0.72',
+      `--chest-breath-scale-x:${dynamicPortraitNumber(config.scaleX, 0.04).toFixed(3)}`,
+      `--chest-breath-scale-y:${dynamicPortraitNumber(config.scaleY, 0.022).toFixed(3)}`,
+      `--chest-jitter:${dynamicPortraitNumber(config.jitter, 0.55).toFixed(2)}px`,
+      dynamicPortraitRectVars('left-chest', config.left),
+      dynamicPortraitRectVars('right-chest', config.right),
+      dynamicPortraitRectVars('eye', config.eye)
+    ].join(';');
+  }
+
+  function dynamicPortraitParticles(count = 22){
+    return Array.from({ length: count }, (_, index) => {
+      const size = 2 + Math.random() * 4;
+      const left = 8 + Math.random() * 84;
+      const top = 6 + Math.random() * 88;
+      const delay = Math.random() * 4;
+      const duration = 5 + Math.random() * 5;
+      const drift = -12 + Math.random() * 24;
+      const opacity = 0.25 + Math.random() * 0.55;
+      return `<span style="left:${left.toFixed(2)}%;top:${top.toFixed(2)}%;width:${size.toFixed(2)}px;height:${(size * 2.2).toFixed(2)}px;animation-delay:${delay.toFixed(2)}s;animation-duration:${duration.toFixed(2)}s;--drift:${drift.toFixed(2)}px;opacity:${opacity.toFixed(2)}"></span>`;
+    }).join('');
+  }
+
+  function renderDynamicPortraitFx(){
+    return `
+      <div class="dynamic-portrait__fx dynamic-portrait__fx--mage" aria-hidden="true"><span class="rune r1">*</span><span class="rune r2">*</span><span class="rune r3">*</span><span class="orb o1"></span><span class="orb o2"></span><span class="arc a1"></span><span class="arc a2"></span></div>
+      <div class="dynamic-portrait__fx dynamic-portrait__fx--priest" aria-hidden="true"><span class="cross c1">+</span><span class="cross c2">+</span><span class="cross c3">+</span><span class="beam b1"></span><span class="beam b2"></span><span class="feather f1"></span><span class="feather f2"></span></div>
+      <div class="dynamic-portrait__fx dynamic-portrait__fx--hunter" aria-hidden="true"><span class="wind w1"></span><span class="wind w2"></span><span class="wind w3"></span><span class="wind w4"></span><span class="leaf l1"></span><span class="leaf l2"></span><span class="leaf l3"></span><span class="leaf l4"></span><span class="seed sd1"></span><span class="seed sd2"></span></div>
+      <div class="dynamic-portrait__fx dynamic-portrait__fx--monk" aria-hidden="true"><span class="chi-ring cr1"></span><span class="chi-ring cr2"></span><span class="chi-ring cr3"></span><span class="bead bd1"></span><span class="bead bd2"></span><span class="bead bd3"></span><span class="sweep sw1"></span><span class="sweep sw2"></span></div>
+      <div class="dynamic-portrait__fx dynamic-portrait__fx--assassin" aria-hidden="true"><span class="shadow s1"></span><span class="shadow s2"></span><span class="shadow s3"></span><span class="shard sh1"></span><span class="shard sh2"></span><span class="shard sh3"></span><span class="slash sl1"></span><span class="slash sl2"></span></div>
+      <div class="dynamic-portrait__fx dynamic-portrait__fx--samurai" aria-hidden="true"><span class="petal p1"></span><span class="petal p2"></span><span class="petal p3"></span><span class="petal p4"></span><span class="blade bl1"></span><span class="blade bl2"></span><span class="sun-pulse su1"></span></div>
+      <div class="dynamic-portrait__fx dynamic-portrait__fx--warrior" aria-hidden="true"><span class="ember e1"></span><span class="ember e2"></span><span class="ember e3"></span><span class="ember e4"></span><span class="dust d1"></span><span class="dust d2"></span><span class="dust d3"></span><span class="flare fr1"></span><span class="flare fr2"></span></div>
+      <div class="dynamic-portrait__fx dynamic-portrait__fx--shaman" aria-hidden="true"><span class="bolt bo1"></span><span class="bolt bo2"></span><span class="bolt bo3"></span><span class="totem t1"></span><span class="totem t2"></span><span class="spirit sp1"></span><span class="spirit sp2"></span></div>
+      <div class="dynamic-portrait__fx dynamic-portrait__fx--necromancer" aria-hidden="true"><span class="soul so1"></span><span class="soul so2"></span><span class="soul so3"></span><span class="soul so4"></span><span class="ash a1"></span><span class="ash a2"></span><span class="ash a3"></span><span class="bone bn1">x</span><span class="bone bn2">x</span></div>
+      <div class="dynamic-portrait__fx dynamic-portrait__fx--warlock" aria-hidden="true"><span class="fel ff1"></span><span class="fel ff2"></span><span class="fel ff3"></span><span class="sigil sg1">*</span><span class="sigil sg2">*</span><span class="smoke sm1"></span><span class="smoke sm2"></span><span class="smoke sm3"></span></div>`;
+  }
+
+  function renderDynamicPortrait(professionKey, options = {}){
+    const preset = dynamicPortraitPresetFor(professionKey);
+    const config = dynamicPortraitConfigFor(professionKey);
+    const assets = dynamicPortraitAssetsFor(professionKey);
+    if(!preset || !config || !assets) return '';
+    const topLayer = config.topLayer === 'open' ? 'open' : 'close';
+    const baseSrc = topLayer === 'open' ? assets.close : assets.open;
+    const blinkSrc = topLayer === 'open' ? assets.open : assets.close;
+    const className = options.className ? ` ${options.className}` : '';
+    const label = options.label || professionDisplayName(professionKey, professionKey);
+    const blinkDuration = Math.max(80, Math.round(dynamicPortraitNumber(config.blinkDuration, 220)));
+    return `<div class="dynamic-portrait dynamic-portrait--preset-${escapeHtml(preset)}${escapeHtml(className)}" data-dynamic-portrait data-top-layer="${topLayer}" data-blink-duration="${blinkDuration}" style="${dynamicPortraitStyleVars(preset, config)}" aria-label="${escapeHtml(label)}">
+      <img class="dynamic-portrait__background" src="${escapeHtml(assets.bg)}" alt="">
+      <div class="dynamic-portrait__magic-pulse" aria-hidden="true"></div>
+      <div class="dynamic-portrait__particles" aria-hidden="true">${dynamicPortraitParticles()}</div>
+      <div class="dynamic-portrait__edge-glow" aria-hidden="true"><img src="${escapeHtml(baseSrc)}" alt=""></div>
+      <div class="dynamic-portrait__glow" aria-hidden="true"></div>
+      <div class="dynamic-portrait__character-rig">
+        <img class="dynamic-portrait__base" src="${escapeHtml(baseSrc)}" alt="${escapeHtml(label)}">
+        <div class="dynamic-portrait__blink-eyes" aria-hidden="true"><img src="${escapeHtml(blinkSrc)}" alt=""></div>
+        <div class="dynamic-portrait__left-chest-breath-layer" aria-hidden="true"><img src="${escapeHtml(baseSrc)}" alt=""></div>
+        <div class="dynamic-portrait__right-chest-breath-layer" aria-hidden="true"><img src="${escapeHtml(baseSrc)}" alt=""></div>
+        <div class="dynamic-portrait__metal-glints" aria-hidden="true"><span class="glint g1"></span><span class="glint g2"></span><span class="glint g3"></span></div>
+      </div>
+      ${renderDynamicPortraitFx()}
+    </div>`;
+  }
+
+  function fitDynamicPortraitFrames(root = document){
+    root?.querySelectorAll?.('[data-dynamic-portrait]').forEach(node => {
+      const parent = node.parentElement;
+      if(!parent) return;
+      const rect = parent.getBoundingClientRect();
+      if(!rect.width || !rect.height) return;
+      const useWidthCover = !node.classList.contains('battle-dynamic-portrait') && (rect.width / rect.height) > (2 / 3);
+      node.classList.toggle('is-cover-wide', useWidthCover);
+      node.classList.toggle('is-cover-tall', !useWidthCover);
+    });
+  }
+
+  function clearDynamicPortraitBlinkTimers(root){
+    root?.querySelectorAll?.('[data-dynamic-portrait]').forEach(node => {
+      if(node._dynamicBlinkTimer) clearTimeout(node._dynamicBlinkTimer);
+      if(node._dynamicBlinkEndTimer) clearTimeout(node._dynamicBlinkEndTimer);
+      if(node._dynamicShakeTimer) clearTimeout(node._dynamicShakeTimer);
+      node._dynamicBlinkTimer = null;
+      node._dynamicBlinkEndTimer = null;
+      node._dynamicShakeTimer = null;
+    });
+  }
+
+  function initDynamicPortraitBlinkTimers(root){
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    root?.querySelectorAll?.('[data-dynamic-portrait]').forEach(node => {
+      if(reduceMotion) return;
+      const rig = node.querySelector('.dynamic-portrait__character-rig');
+      const duration = Math.max(80, dynamicPortraitNumber(node.dataset.blinkDuration, 220));
+      const schedule = () => {
+        const delay = 2600 + Math.random() * 2600;
+        node._dynamicBlinkTimer = window.setTimeout(() => {
+          if(!node.isConnected) return;
+          node.classList.add('is-blinking');
+          rig?.classList.add('is-shaking');
+          node._dynamicShakeTimer = window.setTimeout(() => rig?.classList.remove('is-shaking'), 100);
+          node._dynamicBlinkEndTimer = window.setTimeout(() => {
+            node.classList.remove('is-blinking');
+            schedule();
+          }, duration);
+        }, delay);
+      };
+      schedule();
+    });
+  }
+
   function professionDisplayName(professionKey, fallback = ''){
     const prof = activeRulesetData()?.professions?.[professionKey];
     return I18N().entity('profession', professionKey, prof?.name || fallback || professionKey);
@@ -2609,6 +2962,7 @@
   function renderSetupPortraits(){
     const host = $('setup-portrait-stage');
     if(!host) return;
+    clearDynamicPortraitBlinkTimers(host);
     const slots = [
       { side: 'p1', label: 'Player 1', selectId: 'p1-profession' },
       { side: 'p2', label: 'Player 2', selectId: 'p2-profession' }
@@ -2618,17 +2972,21 @@
       const art = professionArtFor(professionKey);
       const name = professionDisplayName(professionKey, professionKey);
       const src = art?.select || '';
+      const dynamicPortrait = renderDynamicPortrait(professionKey, { className: 'setup-dynamic-portrait', label: name });
       return `<article class="setup-portrait-card ${slot.side}">
-        <div class="setup-portrait-frame">${src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(name)}">` : ''}</div>
+        <div class="setup-portrait-frame">${dynamicPortrait || (src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(name)}">` : '')}</div>
         <div class="setup-portrait-label"><span>${escapeHtml(slot.label)}</span><strong>${escapeHtml(name)}</strong></div>
       </article>`;
     }).join('');
+    fitDynamicPortraitFrames(host);
+    initDynamicPortraitBlinkTimers(host);
   }
 
   function renderBattlePortraits(){
     const host = $('battle-portrait-stage');
     if(!host) return;
     if(!state.players.length){
+      clearDynamicPortraitBlinkTimers(host);
       host.innerHTML = '';
       host.dataset.signature = '';
       return;
@@ -2637,16 +2995,20 @@
     const signature = state.players.map(player => `${player.id}:${player.professionKey || ''}`).join('|') + `:${active?.id || 0}`;
     if(host.dataset.signature === signature) return;
     host.dataset.signature = signature;
+    clearDynamicPortraitBlinkTimers(host);
     host.innerHTML = state.players.map(player => {
       const art = professionArtFor(player.professionKey);
-      if(!art?.select) return '';
+      const dynamicPortrait = renderDynamicPortrait(player.professionKey, { className: 'battle-dynamic-portrait', label: I18N().entity('profession', player.professionKey, player.profession?.name || player.professionKey) });
+      if(!dynamicPortrait && !art?.select) return '';
       const side = player.id === 1 ? 'left' : 'right';
       const activeClass = active?.id === player.id ? 'is-active' : '';
       const name = I18N().entity('profession', player.professionKey, player.profession?.name || player.professionKey);
       return `<figure class="battle-portrait ${side} ${activeClass}">
-        <img src="${escapeHtml(art.select)}" alt="${escapeHtml(name)}">
+        ${dynamicPortrait || `<img src="${escapeHtml(art.select)}" alt="${escapeHtml(name)}">`}
       </figure>`;
     }).join('');
+    fitDynamicPortraitFrames(host);
+    initDynamicPortraitBlinkTimers(host);
   }
 
   function clearUltimateCutIn(){
@@ -2663,6 +3025,15 @@
       layer.innerHTML = '';
       layer.removeAttribute('style');
     }
+    if(ultimateCutInResolve){
+      ultimateCutInResolve();
+      ultimateCutInResolve = null;
+      ultimateCutInPromise = null;
+    }
+  }
+
+  function waitForUltimateCutInDone(){
+    return ultimateCutInPromise || Promise.resolve();
   }
 
   function queueUltimateCutIn(delay, fn){
@@ -2711,7 +3082,8 @@
 
   function playUltimateCutIn(characterPortrait, options = {}){
     const layer = $('ultimate-cutin-layer');
-    if(!layer || !characterPortrait?.src || ultimateCutInTimer) return;
+    if(!layer || !characterPortrait?.src) return Promise.resolve();
+    if(ultimateCutInTimer) return waitForUltimateCutInDone();
     const config = { ...ULTIMATE_CUTIN_DEFAULTS, ...options };
     const side = characterPortrait.side === 'right' ? 'right' : 'left';
     const name = characterPortrait.name || '';
@@ -2730,6 +3102,9 @@
     const particles = ultimateParticles(config.particleCount, 'particle');
     const shards = ultimateParticles(Math.max(18, Math.round(config.particleCount * 0.75)), 'shard');
     layer.className = `ultimate-cutin-layer side-${side} class-${classKey}`;
+    ultimateCutInPromise = new Promise(resolve => {
+      ultimateCutInResolve = resolve;
+    });
     layer.style.setProperty('--ultimate-intro-text-duration', `${preIntroDuration}ms`);
     layer.innerHTML = `
       <div class="ultimate-black-bg"></div>
@@ -2809,14 +3184,16 @@
       <div class="ultimate-flash"></div>`;
       queueUltimateCutIn(config.titleDelay, () => activateUltimateText(layer, '.ultimate-title-burst'));
     });
+    return waitForUltimateCutInDone();
   }
   function triggerUltimateCutIn(attacker, finalDamage){
-    if(!attacker || finalDamage <= 10 || ultimateCutInTimer) return;
+    if(!attacker || finalDamage <= 10) return Promise.resolve();
+    if(ultimateCutInTimer) return waitForUltimateCutInDone();
     const art = professionArtFor(attacker.professionKey);
-    if(!art?.ultimate) return;
+    if(!art?.ultimate) return Promise.resolve();
     const side = attacker.id === 2 ? 'right' : 'left';
     const name = I18N().entity('profession', attacker.professionKey, attacker.profession?.name || attacker.professionKey);
-    playUltimateCutIn({ src: art.ultimate, name, damage: finalDamage, side, professionKey: attacker.professionKey, callout: ultimateCalloutFor(attacker.professionKey) });
+    return playUltimateCutIn({ src: art.ultimate, name, damage: finalDamage, side, professionKey: attacker.professionKey, callout: ultimateCalloutFor(attacker.professionKey) });
   }
 
   function setupRulesetData(){
@@ -2861,10 +3238,13 @@
   }
 
   function buildDeckFor(playerConfig) {
-    const { ruleset, professionKey, weaponKey, accessoryKey } = playerConfig;
+    const { ruleset, professionKey, weaponKey, accessoryKey, armorKey, bootsKey, relicKey } = playerConfig;
     const profession = ruleset.data.professions[professionKey];
     const weapon = ruleset.data.weaponLibrary[weaponKey];
     const accessory = isNoAccessory(accessoryKey) ? null : ruleset.data.accessoryLibrary[accessoryKey];
+    const armor = ruleset.data.armorLibrary?.[armorKey] || ruleset.data.armorLibrary?.[defaultArmorKey(ruleset.data)];
+    const boots = ruleset.data.bootsLibrary?.[bootsKey] || ruleset.data.bootsLibrary?.[defaultBootsKey(ruleset.data)];
+    const relic = ruleset.data.relicLibrary?.[relicKey] || ruleset.data.relicLibrary?.[defaultRelicKey(ruleset.data)];
     const deck = [];
 
     function pushFromCounts(counts, origin) {
@@ -2874,39 +3254,34 @@
       });
     }
 
-    pushFromCounts(
-      deckCountsFor('profession', profession),
-      '职业技能'
-    );
-    pushFromCounts(
-      deckCountsFor('weapon', weapon),
-      '武器技能'
-    );
-    if(accessory){
-      pushFromCounts(
-        deckCountsFor('accessory', accessory),
-        '饰品技能'
-      );
-    }
+    pushFromCounts(deckCountsFor('profession', profession), 'class_skill');
+    pushFromCounts(deckCountsFor('weapon', weapon), 'weapon_skill');
+    if(accessory) pushFromCounts(deckCountsFor('accessory', accessory), 'accessory_skill');
+    if(armor) pushFromCounts(deckCountsFor('armor', armor), 'armor_skill');
+    if(boots) pushFromCounts(deckCountsFor('boots', boots), 'boots_skill');
+    if(relic) pushFromCounts(deckCountsFor('relic', relic), 'relic_skill');
 
     return shuffle(deck);
   }
 
-  function buildPlayer(slot, professionKey, weaponKey, accessoryKey, type, startPos, opts = {}) {
+  function buildPlayer(slot, professionKey, weaponKey, accessoryKey, armorKey, bootsKey, relicKey, type, startPos, opts = {}) {
     const ruleset = state.ruleset;
     const profession = ruleset.data.professions[professionKey];
     const weapon = ruleset.data.weaponLibrary[weaponKey];
     const accessory = isNoAccessory(accessoryKey) ? null : ruleset.data.accessoryLibrary[accessoryKey];
-    const maxHp = Number(profession.hp || 0) + Number(opts.hpBonus || 0);
+    const armor = ruleset.data.armorLibrary?.[armorKey] || ruleset.data.armorLibrary?.[defaultArmorKey(ruleset.data)] || { key: 'medium_armor', name: '中甲', maxHp: 55 };
+    const boots = ruleset.data.bootsLibrary?.[bootsKey] || ruleset.data.bootsLibrary?.[defaultBootsKey(ruleset.data)] || { key: 'trail_boots', name: '标准靴', moveBase: 4 };
+    const relic = ruleset.data.relicLibrary?.[relicKey] || ruleset.data.relicLibrary?.[defaultRelicKey(ruleset.data)] || null;
+    const maxHp = Number(armor.maxHp || 55) + Number(opts.hpBonus || 0);
     return {
       id: slot, type, label: opts.labelOverride || `玩家 ${slot}`, color: slot===1 ? '#65a9ff' : '#ff8aa8',
-      professionKey, weaponKey, accessoryKey: accessory ? accessoryKey : NO_ACCESSORY, profession, weapon, accessory,
-      maxHp, hp: maxHp, moveBase: profession.move, pos: deep(startPos),
-      deck: opts.deckOverride ? shuffle(deep(opts.deckOverride)) : buildDeckFor({ ruleset, professionKey, weaponKey, accessoryKey }),
+      professionKey, weaponKey, accessoryKey: accessory ? accessoryKey : NO_ACCESSORY, armorKey: armor.key || armorKey, bootsKey: boots.key || bootsKey, relicKey: relic?.key || relicKey, profession, weapon, accessory, armor, boots, relic,
+      maxHp, hp: maxHp, moveBase: Number(boots.moveBase || 4), pos: deep(startPos),
+      deck: opts.deckOverride ? shuffle(deep(opts.deckOverride)) : buildDeckFor({ ruleset, professionKey, weaponKey, accessoryKey, armorKey: armor.key || armorKey, bootsKey: boots.key || bootsKey, relicKey: relic?.key || relicKey }),
       discard: [], hand: [], alive: true, block: 0,
       statuses: { burn:0, slow:0, disarm:0, sheep:0, stun:0, root:0, dot:null, dots:[] },
-      buffs: { nextBasicFlat:0, nextBasicDie:null, spellImmune:false, extraBasicCap:0, extraClassCardUses:0, swordBonusStored:false, dodgeNextDamage:0, counterDamage:'', counterUseTakenDamage:false, counterCharges:0, reactiveMoveTrigger:'', reactiveMoveMaxDistance:0, reactiveMoveCharges:0, healOnDamaged:'', healOnDamagedCharges:0, disarmAttackerOnHit:0, disarmAttackerCharges:0, runShieldHalfCharges:0, runDodgeReductionCharges:0, runLowHpRecoveryAvailable:0, runExtraClassCardUsesPerTurn:0, runMovePenaltyActive:0, runMovePenaltyNext:0 },
-      turn: { move:false, classOrGuardianUsed:false, weaponOrAccessoryUsed:false, basicSpent:0, blockUsed:false, movedDistance:0, autoBlockTriggered:false },
+      buffs: { nextBasicFlat:0, nextBasicDie:null, spellImmune:false, extraBasicCap:0, extraClassCardUses:0, swordBonusStored:false, dodgeNextDamage:0, counterDamage:'', counterUseTakenDamage:false, counterCharges:0, reactiveMoveTrigger:'', reactiveMoveMaxDistance:0, reactiveMoveCharges:0, healOnDamaged:'', healOnDamagedCharges:0, disarmAttackerOnHit:0, disarmAttackerCharges:0, vulnerableDamageBonus:0, vulnerableDamageScope:'any', vulnerableDamagePermanent:false, clumsyFailChance:0, clumsyScope:'any', clumsyPermanent:false, chaosDamageCharges:0, runShieldHalfCharges:0, runDodgeReductionCharges:0, runLowHpRecoveryAvailable:0, runExtraClassCardUsesPerTurn:0, runMovePenaltyActive:0, runMovePenaltyNext:0 },
+      turn: { move:false, classOrGuardianUsed:false, weaponOrAccessoryUsed:false, equipmentSkillUsed:false, basicSpent:0, blockUsed:false, movedDistance:0, autoBlockTriggered:false },
       counters: { heal_count:0 },
       negativeQueue: [],
       summons: { skeleton:0, bone_dragon:0 },
@@ -2965,12 +3340,6 @@
       }
       const drawn = player.deck.shift();
       const cardDef = getCardDef(drawn.cardKey);
-      if(cardDef && cardDef.negativeOnDraw){
-        player.discard.push(drawn);
-        log(`${player.label} 抽到负面牌：${cardDef.name}。`);
-        resolveNegativeOnDraw(player, drawn);
-        continue;
-      }
       if(cardDef && cardDef.category==='block' && !player.turn.autoBlockTriggered){
         player.turn.autoBlockTriggered = true;
         player.discard.push(drawn);
@@ -2984,6 +3353,7 @@
         log(`${player.label} 抽到额外格挡牌，但本回合已触发过自动格挡。`);
         continue;
       }
+      if(isNegativeCardDef(cardDef)) log(`${player.label} 抽到负面牌：${cardDef.name || drawn.cardKey}，已加入手牌。`);
       player.hand.push(drawn);
     }
   }
@@ -2996,6 +3366,212 @@
     }
     if(state.ruleset?.data?.cardLibrary?.[cardKey]) return state.ruleset.data.cardLibrary[cardKey];
     return null;
+  }
+
+  function normalizeNegativeEffects(config){
+    const effects = [];
+    if(Array.isArray(config?.negativeEffects)) effects.push(...config.negativeEffects);
+    if(config?.negativeEffectType) effects.push(config);
+    if(config?.effectType && String(config.effectType).startsWith('negative_')) effects.push(config);
+    if(config?.effectType && ['fumble','vulnerable','clumsy','panic','chaos','blood'].includes(String(config.effectType))) effects.push(config);
+    return effects.filter(Boolean);
+  }
+
+  function isNegativeCardDef(cardDef){
+    return !!(
+      cardDef?.negativeOnDraw ||
+      cardDef?.source === '负面牌' ||
+      String(cardDef?.template || '').startsWith('negative_')
+    );
+  }
+
+  function isQuickCardDef(cardDef){
+    return !!(cardDef?.quick || cardDef?.config?.quick);
+  }
+
+  function negativeCardIndicesInHand(player){
+    if(!player?.hand) return [];
+    return player.hand
+      .map((item, index) => ({ item, index, def: getCardDef(item.cardKey) }))
+      .filter(entry => isNegativeCardDef(entry.def))
+      .map(entry => entry.index);
+  }
+
+  function hasForcedNegativeCards(player){
+    return negativeCardIndicesInHand(player).length > 0;
+  }
+
+  function mustResolveNegativeCards(player){
+    if(!hasForcedNegativeCards(player)) return false;
+    setHint('请先使用手牌里的负面牌，处理完后才能进行其他动作。');
+    return true;
+  }
+
+  function markActionBucketSpent(player, bucket){
+    const raw = String(bucket || 'random').trim();
+    const options = ['basic_attack', 'weapon_or_accessory', 'class_or_guardian', 'equipment_skill'];
+    const choice = raw === 'random' ? randItem(options) : raw;
+    if(choice === 'basic_attack'){
+      player.turn.basicSpent = Math.max(Number(player.turn.basicSpent || 0), 1 + Number(player.buffs?.extraBasicCap || 0));
+      log(`${player.label} 失去本回合普通攻击机会。`);
+      return choice;
+    }
+    if(choice === 'weapon_or_accessory'){
+      player.turn.weaponOrAccessoryUsed = true;
+      log(`${player.label} 失去本回合武器技能机会。`);
+      return choice;
+    }
+    if(choice === 'class_or_guardian'){
+      player.turn.classOrGuardianUsed = true;
+      player.buffs.extraClassCardUses = 0;
+      log(`${player.label} 失去本回合职业技能机会。`);
+      return choice;
+    }
+    if(choice === 'equipment_skill'){
+      player.turn.equipmentSkillUsed = true;
+      log(`${player.label} 失去本回合装备技能机会。`);
+      return choice;
+    }
+    return '';
+  }
+
+  function damageSourceMatchesScope(scope, sourceName){
+    const raw = String(sourceName || '').toLowerCase();
+    const s = String(scope || 'any');
+    if(s === 'any') return true;
+    if(s === 'hazard') return isHazardDamageSource(sourceName);
+    if(s === 'trap') return raw.includes('trap') || raw.includes('陷阱');
+    if(s === 'spell') return raw.includes('spell') || raw.includes('法术') || raw.includes('火球') || raw.includes('闪电') || raw.includes('nova');
+    if(s === 'basic') return raw.includes('basic') || raw.includes('普通攻击') || raw.includes('普攻');
+    if(s === 'negative') return raw.includes('negative') || raw.includes('负面牌');
+    if(s === 'attack') return !isHazardDamageSource(sourceName) && !raw.includes('dot') && !raw.includes('负面牌');
+    return true;
+  }
+
+  function applyVulnerableDamageBonus(target, damage, sourceName){
+    const bonus = Math.max(0, Number(target?.buffs?.vulnerableDamageBonus || 0));
+    if(!target?.buffs || damage <= 0 || bonus <= 0) return damage;
+    if(!damageSourceMatchesScope(target.buffs.vulnerableDamageScope || 'any', sourceName)) return damage;
+    const boosted = damage + bonus;
+    log(`${target.label} 的破绽使 ${sourceName || '伤害'} 从 ${damage} 提高到 ${boosted}。`);
+    if(!target.buffs.vulnerableDamagePermanent){
+      target.buffs.vulnerableDamageBonus = 0;
+      target.buffs.vulnerableDamageScope = 'any';
+    }
+    return boosted;
+  }
+
+  function isAttackCard(cardDef){
+    return ['direct_damage','dash_hit','insert_negative_card_into_target_deck','mark_target_for_bonus','bonus_if_target_marked','consume_all_activated_tokens_for_burst','damage_then_multi_buff','damage_roll_grant_card','aoe'].includes(cardDef?.template);
+  }
+
+  function cardDealsDamage(cardDef){
+    return ['direct_damage','dash_hit','bonus_if_target_marked','consume_all_activated_tokens_for_burst','damage_then_multi_buff','damage_roll_grant_card','aoe'].includes(cardDef?.template) || !!cardDef?.config?.damage || !!cardDef?.config?.baseDamage;
+  }
+
+  function averageDiceValue(expr){
+    const raw = String(expr || '').trim().toLowerCase();
+    if(!raw) return 0;
+    if(/^[-+]?\d+(?:\.\d+)?$/.test(raw)) return Number(raw);
+    const dice = raw.match(/^(\d*)d(\d+)([+-]\d+)?$/);
+    if(dice){
+      const count = Number(dice[1] || 1);
+      const sides = Number(dice[2] || 0);
+      const mod = Number(dice[3] || 0);
+      return count * (sides + 1) / 2 + mod;
+    }
+    const multi = raw.match(/^(\d+)x\((\d+)\|(\d+)\)$/);
+    if(multi) return Number(multi[1]) * (Number(multi[2]) + Number(multi[3])) / 2;
+    const fixed = raw.match(/^(\d+)x(\d+(?:\.\d+)?)$/);
+    if(fixed) return Number(fixed[1]) * Number(fixed[2]);
+    return Number(raw.replace(/[^\d.-]/g, '')) || 0;
+  }
+
+  function cardDamageEstimate(player, handItem){
+    const def = getCardDef(handItem?.cardKey);
+    const cfg = def?.config || {};
+    const expr = cfg.damage || cfg.baseDamage || cfg.bonusDamage || '0';
+    return averageDiceValue(resolvePlayerNotation(player, expr));
+  }
+
+  function discardPanicCard(player, mode){
+    const candidates = player.hand
+      .map((card, index) => ({ card, index, def: getCardDef(card.cardKey), score: cardDamageEstimate(player, card) }))
+      .filter(item => isAttackCard(item.def));
+    const pool = candidates.length ? candidates : player.hand.map((card, index) => ({ card, index, def: getCardDef(card.cardKey), score: cardDamageEstimate(player, card) }));
+    if(!pool.length) return false;
+    const picked = String(mode || 'random_attack') === 'highest_damage'
+      ? pool.slice().sort((a,b) => b.score - a.score)[0]
+      : randItem(pool);
+    const [drop] = player.hand.splice(picked.index, 1);
+    player.discard.push(drop);
+    const def = getCardDef(drop.cardKey);
+    log(`${player.label} 惊慌失措，弃掉了 ${def?.name || drop.cardKey}。`);
+    return true;
+  }
+
+  function applyNegativeEffect(player, effect, sourceName){
+    if(!player?.alive || !effect) return;
+    const type = String(effect.effectType || effect.negativeEffectType || '').replace(/^negative_/, '');
+    if(type === 'fumble'){
+      markActionBucketSpent(player, effect.fumbleBucket || effect.actionBucket || 'random');
+      return;
+    }
+    if(type === 'vulnerable'){
+      player.buffs.vulnerableDamageBonus = Math.max(Number(player.buffs.vulnerableDamageBonus || 0), Number(effect.vulnerableBonus ?? effect.damageBonus ?? 2));
+      player.buffs.vulnerableDamageScope = effect.vulnerableScope || effect.damageScope || 'any';
+      player.buffs.vulnerableDamagePermanent = String(effect.vulnerableDuration || effect.duration || 'next') === 'permanent';
+      log(`${player.label} 获得破绽：${player.buffs.vulnerableDamagePermanent ? '永久' : '下次'}受到 ${player.buffs.vulnerableDamageScope} 伤害 +${player.buffs.vulnerableDamageBonus}。`);
+      return;
+    }
+    if(type === 'clumsy'){
+      player.buffs.clumsyFailChance = Math.max(Number(player.buffs.clumsyFailChance || 0), Number(effect.clumsyChance ?? effect.failChance ?? 25));
+      player.buffs.clumsyScope = effect.clumsyScope || 'any';
+      player.buffs.clumsyPermanent = String(effect.clumsyDuration || effect.duration || 'next') === 'permanent';
+      log(`${player.label} 变得笨拙：${player.buffs.clumsyScope} 有 ${player.buffs.clumsyFailChance}% 几率失败。`);
+      return;
+    }
+    if(type === 'panic'){
+      discardPanicCard(player, effect.panicMode || 'random_attack');
+      return;
+    }
+    if(type === 'chaos'){
+      player.buffs.chaosDamageCharges = Math.max(Number(player.buffs.chaosDamageCharges || 0), Number(effect.chaosCharges || 1));
+      log(`${player.label} 陷入混乱：下一次伤害攻击会打到自己。`);
+      return;
+    }
+    if(type === 'blood'){
+      const amount = Math.max(0, rollOrValue(`${player.label} 生命代价`, effect.bloodDamage ?? effect.lifeCost ?? effect.damage ?? 1));
+      if(amount > 0){
+        player.hp = Math.max(0, Number(player.hp || 0) - amount);
+        playSfx('meleeHit', 0.32);
+        if(player.hp <= 0) finalizePlayerState(player);
+        else playUnitAnim(player, 'hurt', spriteAnimDuration(player, 'hurt', 420));
+        log(`${player.label} 支付生命代价，失去 ${amount} 生命。`);
+      }
+    }
+  }
+
+  function applyNegativeEffects(player, effects, sourceName){
+    normalizeNegativeEffects({ negativeEffects: effects }).forEach(effect => applyNegativeEffect(player, effect, sourceName));
+  }
+
+  function applyLifeSteal(attacker, finalDamage, source, sourceName, opts = {}){
+    if(!attacker?.alive || !source || opts.hit === false) return 0;
+    const percent = Math.max(0, Number(source.lifestealPercent ?? source.lifeStealPercent ?? source.outgoingDamageLifestealPercent ?? 0));
+    const flat = Math.max(0, Number(source.lifestealFlat ?? source.lifeStealFlat ?? source.outgoingDamageHealFlat ?? source.outgoingDamageLifestealFlat ?? 0));
+    if(percent <= 0 && flat <= 0) return 0;
+    const amount = Math.max(0, Math.floor(Math.max(0, Number(finalDamage || 0)) * percent / 100) + flat);
+    if(amount <= 0) return 0;
+    const before = Number(attacker.hp || 0);
+    attacker.hp = Math.min(attacker.maxHp, before + amount);
+    const actual = attacker.hp - before;
+    if(actual > 0){
+      triggerSkillTileFx('heal-green', attacker.pos);
+      playVoiceLine('voiceHealed', 0.62, 760);
+      log(`${attacker.label} 通过 ${sourceName || '吸血'} 回复 ${actual} 生命。`);
+    }
+    return actual;
   }
 
   function hasAdjacentSpike(tile){
@@ -3348,7 +3924,7 @@
     return Math.max(1, Number(cfg?.durationTurns ?? cfg?.controlDuration ?? fallback));
   }
 
-  function applyDotEffect(target, cfg = {}, sourceName = 'DOT'){
+  function applyDotEffect(target, cfg = {}, sourceName = 'DOT', attacker = null, source = null){
     if(!target?.statuses) return;
     const dot = {
       damagePerTick: cfg.damagePerTick || cfg.statusValue || cfg.damage || '1d4',
@@ -3357,6 +3933,13 @@
       stackRule: cfg.stackRule || 'refresh_duration',
       sourceName
     };
+    const lifestealPercent = Number(source?.lifestealPercent ?? source?.lifeStealPercent ?? cfg.lifestealPercent ?? cfg.lifeStealPercent ?? 0);
+    const lifestealFlat = Number(source?.lifestealFlat ?? source?.lifeStealFlat ?? cfg.lifestealFlat ?? cfg.lifeStealFlat ?? 0);
+    if(attacker?.id && (lifestealPercent > 0 || lifestealFlat > 0)){
+      dot.lifestealOwnerId = attacker.id;
+      dot.lifestealPercent = lifestealPercent;
+      dot.lifestealFlat = lifestealFlat;
+    }
     if(dot.stackRule === 'stack'){
       target.statuses.dots = target.statuses.dots || [];
       target.statuses.dots.push(dot);
@@ -3388,10 +3971,10 @@
     if(cfg.controlType) applyControlStatus(target, cfg.controlType, cfg.controlDuration || cfg.durationTurns || 1, sourceName);
   }
 
-  function applyTemplateEffect(target, template, cfg = {}, sourceName = '效果'){
+  function applyTemplateEffect(target, template, cfg = {}, sourceName = '效果', attacker = null, source = null){
     if(!template || template === 'none') return;
     if(template === 'dot_damage_over_time'){
-      applyDotEffect(target, cfg, sourceName);
+      applyDotEffect(target, cfg, sourceName, attacker, source);
       return;
     }
     if(template === 'slow_status'){
@@ -3406,7 +3989,7 @@
   function applySourceOnHitEffects(attacker, target, source, sourceName, opts = {}){
     if(!target || !source) return;
     applyStatusConfig(target, source.apply || {}, sourceName);
-    applyTemplateEffect(target, source.applyTemplate, source.applyConfig || {}, sourceName);
+    applyTemplateEffect(target, source.applyTemplate, source.applyConfig || {}, sourceName, attacker, source);
     const passive = attacker?.profession?.passives?.shaman_passive;
     const sourceHasOwnDot = source.applyTemplate === 'dot_damage_over_time';
     if(opts.includeBasicPassive && !sourceHasOwnDot && attacker?.professionKey === 'shaman' && passive?.template === 'weapon_basic_inflicts_status'){
@@ -3431,7 +4014,9 @@
     const remaining = [];
     for (const cfg of active){
       const dmg = await animatedRoll(`${player.label} ${cfg.sourceName || 'DOT'}`, cfg.damagePerTick || '1');
-      takePureDamage(player, dmg);
+      const owner = cfg.lifestealOwnerId ? state.players.find(p => p.id === cfg.lifestealOwnerId) : null;
+      const finalDamage = owner ? applyOwnedOngoingDamage(owner, player, dmg, cfg.sourceName || 'DOT') : takePureDamage(player, dmg, cfg.sourceName || 'DOT');
+      applyLifeSteal(owner, finalDamage, cfg, cfg.sourceName || 'DOT', { hit: finalDamage > 0 });
       log(`${player.label} 受到 ${cfg.sourceName || 'DOT'} ${dmg} 伤害。`);
       cfg.durationTurns = Number(cfg.durationTurns || 1) - 1;
       if(cfg.durationTurns > 0) remaining.push(cfg);
@@ -3514,7 +4099,7 @@
       playSfx('trap', 0.5);
       if (tok.damage) {
         const dmg = loggedRoll(`${player.label} ${tok.name || '陷阱'}伤害`, resolvePlayerNotation(player, tok.damage));
-        takePureDamage(player, dmg);
+        takePureDamage(player, dmg, tok.name || '陷阱');
         log(`${player.label} 触发 ${tok.name || '陷阱'}，受到 ${dmg} 伤害。`);
       }
       if (tok.insertCardKey) insertNegativeCardsToDeck(player, tok.insertCardKey, tok.insertCount || 1);
@@ -4177,24 +4762,60 @@ function applyHealOnDamaged(player, finalDamage){
   }
 }
 
-function applyRunIncomingDamageModifiers(target, rawDamage, sourceName){
+function applyRunIncomingDamageModifiers(target, rawDamage, sourceName, opts = {}){
   let damage = Math.max(0, Number(rawDamage || 0));
   if(!target?.buffs || damage <= 0) return damage;
+  const armor = target.armor || {};
+  let pierce = Math.max(0, Number(opts.ignoreReductionFlat || 0));
+  const rawArmorReduction = armorFlatDamageReduction(armor);
+  const armorReduction = Math.max(0, rawArmorReduction - pierce);
+  pierce = Math.max(0, pierce - rawArmorReduction);
+  if(armorReduction > 0){
+    const reduced = Math.max(0, damage - armorReduction);
+    log(`${target.label} ${target.armor?.name || 'armor'} reduces ${sourceName || 'damage'} ${damage} -> ${reduced}.`);
+    damage = reduced;
+  }
+  const armorReductionRoll = armor.damageReductionRoll || '';
+  if(damage > 0 && armorReductionRoll){
+    const rolledReduction = Math.max(0, rollOrValue(`${target.label} ${armor.name || 'armor'} reduction`, armorReductionRoll));
+    const effectiveRolledReduction = Math.max(0, rolledReduction - pierce);
+    const reduced = Math.max(0, damage - effectiveRolledReduction);
+    log(`${target.label} ${armor.name || 'armor'} rolled ${armorReductionRoll} reduction ${rolledReduction}; effective reduction ${effectiveRolledReduction}; ${sourceName || 'damage'} ${damage} -> ${reduced}.`);
+    damage = reduced;
+  }
+  const hazardReduction = isHazardDamageSource(sourceName) ? Math.max(0, Number(target.boots?.hazardDamageReduction || 0)) : 0;
+  if(damage > 0 && hazardReduction > 0){
+    const reduced = Math.max(0, damage - hazardReduction);
+    log(`${target.label} ${target.boots?.name || 'boots'} reduced hazard damage ${damage} -> ${reduced}.`);
+    damage = reduced;
+  }
+  const hazardBonus = isHazardDamageSource(sourceName) ? equipmentStatSum(target, 'hazardDamageBonus') : 0;
+  if(damage > 0 && hazardBonus > 0){
+    const boosted = damage + hazardBonus;
+    log(`${target.label} equipment drawback raises hazard damage ${damage} -> ${boosted}.`);
+    damage = boosted;
+  }
+  const incomingDamageBonus = equipmentStatSum(target, 'incomingDamageBonus');
+  if(incomingDamageBonus > 0){
+    const boosted = damage + incomingDamageBonus;
+    log(`${target.label} equipment drawback raises ${sourceName || 'damage'} ${damage} -> ${boosted}.`);
+    damage = boosted;
+  }
+  damage = applyVulnerableDamageBonus(target, damage, sourceName);
   if(Number(target.buffs.runShieldHalfCharges || 0) > 0){
     target.buffs.runShieldHalfCharges = 0;
     const reduced = Math.max(0, Math.ceil(damage / 2));
-    log(`${target.label} 的开场护盾将 ${sourceName || '伤害'} �?${damage} 降至 ${reduced}。`);
+    log(`${target.label} run shield reduces ${sourceName || 'damage'} ${damage} -> ${reduced}.`);
     damage = reduced;
   }
   if(damage > 0 && Number(target.buffs.runDodgeReductionCharges || 0) > 0){
     target.buffs.runDodgeReductionCharges = 0;
     const reduced = Math.max(0, damage - 3);
-    log(`${target.label} 的危险步伐将 ${sourceName || '伤害'} �?${damage} 降至 ${reduced}。`);
+    log(`${target.label} danger step reduces ${sourceName || 'damage'} ${damage} -> ${reduced}.`);
     damage = reduced;
   }
   return damage;
 }
-
 function maybeTriggerRunLowHpRecovery(player){
   if(!player?.alive || !player.buffs || Number(player.buffs.runLowHpRecoveryAvailable || 0) <= 0) return;
   if(player.hp <= 0 || player.hp > player.maxHp * 0.3) return;
@@ -4213,8 +4834,8 @@ function grantRunSpecialTileDodge(player, reason){
   log(`${player.label} �?${reason || '特殊地格'} 获得危险步伐：下次受到伤�?-3。`);
 }
 
-function takePureDamage(player, rawDamage){
-  const damage = applyRunIncomingDamageModifiers(player, rawDamage, '伤害');
+function takePureDamage(player, rawDamage, sourceName = '伤害'){
+  const damage = applyRunIncomingDamageModifiers(player, rawDamage, sourceName);
   if(!player || !player.alive || damage <= 0) return 0;
   playSfx('meleeHit', 0.36);
   player.hp -= damage;
@@ -4223,6 +4844,43 @@ function takePureDamage(player, rawDamage){
   applyHealOnDamaged(player, damage);
   if(player.hp <= 0) finalizePlayerState(player);
   else playUnitAnim(player, 'hurt', spriteAnimDuration(player, 'hurt', 460));
+  return damage;
+}
+
+function applyOwnedOngoingDamage(owner, target, rawDamage, sourceName = 'DOT'){
+  if(!target || !target.alive) return 0;
+  let damage = Math.max(0, Number(rawDamage || 0));
+  damage = applyRelicOutgoingDamageModifiers(owner, damage, sourceName);
+  damage = applyRunIncomingDamageModifiers(target, damage, sourceName, { ignoreReductionFlat: relicOutgoingPierce(owner) });
+  if(damage <= 0) return 0;
+  playSfx('meleeHit', 0.32);
+  target.hp -= damage;
+  maybeTriggerRunLowHpRecovery(target);
+  applyDamageTakenTriggeredPassives(target, damage, sourceName);
+  applyHealOnDamaged(target, damage);
+  if(owner && owner !== target) applyLifeSteal(owner, damage, owner.relic, owner.relic?.name || sourceName, { hit: true });
+  if(target.hp <= 0) finalizePlayerState(target);
+  else playUnitAnim(target, 'hurt', spriteAnimDuration(target, 'hurt', 420));
+  return damage;
+}
+
+function relicOutgoingPierce(attacker){
+  return Math.max(0, Number(attacker?.relic?.ignoreTargetReductionFlat || attacker?.relic?.armorPierceFlat || 0));
+}
+
+function applyRelicOutgoingDamageModifiers(attacker, damage, sourceName){
+  if(!attacker?.alive || !attacker.relic || damage <= 0) return damage;
+  const relic = attacker.relic;
+  const chance = Math.max(0, Math.min(100, Number(relic.outgoingDamageCritChance || relic.critChance || 0)));
+  if(chance > 0 && Math.random() * 100 < chance){
+    let bonus = 0;
+    if(relic.outgoingDamageCritBonusDie) bonus = rollOrValue(`${attacker.label} ${relic.name || '咒物'}暴击`, relic.outgoingDamageCritBonusDie);
+    else if(Number(relic.outgoingDamageCritMultiplier || relic.critMultiplier || 0) > 1) bonus = Math.floor(damage * (Number(relic.outgoingDamageCritMultiplier || relic.critMultiplier) - 1));
+    else bonus = Math.max(1, Math.floor(damage / 2));
+    const boosted = damage + bonus;
+    log(`${attacker.label} 的 ${relic.name || '咒物'} 触发暴击：${sourceName || '伤害'} 从 ${damage} 提高到 ${boosted}。`);
+    return boosted;
+  }
   return damage;
 }
 
@@ -4246,11 +4904,13 @@ function dealDamage(attacker, target, rawDamage, meta){
     return { rawDamage: damage, blocked: 0, finalDamage: 0, dodged: true };
   }
 
-  damage = applyRunIncomingDamageModifiers(target, damage, sourceName);
+  damage = applyRelicOutgoingDamageModifiers(attacker, damage, sourceName);
+  damage = applyRunIncomingDamageModifiers(target, damage, sourceName, { ignoreReductionFlat: relicOutgoingPierce(attacker) });
   const blocked = Math.min(Number(target.block || 0), damage);
   const finalDamage = Math.max(0, damage - blocked);
   target.block = Math.max(0, Number(target.block || 0) - damage);
   target.hp -= finalDamage;
+  if(attacker && attacker !== target && finalDamage > 0) applyLifeSteal(attacker, finalDamage, attacker.relic, attacker.relic?.name || sourceName, { hit: true });
   if(finalDamage > 0) maybeTriggerRunLowHpRecovery(target);
   if(damage > 0) playHitSfx(attacker, attackAnim === 'cast' || info.spell === true);
   if(attacker && finalDamage > 10) triggerUltimateCutIn(attacker, finalDamage);
@@ -4444,6 +5104,7 @@ async function applyRewardList(player, rewards, labelPrefix){
   function ensureHandLimit(player){
     const limit = handLimit();
     if(player.hand.length <= limit) return false;
+    if(hasForcedNegativeCards(player)) return false;
     if(player.type === 'ai'){
       while(player.hand.length > limit){
         const idx = Math.floor(Math.random() * player.hand.length);
@@ -4473,15 +5134,51 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.hand.length <= handLimit()){
       state.pending = null;
       setMode('待机');
-      setHint('请选择移动、普通攻击，或打出一张牌。');
+      setHint(hasForcedNegativeCards(p) ? '请先使用手牌里的负面牌，处理完后才能进行其他动作。' : '请选择移动、普通攻击，或打出一张牌。');
     } else {
       setHint(`仍需弃牌至 ${handLimit()} 张，当前 ${p.hand.length} 张。`);
     }
     render();
   }
 
+  function applyRelicTurnStart(player){
+    if(!player?.alive || !player.relic) return;
+    const relic = player.relic;
+    const damage = Math.max(0, Number(relic.turnStartSelfDamage || 0));
+    if(damage > 0){
+      player.hp = Math.max(0, Number(player.hp || 0) - damage);
+      triggerSkillTileFx('hit-red', player.pos);
+      log(`${player.label} 的 ${relic.name || '咒物'} 索取 ${damage} 点生命。`);
+      if(player.hp <= 0){
+        finalizePlayerState(player);
+        return;
+      }
+    }
+    const effectType = String(relic.turnStartNegativeEffect || '').trim();
+    const chance = Math.max(0, Math.min(100, Number(relic.turnStartNegativeChance || 0)));
+    if(effectType && chance > 0 && Math.random() * 100 < chance){
+      const power = Math.max(1, Number(relic.turnStartNegativePower || 1));
+      const effect = { negativeEffectType: effectType };
+      if(effectType === 'fumble') effect.fumbleBucket = relic.turnStartFumbleBucket || 'random';
+      if(effectType === 'vulnerable'){
+        effect.vulnerableBonus = power;
+        effect.vulnerableScope = relic.turnStartVulnerableScope || 'any';
+        effect.vulnerableDuration = relic.turnStartVulnerableDuration || 'next';
+      }
+      if(effectType === 'clumsy'){
+        effect.clumsyChance = power;
+        effect.clumsyScope = relic.turnStartClumsyScope || 'any';
+        effect.clumsyDuration = relic.turnStartClumsyDuration || 'next';
+      }
+      if(effectType === 'panic') effect.panicMode = relic.turnStartPanicMode || 'random_attack';
+      if(effectType === 'chaos') effect.chaosCharges = power;
+      if(effectType === 'blood') effect.bloodDamage = power;
+      applyNegativeEffect(player, effect, relic.name || '咒物');
+    }
+  }
+
   function resetTurnState(player){
-    player.turn = { move:false, classOrGuardianUsed:false, weaponOrAccessoryUsed:false, basicSpent:0, blockUsed:false, movedDistance:0, autoBlockTriggered:false, passiveOnceTriggered:{} };
+    player.turn = { move:false, classOrGuardianUsed:false, weaponOrAccessoryUsed:false, equipmentSkillUsed:false, basicSpent:0, blockUsed:false, movedDistance:0, autoBlockTriggered:false, passiveOnceTriggered:{} };
     if(player?.buffs){
       player.buffs.extraClassCardUses = Number(player.buffs.runExtraClassCardUsesPerTurn || 0);
       player.buffs.runMovePenaltyActive = Number(player.buffs.runMovePenaltyNext || 0);
@@ -4536,8 +5233,8 @@ async function applyRewardList(player, rewards, labelPrefix){
     syncCardLibraryFromProfessions(state.ruleset);
     state.matchOptions = readMatchOptions();
     state.players = [
-      buildPlayer(1, $('p1-profession').value, $('p1-weapon').value, $('p1-accessory').value, 'human', {q:-R,r:0}),
-      buildPlayer(2, $('p2-profession').value, $('p2-weapon').value, $('p2-accessory').value, $('p2-type').value, {q:R,r:0}),
+      buildPlayer(1, $('p1-profession').value, $('p1-weapon').value, $('p1-accessory').value, $('p1-armor')?.value, $('p1-boots')?.value, $('p1-relic')?.value, 'human', {q:-R,r:0}),
+      buildPlayer(2, $('p2-profession').value, $('p2-weapon').value, $('p2-accessory').value, $('p2-armor')?.value, $('p2-boots')?.value, $('p2-relic')?.value, $('p2-type').value, {q:R,r:0}),
     ];
     state.board = buildBoard();
     state.boardMap = new Map(state.board.map(t=>[key(t),t]));
@@ -4565,6 +5262,9 @@ async function applyRewardList(player, rewards, labelPrefix){
     state.turnCount = 0;
     state.turnSerial = 0;
     state.turnStartKey = '';
+    state.blackHolePullKey = '';
+    state.turnAdvanceKey = '';
+    state.aiTurnRunKey = '';
     state.run.active = false;
     state.run.pendingOutcome = null;
     hideRunPanel();
@@ -4596,10 +5296,17 @@ async function applyRewardList(player, rewards, labelPrefix){
   async function startTurn(){
     if(state.winner) return;
     const p = current();
-    if(!p.alive) return nextTurn();
+    if(!p.alive) return nextTurn(p.id);
     if(p.id === 1) state.turnCount = Number(state.turnCount || 0) + 1;
     resetTurnState(p);
     p.block = 0;
+    applyRelicTurnStart(p);
+    if(!p.alive){
+      state.winner = enemyOf(p)?.id || 1;
+      render();
+      setHint('Battle ended');
+      return;
+    }
     if(isBlackHoleEnabled()) await applyBlackHolePull();
     await processDotEffectsAnimated(p);
     if(p.statuses.burn>0){ takePureDamage(p, 2); p.statuses.burn -= 1; log(`${p.label} 受到点燃 2 伤害。`); }
@@ -4613,7 +5320,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       if(dragons > 0) triggerSummonAttack(p, 'bone_dragon');
       bonus += loggedRollBatch(`${p.label} 的骷髅自动伤害`, '1d4', skeletons);
       bonus += loggedRollBatch(`${p.label} 的骨龙自动伤害`, '1d8', dragons);
-      if(bonus>0){ takePureDamage(enemy, bonus); log(`${p.label} 的亡灵随从在回合开始合计造成 ${bonus} 伤害。`); if(enemy.hp<=0){ state.winner=p.id; render(); setHint('对局结束'); return; } }
+      if(bonus>0){ applyOwnedOngoingDamage(p, enemy, bonus, '召唤物伤害'); log(`${p.label} 的亡灵随从在回合开始合计造成 ${bonus} 伤害。`); if(enemy.hp<=0){ state.winner=p.id; render(); setHint('对局结束'); return; } }
     }
     await processMapTokensAtTurnStartAnimated(p);
     if(p.hp<=0){ p.hp=0; p.alive=false; state.winner = enemyOf(p)?.id || 1; render(); setHint('对局结束'); return; }
@@ -4621,19 +5328,30 @@ async function applyRewardList(player, rewards, labelPrefix){
       p.statuses.stun -= 1;
       log(`${p.label} 被眩晕，跳过本回合。`);
       render();
-      setTimeout(nextTurn, 450);
+      setTimeout(() => nextTurn(p.id), 450);
       return;
     }
     drawCards(p, state.matchOptions.drawPerTurn + Number(p.drawPerTurnBonus || 0));
     if(ensureHandLimit(p)){ render(); return; }
     setMode('待机');
-    setHint('选择移动、普通攻击，或打出一张牌。');
+    setHint(hasForcedNegativeCards(p) ? '请先使用手牌里的负面牌，处理完后才能进行其他动作。' : '选择移动、普通攻击，或打出一张牌。');
     render();
     if(p.type==='ai') setTimeout(runAiTurn, 450);
   }
 
-  function nextTurn(){
+  function nextTurn(expectedActorId = null){
     const prev = current();
+    if(!prev) return;
+    if(expectedActorId != null && prev.id !== expectedActorId) {
+      pushDebug('turn.advance.skipped_stale_actor', { expectedActorId, currentId: prev.id, turnSerial: state.turnSerial });
+      return;
+    }
+    const advanceKey = `${Number(state.turnSerial || 0)}:${prev.id}`;
+    if(state.turnAdvanceKey === advanceKey){
+      pushDebug('turn.advance.skipped_duplicate', { advanceKey });
+      return;
+    }
+    state.turnAdvanceKey = advanceKey;
     if(prev?.buffs?.basicTransform && prev.buffs.basicTransform.consumeOn === 'end_of_turn'){
       if ((prev.buffs.basicTransform.durationTurns || 1) > 1) prev.buffs.basicTransform.durationTurns -= 1;
       else prev.buffs.basicTransform = null;
@@ -4646,13 +5364,20 @@ async function applyRewardList(player, rewards, labelPrefix){
   async function startTurn(){
     if(state.winner) return;
     const p = current();
-    if(!p.alive) return nextTurn();
+    if(!p.alive) return nextTurn(p.id);
     const turnKey = `${Number(state.turnSerial || 0)}:${p.id}`;
     if(state.turnStartKey === turnKey) return;
     state.turnStartKey = turnKey;
     if(p.id === 1) state.turnCount = Number(state.turnCount || 0) + 1;
     resetTurnState(p);
     p.block = 0;
+    applyRelicTurnStart(p);
+    if(!p.alive){
+      state.winner = enemyOf(p)?.id || 1;
+      render();
+      setHint('Battle ended');
+      return;
+    }
     if(isBlackHoleEnabled()) await applyBlackHolePull();
     await processDotEffectsAnimated(p);
     if(p.statuses.burn > 0){
@@ -4678,7 +5403,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       bonus += await animatedRollBatch(`${p.label} skeleton auto damage`, '1d4', skeletons);
       bonus += await animatedRollBatch(`${p.label} bone dragon auto damage`, '1d8', dragons);
       if(bonus > 0){
-        takePureDamage(enemy, bonus);
+        applyOwnedOngoingDamage(p, enemy, bonus, 'summon damage');
         log(`${p.label}'s summons deal ${bonus} at turn start.`);
         if(enemy.hp <= 0){
           state.winner = p.id;
@@ -4701,7 +5426,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       p.statuses.stun -= 1;
       log(`${p.label} is stunned and skips the turn.`);
       render();
-      setTimeout(nextTurn, 450);
+      setTimeout(() => nextTurn(p.id), 450);
       return;
     }
     drawCards(p, state.matchOptions.drawPerTurn + Number(p.drawPerTurnBonus || 0));
@@ -4710,15 +5435,25 @@ async function applyRewardList(player, rewards, labelPrefix){
       return;
     }
     setMode('Idle');
-    setHint('Choose move, basic attack, or a card.');
+    setHint(hasForcedNegativeCards(p) ? '请先使用手牌里的负面牌，处理完后才能进行其他动作。' : 'Choose move, basic attack, or a card.');
     render();
     if(p.type === 'ai') setTimeout(runAiTurn, 450);
   }
 
   async function applyBlackHolePull(){
+    const turnKey = `${Number(state.turnSerial || 0)}:${current()?.id || 'none'}`;
+    if(state.blackHolePullKey === turnKey){
+      pushDebug('blackhole.pull.skipped_duplicate', { turnKey });
+      return;
+    }
+    state.blackHolePullKey = turnKey;
     const center={q:0,r:0};
     for(const p of state.players){
       if(!p.alive) continue;
+      if(Number(p.boots?.forcedMoveResistance || 0) > 0){
+        log(`${p.label} 的${p.boots?.name || '靴子'}抵抗了黑洞牵引。`);
+        continue;
+      }
       const opts = neighbors(p.pos).filter(c=>state.boardMap.has(key(c)) && !isBlockedTile(c)).filter(c=>{ const occ=getPlayerAt(c); return !occ || occ.id===p.id; }).sort((a,b)=>dist(a,center)-dist(b,center));
       if(opts[0] && key(opts[0])!==key(p.pos)){ await movePlayerTo(p, opts[0], { duration: 260 }); await enterTileAnimated(p); }
     }
@@ -4733,7 +5468,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       playSfx('trap', 0.55);
       triggerObeliskLightning(tilePos);
       const dmg = loggedRoll(`${player.label} 尖刺区域伤害`, '2d8');
-      takePureDamage(player, dmg);
+      takePureDamage(player, dmg, 'spike hazard');
       log(`${player.label} 触碰飞行方尖碑危险区域，受到 ${dmg} 伤害。`);
       if(!player.alive) return;
       grantRunSpecialTileDodge(player, 'spike hazard');
@@ -4743,7 +5478,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       const expr = tok?.damage || '2d8';
       playSfx('trap', 0.55);
       const dmg = loggedRoll(`${player.label} ${tok?.name || '危险区'}伤害`, resolvePlayerNotation(player, expr));
-      takePureDamage(player, dmg);
+      takePureDamage(player, dmg, tok?.name || 'hazard');
       log(`${player.label} touched ${tok?.name || 'hazard'} and took ${dmg} damage.`);
       if(!player.alive) return;
       grantRunSpecialTileDodge(player, tok?.name || 'hazard');
@@ -4751,7 +5486,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(isBlackHoleEnabled() && t.type==='center'){
       playSfx('trap', 0.55);
       const dmg = loggedRoll(`${player.label} 黑洞中心伤害`, '2d8');
-      takePureDamage(player, dmg);
+      takePureDamage(player, dmg, 'black hole center');
       log(`${player.label} 被黑洞中心撕扯，受到 ${dmg} 伤害。`);
       if(!player.alive) return;
       grantRunSpecialTileDodge(player, '黑洞中心');
@@ -4759,7 +5494,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     const trap = state.traps.get(tileKey);
     if(trap && trap.ownerId !== player.id){
       playSfx('trap', 0.55);
-      const dmg = loggedRoll(`${player.label} 陷阱伤害`, '2d6'); takePureDamage(player, dmg); player.statuses.slow = 1;
+      const dmg = loggedRoll(`${player.label} 陷阱伤害`, '2d6'); takePureDamage(player, dmg, 'trap'); player.statuses.slow = 1;
       log(`${player.label} triggered a trap and took ${dmg} damage.`);
       state.traps.delete(tileKey);
       if(!player.alive) return;
@@ -4778,7 +5513,9 @@ async function applyRewardList(player, rewards, labelPrefix){
     for(const cfg of active){
       const sourceName = cfg?.sourceName || 'DOT';
       const dmg = await animatedRoll(`${player.label} ${sourceName}`, cfg?.damagePerTick || '1');
-      takePureDamage(player, dmg);
+      const owner = cfg?.lifestealOwnerId ? state.players.find(p => p.id === cfg.lifestealOwnerId) : null;
+      const finalDamage = owner ? applyOwnedOngoingDamage(owner, player, dmg, sourceName) : takePureDamage(player, dmg, sourceName);
+      applyLifeSteal(owner, finalDamage, cfg, sourceName, { hit: finalDamage > 0 });
       log(`${player.label} takes ${dmg} from ${sourceName}.`);
       cfg.durationTurns = Number(cfg?.durationTurns || 1) - 1;
       if(cfg.durationTurns > 0) remaining.push(cfg);
@@ -4800,7 +5537,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(tok.damage){
       const sourceName = tok.name || 'Trap';
       const dmg = await animatedRoll(`${player.label} ${sourceName} damage`, resolvePlayerNotation(player, tok.damage));
-      takePureDamage(player, dmg);
+      takePureDamage(player, dmg, sourceName);
       log(`${player.label} triggers ${sourceName} for ${dmg}.`);
     }
     if(tok.insertCardKey) insertNegativeCardsToDeck(player, tok.insertCardKey, tok.insertCount || 1);
@@ -4861,7 +5598,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       playSfx('trap', 0.55);
       triggerObeliskLightning(tilePos);
       const dmg = await animatedRoll(`${player.label} spike field`, '2d8');
-      takePureDamage(player, dmg);
+      takePureDamage(player, dmg, 'spike field');
       log(`${player.label} takes ${dmg} from the spike field.`);
       if(!player.alive) return;
       grantRunSpecialTileDodge(player, 'spike field');
@@ -4872,7 +5609,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       playSfx('trap', 0.55);
       const sourceName = tok?.name || 'Danger zone';
       const dmg = await animatedRoll(`${player.label} ${sourceName}`, resolvePlayerNotation(player, expr));
-      takePureDamage(player, dmg);
+      takePureDamage(player, dmg, sourceName);
       log(`${player.label} takes ${dmg} from ${sourceName}.`);
       if(!player.alive) return;
       grantRunSpecialTileDodge(player, sourceName);
@@ -4880,7 +5617,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(isBlackHoleEnabled() && tile.type === 'center'){
       playSfx('trap', 0.55);
       const dmg = await animatedRoll(`${player.label} black hole center`, '2d8');
-      takePureDamage(player, dmg);
+      takePureDamage(player, dmg, 'black hole center');
       log(`${player.label} takes ${dmg} from the black hole center.`);
       if(!player.alive) return;
       grantRunSpecialTileDodge(player, 'black hole center');
@@ -4889,7 +5626,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(trap && trap.ownerId !== player.id){
       playSfx('trap', 0.55);
       const dmg = await animatedRoll(`${player.label} trap damage`, '2d6');
-      takePureDamage(player, dmg);
+      takePureDamage(player, dmg, 'trap');
       player.statuses.slow = 1;
       log(`${player.label} triggers a trap for ${dmg} and becomes slowed.`);
       state.traps.delete(tileKey);
@@ -4921,6 +5658,7 @@ async function applyRewardList(player, rewards, labelPrefix){
   async function useProfessionPassive(){
     const p = current();
     if (!p.alive) return;
+    if (mustResolveNegativeCards(p)) return;
     const passiveEntry = Object.entries(p.profession.passives || {})[0];
     const passiveKey = passiveEntry?.[0] || 'profession_passive';
     const passive = passiveEntry?.[1];
@@ -4953,28 +5691,33 @@ async function applyRewardList(player, rewards, labelPrefix){
   }
 
   function isKnownActionSource(source){
-    return source === '职业技能' || source === '守护神技能' || source === '武器技能' || source === '饰品技能';
+    return ['\u804c\u4e1a\u6280\u80fd','\u5b88\u62a4\u795e\u6280\u80fd','\u6b66\u5668\u6280\u80fd','\u9970\u54c1\u6280\u80fd','\u62a4\u7532\u6280\u80fd','\u9774\u5b50\u6280\u80fd','\u5492\u7269\u6280\u80fd'].includes(source) ||
+      ['class_skill','guardian_skill','weapon_skill','accessory_skill','armor_skill','boots_skill','relic_skill'].includes(source);
   }
 
   function cardActionSource(handItem, cardDef){
     const origin = String(handItem?.origin || '').trim();
     const source = String(cardDef?.source || '').trim();
-    const cardDefinesEquipmentBucket = source === '武器技能' || source === '饰品技能';
-    if(origin === '职业技能' && cardDefinesEquipmentBucket) return source;
+    const cardDefinesEquipmentBucket = ['\u6b66\u5668\u6280\u80fd','\u9970\u54c1\u6280\u80fd','\u62a4\u7532\u6280\u80fd','\u9774\u5b50\u6280\u80fd','\u5492\u7269\u6280\u80fd'].includes(source);
+    if(origin === '\u804c\u4e1a\u6280\u80fd' && cardDefinesEquipmentBucket) return source;
     if(isKnownActionSource(origin)) return origin;
     return source || origin;
   }
 
   function actionBucketFor(card, cardDef){
+    if(isNegativeCardDef(cardDef)) return 'free';
+    if(isQuickCardDef(cardDef)) return 'free';
     const origin = cardActionSource(card, cardDef);
-    if(origin === 'weapon_skill' || origin === 'accessory_skill') return 'weapon_or_accessory';
-    if(origin === 'class_skill' || origin === 'guardian_skill') return 'class_or_guardian';
-    if(origin==='职业技能' || origin==='守护神技能') return 'class_or_guardian';
-    if(origin==='武器技能' || origin==='饰品技能') return 'weapon_or_accessory';
+    if(origin === 'relic_skill' || origin === '\u5492\u7269\u6280\u80fd') return 'free';
+    if(origin === 'weapon_skill' || origin === '\u6b66\u5668\u6280\u80fd') return 'weapon_or_accessory';
+    if(origin === 'accessory_skill' || origin === 'armor_skill' || origin === 'boots_skill' || origin === '\u9970\u54c1\u6280\u80fd' || origin === '\u62a4\u7532\u6280\u80fd' || origin === '\u9774\u5b50\u6280\u80fd') return 'equipment_skill';
+    if(origin === 'class_skill' || origin === 'guardian_skill' || origin === '\u804c\u4e1a\u6280\u80fd' || origin === '\u5b88\u62a4\u795e\u6280\u80fd') return 'class_or_guardian';
     return 'class_or_guardian';
   }
-
   function cardCanBePlayed(p, handItem, cardDef){
+    if(isNegativeCardDef(cardDef)) return true;
+    if(hasForcedNegativeCards(p)) return false;
+    if(isQuickCardDef(cardDef)) return true;
     const source = cardActionSource(handItem, cardDef);
     const bucket = actionBucketFor(handItem, cardDef);
     if(bucket==='class_or_guardian' && p.turn.classOrGuardianUsed){
@@ -4982,6 +5725,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       if(!((source === '\u804c\u4e1a\u6280\u80fd' || source === 'class_skill') && extraClassUses > 0)) return false;
     }
     if(bucket==='weapon_or_accessory' && p.turn.weaponOrAccessoryUsed) return false;
+    if(bucket==='equipment_skill' && p.turn.equipmentSkillUsed) return false;
     return true;
   }
 
@@ -5002,7 +5746,9 @@ async function applyRewardList(player, rewards, labelPrefix){
   }
 
   function movementStepLimit(player){
-    const base = player.statuses.slow>0 ? Math.ceil(player.moveBase/2) : player.moveBase;
+    const moveBonus = Math.max(0, Number(player?.relic?.moveBonus || 0));
+    const baseMove = Number(player.moveBase || 0) + moveBonus;
+    const base = player.statuses.slow>0 ? Math.ceil(baseMove/2) : baseMove;
     return Math.max(0, base - Number(player.buffs?.runMovePenaltyActive || 0));
   }
 
@@ -5026,7 +5772,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(state.pending) state.pending.resolving = false;
   }
 
-  async function waitForActionResolvingDone(timeoutMs = 3000){
+  async function waitForActionResolvingDone(timeoutMs = 15000){
     const startedAt = Date.now();
     while(isActionResolving() && Date.now() - startedAt < timeoutMs){
       await new Promise(resolve => setTimeout(resolve, 40));
@@ -5160,15 +5906,24 @@ async function applyRewardList(player, rewards, labelPrefix){
 
   async function useBasicAttack(target){
     const p=current();
+    if(mustResolveNegativeCards(p)) return;
     if(p.turn.basicSpent >= 1 + (p.buffs.extraBasicCap||0)) return;
     if(!beginActionResolving('basic')) return;
     const b = getActiveBasicAttack(p);
-    const reactive = maybeTriggerReactiveMoveOnTargeted(p, target, b, b.name || '普通攻击');
+    target = maybeRedirectChaosTarget(p, target, b.name || '普通攻击');
+    const reactive = target === p ? { evaded:false } : maybeTriggerReactiveMoveOnTargeted(p, target, b, b.name || '普通攻击');
     if (reactive.evaded) {
       p.turn.basicSpent += 1;
       p.buffs.nextBasicFlat = 0; p.buffs.nextBasicDie = null; p.buffs.swordBonusStored = false;
       if(p.buffs.basicTransform && p.buffs.basicTransform.consumeOn === 'next_basic_attack') p.buffs.basicTransform = null;
       log(`${p.label} 的 ${b.name || '普通攻击'} 被 ${target.label} 闪开。`);
+      finishAfterAction();
+      return;
+    }
+    if(shouldNegativeActionFail(p, b.name || '普通攻击', 'attack') || shouldEquipmentAttackFail(p, b.name || '普通攻击')){
+      p.turn.basicSpent += 1;
+      p.buffs.nextBasicFlat = 0; p.buffs.nextBasicDie = null; p.buffs.swordBonusStored = false;
+      if(p.buffs.basicTransform && p.buffs.basicTransform.consumeOn === 'next_basic_attack') p.buffs.basicTransform = null;
       finishAfterAction();
       return;
     }
@@ -5189,6 +5944,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     triggerBasicAttackVisual(p, target);
     const basicAnim = basicAttackAnimForDamage(p, target, dmg);
     const damageResult = dealDamage(p, target, dmg, { sourceName: b.name || '普通攻击', anim: basicAnim, spell: basicAnim === 'cast' || weaponPresentation(p).kind === 'wand' });
+    applyLifeSteal(p, damageResult.finalDamage, b, b.name || '普通攻击', { hit: !damageResult.dodged });
     if(!damageResult.dodged) applySourceOnHitEffects(p, target, b, b.name || '普通攻击', { includeBasicPassive: true });
     if(!damageResult.dodged && hasRunReward(p, 'melee_pressure') && target?.alive){
       target.buffs.runMovePenaltyNext = Math.max(Number(target.buffs.runMovePenaltyNext || 0), 1);
@@ -5204,11 +5960,13 @@ async function applyRewardList(player, rewards, labelPrefix){
 
   async function playCardFromHand(index){
     const p=current();
-    if(state.pending?.type==='discard'){ discardHandCard(index); return; }
-    if(isActionResolving()) return;
     const handItem = p.hand[index];
     const cardDef = getCardDef(handItem.cardKey);
     if(!cardDef) return;
+    if(state.pending?.type==='discard' && !isNegativeCardDef(cardDef)){ discardHandCard(index); return; }
+    if(state.pending?.type==='discard' && isNegativeCardDef(cardDef)) state.pending = null;
+    if(isActionResolving()) return;
+    if(hasForcedNegativeCards(p) && !isNegativeCardDef(cardDef)){ setHint('请先使用手牌里的负面牌，处理完后才能进行其他动作。'); return; }
     if(!cardCanBePlayed(p, handItem, cardDef)) { setHint('当前行动桶已用尽。'); return; }
     state.selectedCardIndex = index;
     if(cardDef.template==='dual_mode'){
@@ -5220,7 +5978,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     state.pending = { type:'card', index, handItem, cardDef };
     setMode(`卡牌：${cardDef.name}`);
     render();
-    if(cardDef.template==='self_buff' || cardDef.template==='summon_token_into_self_deck' || cardDef.template==='grant_multiple_buffs' || cardDef.template==='transform_basic_attack' || cardDef.template==='pay_life_draw_cards'){
+    if(isNegativeCardDef(cardDef) || cardDef.template==='self_buff' || cardDef.template==='summon_token_into_self_deck' || cardDef.template==='grant_multiple_buffs' || cardDef.template==='transform_basic_attack' || cardDef.template==='pay_life_draw_cards'){
       await resolveCard(index, handItem, cardDef, null, null);
       return;
     }
@@ -5262,8 +6020,11 @@ async function applyRewardList(player, rewards, labelPrefix){
   }
 
   function consumeBucket(p, handItem, cardDef){
+    if(isNegativeCardDef(cardDef)) return;
+    if(isQuickCardDef(cardDef)) return;
     const source = cardActionSource(handItem, cardDef);
     const bucket = actionBucketFor(handItem, cardDef);
+    if(bucket === 'free') return;
     if(bucket==='class_or_guardian'){
       if(p.turn.classOrGuardianUsed && (source === '\u804c\u4e1a\u6280\u80fd' || source === 'class_skill') && (p.buffs.extraClassCardUses || 0) > 0){
         p.buffs.extraClassCardUses = Math.max(0, Number(p.buffs.extraClassCardUses || 0) - 1);
@@ -5272,6 +6033,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       }
     }
     if(bucket==='weapon_or_accessory') p.turn.weaponOrAccessoryUsed = true;
+    if(bucket==='equipment_skill') p.turn.equipmentSkillUsed = true;
   }
 
   async function resolveCard(index, handItem, cardDef, tile, target){
@@ -5281,6 +6043,20 @@ async function applyRewardList(player, rewards, labelPrefix){
     p.hand.splice(index,1);
     p.discard.push(handItem);
     playCardVoice(handItem.cardKey, cardDef, p);
+    if(isNegativeCardDef(cardDef)){
+      resolveNegativeCardUse(p, handItem, cardDef);
+      finishAfterAction();
+      return;
+    }
+    if(!cardDealsDamage(cardDef) && shouldNegativeActionFail(p, cardDef.name, 'skill')){
+      finishAfterAction();
+      return;
+    }
+    applyNegativeEffects(p, normalizeNegativeEffects(cardDef.config), cardDef.name);
+    if(!p.alive){
+      finishAfterAction();
+      return;
+    }
 
     if(cardDef.template==='summon_token_into_self_deck'){
       const anim = cardActionAnim(p, handItem, cardDef);
@@ -5359,6 +6135,8 @@ async function applyRewardList(player, rewards, labelPrefix){
           range: Number(cardDef.config.range || p.weapon.basic.range || 1),
           damage: cardDef.config.damage || p.weapon.basic.damage,
           straight: !!cardDef.config.straight,
+          lifestealPercent: Number(cardDef.config.lifestealPercent || cardDef.config.lifeStealPercent || 0),
+          lifestealFlat: Number(cardDef.config.lifestealFlat || cardDef.config.lifeStealFlat || 0),
           apply: deep(cardDef.config.apply || {}),
           applyTemplate: cardDef.config.applyTemplate || '',
           applyConfig: deep(cardDef.config.applyConfig || {})
@@ -5412,19 +6190,24 @@ async function applyRewardList(player, rewards, labelPrefix){
     }
 
     if((cardDef.template==='direct_damage' || cardDef.template==='dash_hit' || cardDef.template==='insert_negative_card_into_target_deck' || cardDef.template==='mark_target_for_bonus' || cardDef.template==='bonus_if_target_marked' || cardDef.template==='consume_all_activated_tokens_for_burst' || cardDef.template==='damage_then_multi_buff' || cardDef.template==='damage_roll_grant_card') && target){
+      if(cardDealsDamage(cardDef)) target = maybeRedirectChaosTarget(p, target, cardDef.name);
       if(target.buffs?.spellImmune && cardDef.config.spell){
         target.buffs.spellImmune = false;
         log(`${target.label} 的法术无效抵消了 ${cardDef.name}。`);
         finishAfterAction();
         return;
       }
-      const reactive = maybeTriggerReactiveMoveOnTargeted(p, target, cardDef, cardDef.name);
+      const reactive = target === p ? { evaded:false } : maybeTriggerReactiveMoveOnTargeted(p, target, cardDef, cardDef.name);
       if (reactive.evaded){
         log(`${p.label} 的 ${cardDef.name} 被 ${target.label} 闪开。`);
         finishAfterAction();
         return;
       }
-      if(cardDef.template==='dash_hit'){
+      if((cardDealsDamage(cardDef) && shouldNegativeActionFail(p, cardDef.name, 'attack')) || shouldEquipmentAttackFail(p, cardDef.name)){
+        finishAfterAction();
+        return;
+      }
+      if(cardDef.template==='dash_hit' && target !== p){
         const adj = neighbors(target.pos).filter(c=>state.boardMap.has(key(c)) && !getPlayerAt(c)).sort((a,b)=>dist(p.pos,a)-dist(p.pos,b))[0];
         if(adj){ await movePlayerTo(p, adj, { duration: 340, triggerDestinationEffects: true }); }
       }
@@ -5469,6 +6252,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       const cardAnim = cardActionAnim(p, handItem, cardDef);
       triggerCardVisual(handItem.cardKey, cardDef, p, target);
       const damageResult = dealDamage(p, target, dmg, { sourceName: cardDef.name, anim: cardAnim, spell: !!cardDef.config?.spell });
+      applyLifeSteal(p, damageResult.finalDamage, cardDef.config || {}, cardDef.name, { hit: !damageResult.dodged });
       if(cardDef.config.buffBasic) p.buffs.nextBasicFlat = (p.buffs.nextBasicFlat||0) + Number(cardDef.config.buffBasic||0);
       if(cardDef.config.gainBlock) p.block += await showDice('获得格挡', cardDef.config.gainBlock);
       if(!damageResult.dodged) applySourceOnHitEffects(p, target, cardDef.config || {}, cardDef.name);
@@ -5487,6 +6271,7 @@ async function applyRewardList(player, rewards, labelPrefix){
           grantCardToHand(p, cardDef.config.grantedCardKey, cardDef.config.grantedOrigin || handItem.origin);
           if(cardDef.config.refundBucket === 'class_or_guardian') p.turn.classOrGuardianUsed = false;
           if(cardDef.config.refundBucket === 'weapon_or_accessory') p.turn.weaponOrAccessoryUsed = false;
+          if(cardDef.config.refundBucket === 'equipment_skill') p.turn.equipmentSkillUsed = false;
           if(cardDef.config.refundBucket === 'basic_attack') p.turn.basicSpent = Math.max(0, (p.turn.basicSpent || 0) - 1);
           log(`${p.label} �?${cardDef.name} 触发成功，可以再次行动。`);
         } else {
@@ -5505,13 +6290,19 @@ async function applyRewardList(player, rewards, labelPrefix){
     }
 
     if(cardDef.template==='aoe' && tile){
+      if(shouldNegativeActionFail(p, cardDef.name, 'attack') || shouldEquipmentAttackFail(p, cardDef.name)){
+        finishAfterAction();
+        return;
+      }
       const cardAnim = cardActionAnim(p, handItem, cardDef);
       playUnitAnim(p, cardAnim, spriteAnimDuration(p, cardAnim, 620));
       triggerCardVisual(handItem.cardKey, cardDef, p, tile);
-      const targets = state.players.filter(x=>x.alive && x.id!==p.id && dist(x.pos,tile)<=Number(cardDef.config.radius||1));
+      const chaosTarget = maybeRedirectChaosTarget(p, null, cardDef.name);
+      const targets = chaosTarget ? [chaosTarget] : state.players.filter(x=>x.alive && x.id!==p.id && dist(x.pos,tile)<=Number(cardDef.config.radius||1));
       for(const target of targets){
         let dmg = await showDice(cardDef.name, resolvePlayerNotation(p, cardDef.config.damage));
         const damageResult = dealDamage(p, target, dmg, { sourceName: cardDef.name, anim: cardAnim, spell: !!cardDef.config?.spell });
+        applyLifeSteal(p, damageResult.finalDamage, cardDef.config || {}, cardDef.name, { hit: !damageResult.dodged });
         if(!damageResult.dodged) applySourceOnHitEffects(p, target, cardDef.config || {}, cardDef.name);
         log(`${p.label} �?${cardDef.name} 命中 ${target.label}，原始伤�?${dmg}，实际伤�?${damageResult.finalDamage}，目标当前生�?${target.hp}，格�?${target.block}。`);
       }
@@ -5522,11 +6313,16 @@ async function applyRewardList(player, rewards, labelPrefix){
     clearActionResolving();
   }
 
-  function resolveNegativeOnDraw(player, handItem){
-    const def = getCardDef(handItem.cardKey);
+  function resolveNegativeCardUse(player, handItem, cardDefOverride){
+    const def = cardDefOverride || getCardDef(handItem.cardKey);
     if(!def) return;
     const tpl = def.template || 'direct_damage';
     const cfg = def.config || {};
+    if(tpl === 'negative_effect'){
+      applyNegativeEffects(player, normalizeNegativeEffects(cfg), def.name || '负面牌');
+      log(`${player.label} 使用负面牌 ${def.name}，当前生命 ${player.hp}。`);
+      return;
+    }
     let totalDamage = 0;
     if (tpl === 'direct_damage' || tpl === 'negative_direct_damage') {
       totalDamage = loggedRoll(`${player.label} 负面牌伤害`, cfg.damage || '2d6');
@@ -5547,18 +6343,26 @@ async function applyRewardList(player, rewards, labelPrefix){
       totalDamage += extraDamage;
       dealDamage(null, player, extraDamage, { sourceName: `${def.name || '负面牌'} 追加伤害` });
     }
+    applyNegativeEffects(player, normalizeNegativeEffects(cfg), def.name || '负面牌');
     if (player.hp < 0) player.hp = 0;
-    log(`${player.label} 抽到 ${def.name} 并触发负面效果，当前生命 ${player.hp}。`);
+    log(`${player.label} 使用负面牌 ${def.name}，当前生命 ${player.hp}。`);
+  }
+
+  function resolveNegativeOnDraw(player, handItem){
+    resolveNegativeCardUse(player, handItem);
   }
 
   async function finishAfterAction(){
     const animWait = actionFinishAnimWait(current());
     if(animWait > 0) await sleep(animWait);
+    await waitForUltimateCutInDone();
     clearActionResolving();
     state.pending = null;
     state.selectedCardIndex = null;
     $('choice-panel').innerHTML = '';
     state.players.forEach(p=>{ if(p.hp<=0){ p.hp=0; p.alive=false; }});
+    const active = current();
+    if(active?.alive && !hasForcedNegativeCards(active)) ensureHandLimit(active);
     const living = state.players.filter(p=>p.alive);
     if(living.length===1){ state.winner = living[0].id; setHint(`${living[0].label} 获胜！`); }
     render();
@@ -5570,8 +6374,11 @@ async function applyRewardList(player, rewards, labelPrefix){
       const hpPct = Math.max(0, Math.min(100, p.hp/p.maxHp*100));
       const blockPct = Math.max(0, Math.min(100, p.block*10));
       const accessoryName = p.accessory ? I18N().entity('accessory', p.accessoryKey, p.accessory.name) : I18N().t('no_accessory','无饰品');
+      const armorName = p.armor ? I18N().entity('armor', p.armorKey, p.armor.name) : '无护甲';
+      const bootsName = p.boots ? I18N().entity('boots', p.bootsKey, p.boots.name) : '无靴子';
+      const relicName = p.relic ? I18N().entity('relic', p.relicKey, p.relic.name) : '无咒物';
       return `<div class="player-box${p.id===active.id?' active':''}">
-        <div class="player-title"><strong>${p.label}${p.boss ? ' [BOSS]' : ''}</strong><span>${I18N().entity('profession', p.professionKey, p.profession.name)} / ${I18N().entity('weapon', p.weaponKey, p.weapon.name)} / ${accessoryName}</span></div>
+        <div class="player-title"><strong>${p.label}${p.boss ? ' [BOSS]' : ''}</strong><span>${I18N().entity('profession', p.professionKey, p.profession.name)} / ${I18N().entity('weapon', p.weaponKey, p.weapon.name)} / ${accessoryName} / ${armorName} / ${bootsName} / ${relicName}</span></div>
         <div class="hud-metrics">
           <span>${I18N().t('hp','生命')} ${p.hp}/${p.maxHp}</span>
           <span>${I18N().t('block','格挡')} ${p.block}</span>
@@ -5581,7 +6388,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         </div>
         <div class="hp-bar"><div class="hp-fill" style="width:${hpPct}%"></div></div>
         <div class="block-bar"><div class="block-fill" style="width:${blockPct}%"></div></div>
-        <div class="stat-line action-line">${I18N().t('action','行动')}：职 ${p.turn.classOrGuardianUsed?'✓':'○'}${(p.buffs.extraClassCardUses||0)>0?`+${p.buffs.extraClassCardUses}`:''} / 武 ${p.turn.weaponOrAccessoryUsed?'✓':'○'} / 移 ${p.turn.move?'✓':'○'} / 普 ${p.turn.basicSpent}/${1 + (p.buffs.extraBasicCap||0)} / 格 ${p.turn.autoBlockTriggered?'✓':'○'}</div>
+        <div class="stat-line action-line">${I18N().t('action','行动')}：职 ${p.turn.classOrGuardianUsed?'✓':'○'}${(p.buffs.extraClassCardUses||0)>0?`+${p.buffs.extraClassCardUses}`:''} / 武 ${p.turn.weaponOrAccessoryUsed?'✓':'○'} / 装 ${p.turn.equipmentSkillUsed?'✓':'○'} / 移 ${p.turn.move?'✓':'○'} / 普 ${p.turn.basicSpent}/${1 + (p.buffs.extraBasicCap||0)} / 格 ${p.turn.autoBlockTriggered?'✓':'○'}</div>
         <div class="status-row">${formatStatuses(p)}</div>
       </div>`;
     }).join('')}</div>`;
@@ -5598,6 +6405,45 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(activeDeck) activeDeck.textContent = active ? `${I18N().t('deck_remaining','牌库剩余')} ${active.deck.length}` : `${I18N().t('deck_remaining','牌库剩余')} 0`;
   }
 
+  function statusChip(label, title = ''){
+    const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+    return `<span class="status-chip"${titleAttr}>${escapeHtml(label)}</span>`;
+  }
+
+  function dotStatusTooltip(p){
+    const dots = [];
+    if(p.statuses.dot) dots.push(p.statuses.dot);
+    if(Array.isArray(p.statuses.dots)) dots.push(...p.statuses.dots);
+    return dots.map((dot, idx) => {
+      const source = dot?.sourceName || 'DOT';
+      const tick = dot?.damagePerTick || '1';
+      const turns = dot?.durationTurns ?? 1;
+      return `DOT ${idx + 1}: source=${source}; tick=${tick}; turns=${turns}`;
+    }).join('\n');
+  }
+
+  function relicStatusChips(p){
+    const relic = p?.relic;
+    if(!relic) return [];
+    const positive = [];
+    const costs = [];
+    const name = relic.name || relic.key || 'Relic';
+    if(Number(relic.outgoingDamageHealFlat || 0) > 0) positive.push(`heal on damage +${Number(relic.outgoingDamageHealFlat || 0)}`);
+    if(Number(relic.outgoingDamageCritChance || 0) > 0) positive.push(`crit ${Number(relic.outgoingDamageCritChance || 0)}%${relic.outgoingDamageCritBonusDie ? ` +${relic.outgoingDamageCritBonusDie}` : ''}`);
+    if(Number(relic.ignoreTargetReductionFlat || relic.armorPierceFlat || 0) > 0) positive.push(`pierce ${Number(relic.ignoreTargetReductionFlat || relic.armorPierceFlat || 0)}`);
+    if(Number(relic.moveBonus || 0) > 0) positive.push(`move +${Number(relic.moveBonus || 0)}`);
+    if(Number(relic.turnStartSelfDamage || 0) > 0) costs.push(`turn start self damage ${Number(relic.turnStartSelfDamage || 0)}`);
+    if(Number(relic.incomingDamageBonus || 0) > 0) costs.push(`incoming damage +${Number(relic.incomingDamageBonus || 0)}`);
+    if(Number(relic.hazardDamageBonus || 0) > 0) costs.push(`hazard damage +${Number(relic.hazardDamageBonus || 0)}`);
+    if(Number(relic.outgoingAttackFailChance || 0) > 0) costs.push(`attack/skill fail ${Number(relic.outgoingAttackFailChance || 0)}%`);
+    if(relic.turnStartNegativeEffect && Number(relic.turnStartNegativeChance || 0) > 0) costs.push(`turn start ${relic.turnStartNegativeEffect} ${Number(relic.turnStartNegativeChance || 0)}%, value ${Number(relic.turnStartNegativePower || 1)}`);
+    const title = [`Relic: ${name}`, positive.length ? `Effects: ${positive.join('; ')}` : '', costs.length ? `Costs: ${costs.join('; ')}` : ''].filter(Boolean).join('\n');
+    const chips = [statusChip(`\u5492\u7269 ${name}`, title)];
+    if(positive.length) chips.push(statusChip(`\u5492\u7269\u6548\u679c ${positive.length}`, positive.join('\n')));
+    if(costs.length) chips.push(statusChip(`\u5492\u7269\u4ee3\u4ef7 ${costs.length}`, costs.join('\n')));
+    return chips;
+  }
+
   function formatStatuses(p){
     const out=[];
     if(p.statuses.burn>0) out.push(`<span class="status-chip">${I18N().t('status_burn','点燃')} ${p.statuses.burn}</span>`);
@@ -5607,7 +6453,8 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.statuses.stun>0) out.push(`<span class="status-chip">眩晕 ${p.statuses.stun}</span>`);
     if(p.statuses.root>0) out.push(`<span class="status-chip">定身 ${p.statuses.root}</span>`);
     const dotCount = (p.statuses.dot ? 1 : 0) + (Array.isArray(p.statuses.dots) ? p.statuses.dots.length : 0);
-    if(dotCount) out.push(`<span class="status-chip">${I18N().t('status_dot','DOT')} x${dotCount}</span>`);
+    if(dotCount) out.push(statusChip(`${I18N().t('status_dot','DOT')} x${dotCount}`, dotStatusTooltip(p)));
+    out.push(...relicStatusChips(p));
     if(p.buffs.spellImmune) out.push(`<span class="status-chip">${I18N().t('status_spell_immune','法术无效')}</span>`);
     if(p.buffs.dodgeNextDamage) out.push(`<span class="status-chip">闪避 x${p.buffs.dodgeNextDamage}</span>`);
     if(p.buffs.counterCharges) out.push(`<span class="status-chip">反击待命</span>`);
@@ -5615,6 +6462,9 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.buffs.reactiveMoveCharges && p.buffs.reactiveMoveTrigger) out.push(`<span class="status-chip">随机位移 ${p.buffs.reactiveMoveTrigger}</span>`);
     if(p.buffs.healOnDamagedCharges && p.buffs.healOnDamaged) out.push(`<span class="status-chip">受伤自疗 ${p.buffs.healOnDamaged}</span>`);
     if(p.buffs.disarmAttackerCharges && p.buffs.disarmAttackerOnHit) out.push(`<span class="status-chip">受击缴械 ${p.buffs.disarmAttackerOnHit}</span>`);
+    if(p.buffs.vulnerableDamageBonus) out.push(`<span class="status-chip">破绽 +${p.buffs.vulnerableDamageBonus}${p.buffs.vulnerableDamagePermanent ? ' 永久' : ''}</span>`);
+    if(p.buffs.clumsyFailChance) out.push(`<span class="status-chip">笨拙 ${p.buffs.clumsyFailChance}%${p.buffs.clumsyPermanent ? ' 永久' : ''}</span>`);
+    if(p.buffs.chaosDamageCharges) out.push(`<span class="status-chip">混乱 x${p.buffs.chaosDamageCharges}</span>`);
     if(p.buffs.nextBasicFlat) out.push(`<span class="status-chip">下次普攻 +${p.buffs.nextBasicFlat}</span>`);
     if(p.buffs.nextBasicDie) out.push(`<span class="status-chip">下次普攻 +${p.buffs.nextBasicDie}</span>`);
     if(p.buffs.runChestBasicBonusDie) out.push(`<span class="status-chip">宝箱普攻 +${p.buffs.runChestBasicBonusDie}</span>`);
@@ -6658,6 +7508,11 @@ async function applyRewardList(player, rewards, labelPrefix){
     for(const entry of aiCardEntries(player)){
       const cardDef = entry.cardDef;
       const template = cardDef.template;
+      if(isNegativeCardDef(cardDef)){
+        const score = 720 + Math.max(0, 7 - player.hand.length) * 8;
+        if(!best || score > best.score) best = { type:'card', entry, score };
+        continue;
+      }
       if(aiTargetTemplate(template) && withinTargetRange(player, enemy, cardDef)){
         const dmg = aiCardDamageValue(player, cardDef, enemy);
         let score = 95 + dmg * 5 + aiCardControlBonus(cardDef);
@@ -6754,27 +7609,37 @@ async function applyRewardList(player, rewards, labelPrefix){
 
   async function runAiTurn(){
     const p=current(); if(!p.alive || p.type!=='ai' || state.winner || state.pending?.type==='discard') return;
-    for(let step = 0; step < 6; step += 1){
-      const actor = current();
-      const enemy = enemyOf(actor);
-      if(!actor?.alive || actor.type !== 'ai' || !enemy?.alive || state.winner || state.pending?.type === 'discard') return;
-      let action = chooseAiCardAction(actor, enemy);
-      const escape = chooseAiEscapeAction(actor, enemy);
-      if(escape && (!action || action.score < 600)) action = escape;
-      if(actor.turn.basicSpent < 1 + (actor.buffs.extraBasicCap || 0) && canBasicTarget(actor, enemy)){
-        const basicDamage = aiAverageDamage(resolvePlayerNotation(actor, getActiveBasicAttack(actor).damage));
-        const basicAction = { type:'basic', target: enemy, score: 82 + basicDamage * 4 + (enemy.hp <= basicDamage ? 620 : 0) };
-        if(!action || basicAction.score > action.score) action = basicAction;
-      }
-      if(!action) action = chooseAiMove(actor, enemy);
-      if(!action) break;
-      const acted = await executeAiAction(action);
-      if(!acted || state.winner || state.pending?.type === 'discard') return;
-      await waitForActionResolvingDone();
-      await wait(360);
+    const runKey = `${Number(state.turnSerial || 0)}:${p.id}`;
+    if(state.aiTurnRunKey === runKey){
+      pushDebug('ai.turn.skipped_duplicate_run', { runKey });
+      return;
     }
-    await waitForActionResolvingDone();
-    if(current()?.type === 'ai' && !state.winner && state.pending?.type !== 'discard') endTurn();
+    state.aiTurnRunKey = runKey;
+    try {
+      for(let step = 0; step < 6; step += 1){
+        const actor = current();
+        const enemy = enemyOf(actor);
+        if(!actor?.alive || actor.type !== 'ai' || actor.id !== p.id || !enemy?.alive || state.winner || state.pending?.type === 'discard') return;
+        let action = chooseAiCardAction(actor, enemy);
+        const escape = chooseAiEscapeAction(actor, enemy);
+        if(escape && (!action || action.score < 600)) action = escape;
+        if(actor.turn.basicSpent < 1 + (actor.buffs.extraBasicCap || 0) && canBasicTarget(actor, enemy)){
+          const basicDamage = aiAverageDamage(resolvePlayerNotation(actor, getActiveBasicAttack(actor).damage));
+          const basicAction = { type:'basic', target: enemy, score: 82 + basicDamage * 4 + (enemy.hp <= basicDamage ? 620 : 0) };
+          if(!action || basicAction.score > action.score) action = basicAction;
+        }
+        if(!action) action = chooseAiMove(actor, enemy);
+        if(!action) break;
+        const acted = await executeAiAction(action);
+        if(!acted || state.winner || state.pending?.type === 'discard') return;
+        await waitForActionResolvingDone();
+        await wait(360);
+      }
+      await waitForActionResolvingDone();
+      if(current()?.type === 'ai' && current()?.id === p.id && !state.winner && state.pending?.type !== 'discard') endTurn();
+    } finally {
+      if(state.aiTurnRunKey === runKey) state.aiTurnRunKey = '';
+    }
   }
 
   function endTurn(){
@@ -6789,13 +7654,16 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.statuses.sheep>0){ p.statuses.sheep -= 1; }
     if(p.statuses.root>0) p.statuses.root -= 1;
     state.pending = null; state.selectedCardIndex = null; $('choice-panel').innerHTML=''; setMode('待机');
-    nextTurn();
+    nextTurn(p.id);
   }
 
   function setupSelectKind(select){
     if(select.id.includes('profession')) return 'profession';
     if(select.id.includes('weapon')) return 'weapon';
     if(select.id.includes('accessory')) return 'accessory';
+    if(select.id.includes('armor')) return 'armor';
+    if(select.id.includes('boots')) return 'boots';
+    if(select.id.includes('relic')) return 'relic';
     return '';
   }
 
@@ -6803,6 +7671,9 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(kind === 'profession') return data.professions?.[value] || null;
     if(kind === 'weapon') return data.weaponLibrary?.[value] || null;
     if(kind === 'accessory' && !isNoAccessory(value)) return data.accessoryLibrary?.[value] || null;
+    if(kind === 'armor') return data.armorLibrary?.[value] || null;
+    if(kind === 'boots') return data.bootsLibrary?.[value] || null;
+    if(kind === 'relic') return data.relicLibrary?.[value] || null;
     return null;
   }
 
@@ -6816,12 +7687,17 @@ async function applyRewardList(player, rewards, labelPrefix){
     const entity = setupEntityFor(kind, value, data);
     if(!entity) return `<div class="deck-tooltip-title">${escapeHtml(select.selectedOptions?.[0]?.textContent || '未选择')}</div><div class="deck-tooltip-meta">${escapeHtml('没有可显示的卡组信息。')}</div>`;
     const title = select.selectedOptions?.[0]?.textContent || entity.name || value;
+    const armorMeta = `生命 ${entity.maxHp ?? '-'} / 固定减伤 ${entity.damageReductionFlat ?? entity.incomingDamageFlatReduction ?? 0} / 骰子减伤 ${entity.damageReductionRoll || '无'} / 代价 受伤+${entity.incomingDamageBonus ?? 0} 失误${entity.outgoingAttackFailChance ?? 0}%`;
+    const bootsMeta = `移动 ${entity.moveBase ?? '-'} / 地形减伤 ${entity.hazardDamageReduction ?? 0} / 牵引抗性 ${entity.forcedMoveResistance ?? 0} / 代价 受伤+${entity.incomingDamageBonus ?? 0} 失误${entity.outgoingAttackFailChance ?? 0}%`;
     const meta = kind === 'profession'
-      ? `生命 ${entity.hp ?? '-'} / 移动 ${entity.move ?? '-'} / ${entity.movePreset || 'melee'}`
+      ? `生命旧字段 ${entity.hp ?? '-'} / 移动旧字段 ${entity.move ?? '-'} / ${entity.movePreset || 'melee'}`
       : kind === 'weapon'
         ? `${entity.basic?.name || '普攻'}：${entity.basic?.damage || '-'} / 距离 ${entity.basic?.range ?? '-'} / ${entity.basic?.type || '-'}`
-        : (entity.name || title);
-    const counts = deckCountsFor(kind, entity);
+        : kind === 'armor'
+          ? armorMeta
+          : kind === 'boots'
+            ? bootsMeta
+            : (entity.name || title);    const counts = deckCountsFor(kind, entity);
     const rows = Object.entries(counts).map(([cardKey, count]) => {
       const n = Number(count || 0);
       if(n <= 0) return null;
@@ -6864,7 +7740,7 @@ async function applyRewardList(player, rewards, labelPrefix){
   }
 
   function bindDeckTooltips(){
-    ['p1-profession','p1-weapon','p1-accessory','p2-profession','p2-weapon','p2-accessory'].forEach(id => {
+    ['p1-profession','p1-weapon','p1-accessory','p1-armor','p1-boots','p1-relic','p2-profession','p2-weapon','p2-accessory','p2-armor','p2-boots','p2-relic'].forEach(id => {
       const sel = $(id);
       if(!sel) return;
       sel.onmouseenter = () => showDeckTooltip(sel);
@@ -6878,6 +7754,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     });
     window.addEventListener('resize', hideDeckTooltip);
     window.addEventListener('scroll', hideDeckTooltip, true);
+    window.addEventListener('resize', () => fitDynamicPortraitFrames(document));
   }
 
   function bindActionTooltips(){
@@ -7084,9 +7961,15 @@ async function applyRewardList(player, rewards, labelPrefix){
       p1Profession: $('p1-profession')?.value,
       p1Weapon: $('p1-weapon')?.value,
       p1Accessory: $('p1-accessory')?.value,
+      p1Armor: $('p1-armor')?.value,
+      p1Boots: $('p1-boots')?.value,
+      p1Relic: $('p1-relic')?.value,
       p2Profession: $('p2-profession')?.value,
       p2Weapon: $('p2-weapon')?.value,
       p2Accessory: $('p2-accessory')?.value,
+      p2Armor: $('p2-armor')?.value,
+      p2Boots: $('p2-boots')?.value,
+      p2Relic: $('p2-relic')?.value,
       blackHole: $('black-hole-enabled')?.value,
       chest: $('chest-enabled')?.value,
       drawOpening: $('draw-opening')?.value,
@@ -7104,8 +7987,18 @@ async function applyRewardList(player, rewards, labelPrefix){
     fillSetupSelect('p2-weapon', data.weaponLibrary, 'weapon');
     fillSetupSelect('p1-accessory', data.accessoryLibrary, 'accessory', true);
     fillSetupSelect('p2-accessory', data.accessoryLibrary, 'accessory', true);
+    fillSetupSelect('p1-armor', data.armorLibrary, 'armor');
+    fillSetupSelect('p2-armor', data.armorLibrary, 'armor');
+    fillSetupSelect('p1-boots', data.bootsLibrary, 'boots');
+    fillSetupSelect('p2-boots', data.bootsLibrary, 'boots');
+    fillSetupSelect('p1-relic', data.relicLibrary, 'relic');
+    fillSetupSelect('p2-relic', data.relicLibrary, 'relic');
     setSetupValue('p1-profession', prev.p1Profession || 'warrior'); setSetupValue('p1-weapon', prev.p1Weapon || 'greatsword'); setSetupValue('p1-accessory', prev.p1Accessory || 'trapbag');
     setSetupValue('p2-profession', prev.p2Profession || 'mage'); setSetupValue('p2-weapon', prev.p2Weapon || 'longbow'); setSetupValue('p2-accessory', prev.p2Accessory || 'lincoln');
+    setSetupValue('p1-armor', prev.p1Armor || 'medium_armor'); setSetupValue('p1-boots', prev.p1Boots || 'trail_boots');
+    setSetupValue('p2-armor', prev.p2Armor || 'medium_armor'); setSetupValue('p2-boots', prev.p2Boots || 'trail_boots');
+    setSetupValue('p1-relic', prev.p1Relic || defaultRelicKey(data));
+    setSetupValue('p2-relic', prev.p2Relic || defaultRelicKey(data));
     const defaults = data.ruleDefaults || {};
     if($('black-hole-enabled')) $('black-hole-enabled').value = prev.blackHole || 'true';
     if($('chest-enabled')) $('chest-enabled').value = prev.chest || 'true';
@@ -7118,12 +8011,12 @@ async function applyRewardList(player, rewards, labelPrefix){
     $('start-game').onclick = startGame;
     if($('start-arena-run')) $('start-arena-run').onclick = startNewArenaRun;
     if($('continue-arena-run')) $('continue-arena-run').onclick = continueArenaRun;
-    $('btn-move').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending={type:'move', path:[]}; setMode('移动模式'); render(); setHint('请逐格点击绘制移动路线，再点确认移动。'); };
+    $('btn-move').onclick = ()=>{ if(isActionResolving()) return; if(mustResolveNegativeCards(current())) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending={type:'move', path:[]}; setMode('移动模式'); render(); setHint('请逐格点击绘制移动路线，再点确认移动。'); };
     if($('btn-confirm-move')) $('btn-confirm-move').onclick = confirmMovePath;
-    $('btn-basic-attack').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending={type:'basic'}; setMode('普通攻击'); render(); setHint('请选择普通攻击目标。'); };
-    $('btn-passive').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } useProfessionPassive(); };
+    $('btn-basic-attack').onclick = ()=>{ if(isActionResolving()) return; if(mustResolveNegativeCards(current())) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending={type:'basic'}; setMode('普通攻击'); render(); setHint('请选择普通攻击目标。'); };
+    $('btn-passive').onclick = ()=>{ if(isActionResolving()) return; if(mustResolveNegativeCards(current())) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } useProfessionPassive(); };
     $('btn-cancel').onclick = ()=>{ if(isActionResolving()) return; if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; } state.pending=null; state.selectedCardIndex=null; $('choice-panel').innerHTML=''; setMode('待机'); render(); setHint('已取消当前选择。'); };
-    $('btn-end-turn').onclick = ()=>{ if(isActionResolving()) return; endTurn(); };
+    $('btn-end-turn').onclick = ()=>{ if(isActionResolving()) return; if(mustResolveNegativeCards(current())) return; endTurn(); };
     $('btn-restart').onclick = ()=>location.reload();
     if ($('btn-export-battle-log')) $('btn-export-battle-log').onclick = exportBattleLog;
     if ($('btn-export-debug-log')) $('btn-export-debug-log').onclick = exportDebugBundle;

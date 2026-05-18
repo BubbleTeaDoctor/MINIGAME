@@ -751,6 +751,67 @@
                                                             ]
                                                         ]
                                          },
+                      "negative_effect":  {
+                                              "label":  "负面牌：通用负面效果",
+                                              "desc":  "使用后触发一个可配置的负面效果。",
+                                              "fields":  [
+                                                             [
+                                                                 "negativeEffectType",
+                                                                 "负面效果",
+                                                                 "negativeEffectType"
+                                                             ],
+                                                             [
+                                                                 "fumbleBucket",
+                                                                 "Fumble：失去机会",
+                                                                 "fumbleBucket"
+                                                             ],
+                                                             [
+                                                                 "vulnerableBonus",
+                                                                 "Vulnerable：额外受伤",
+                                                                 "number"
+                                                             ],
+                                                             [
+                                                                 "vulnerableScope",
+                                                                 "Vulnerable：伤害类型",
+                                                                 "vulnerableScope"
+                                                             ],
+                                                             [
+                                                                 "vulnerableDuration",
+                                                                 "Vulnerable：持续",
+                                                                 "vulnerableDuration"
+                                                             ],
+                                                             [
+                                                                 "clumsyChance",
+                                                                 "Clumsy：失败率 %",
+                                                                 "number"
+                                                             ],
+                                                             [
+                                                                 "clumsyScope",
+                                                                 "Clumsy：影响范围",
+                                                                 "clumsyScope"
+                                                             ],
+                                                             [
+                                                                 "clumsyDuration",
+                                                                 "Clumsy：持续",
+                                                                 "clumsyDuration"
+                                                             ],
+                                                             [
+                                                                 "panicMode",
+                                                                 "Panic：弃牌方式",
+                                                                 "panicMode"
+                                                             ],
+                                                             [
+                                                                 "chaosCharges",
+                                                                 "Chaos：次数",
+                                                                 "number"
+                                                             ],
+                                                             [
+                                                                 "bloodDamage",
+                                                                 "Blood：失去生命",
+                                                                 "text"
+                                                             ]
+                                                         ]
+                                          },
                       "create_map_token":  {
                                                "label":  "在地图上创造 Token",
                                                "desc":  "在指定地块放置陷阱、永久柱体或自动炮塔。",
@@ -1123,6 +1184,19 @@
                                                     "controlDuration":  "1",
                                                     "showInPreview":  true
                                                 },
+                             "negative_effect":  {
+                                                     "negativeEffectType":  "fumble",
+                                                     "fumbleBucket":  "random",
+                                                     "vulnerableBonus":  2,
+                                                     "vulnerableScope":  "any",
+                                                     "vulnerableDuration":  "next",
+                                                     "clumsyChance":  25,
+                                                     "clumsyScope":  "any",
+                                                     "clumsyDuration":  "next",
+                                                     "panicMode":  "random_attack",
+                                                     "chaosCharges":  1,
+                                                     "bloodDamage":  1
+                                                 },
                              "create_map_token":  {
                                                       "range":  3,
                                                       "tokenName":  "陷阱",
@@ -1144,6 +1218,7 @@
                          "buckets":  {
                                          "class_or_guardian":  1,
                                          "weapon_or_accessory":  1,
+                                         "equipment_skill":  1,
                                          "move":  1,
                                          "basic_attack":  1,
                                          "block":  1
@@ -1376,6 +1451,106 @@
                                                     ]
                                       }
                          },
+    "armorLibrary":  {
+                         "light_armor":  {
+                                              "key":  "light_armor",
+                                              "name":  "轻甲",
+                                              "maxHp":  50,
+                                              "damageReductionFlat":  0,
+                                              "damageReductionRoll":  "1d4",
+                                              "incomingDamageBonus":  0,
+                                              "outgoingAttackFailChance":  0,
+                                              "cards":  [
+                                                            "armor_guard_step"
+                                                        ],
+                                              "deckCounts":  {
+                                                                 "armor_guard_step":  1
+                                                             }
+                                          },
+                         "medium_armor":  {
+                                               "key":  "medium_armor",
+                                               "name":  "中甲",
+                                               "maxHp":  55,
+                                               "damageReductionFlat":  2,
+                                               "damageReductionRoll":  "",
+                                               "incomingDamageBonus":  0,
+                                               "outgoingAttackFailChance":  0,
+                                               "cards":  [
+                                                             "armor_brace"
+                                                         ],
+                                               "deckCounts":  {
+                                                                  "armor_brace":  1
+                                                              }
+                                           },
+                         "heavy_armor":  {
+                                              "key":  "heavy_armor",
+                                              "name":  "重甲",
+                                              "maxHp":  65,
+                                              "damageReductionFlat":  0,
+                                              "damageReductionRoll":  "",
+                                              "incomingDamageBonus":  0,
+                                              "outgoingAttackFailChance":  10,
+                                              "cards":  [
+                                                            "armor_bulwark"
+                                                        ],
+                                              "deckCounts":  {
+                                                                 "armor_bulwark":  1
+                                                             }
+                                          }
+                     },
+    "bootsLibrary":  {
+                         "swift_boots":  {
+                                             "key":  "swift_boots",
+                                             "name":  "轻便靴",
+                                             "moveBase":  5,
+                                             "hazardDamageReduction":  0,
+                                             "forcedMoveResistance":  0,
+                                             "incomingDamageBonus":  1,
+                                             "outgoingAttackFailChance":  0,
+                                             "cards":  [
+                                                           "boots_dash"
+                                                       ],
+                                             "deckCounts":  {
+                                                                "boots_dash":  1
+                                                            }
+                                         },
+                         "trail_boots":  {
+                                             "key":  "trail_boots",
+                                             "name":  "标准靴",
+                                             "moveBase":  4,
+                                             "hazardDamageReduction":  1,
+                                             "forcedMoveResistance":  0,
+                                             "incomingDamageBonus":  0,
+                                             "outgoingAttackFailChance":  0,
+                                             "cards":  [
+                                                           "boots_sidestep"
+                                                       ],
+                                             "deckCounts":  {
+                                                                "boots_sidestep":  1
+                                                            }
+                                         },
+                         "anchor_boots":  {
+                                              "key":  "anchor_boots",
+                                              "name":  "重靴",
+                                              "moveBase":  4,
+                                              "hazardDamageReduction":  2,
+                                              "forcedMoveResistance":  1,
+                                              "incomingDamageBonus":  0,
+                                              "outgoingAttackFailChance":  5,
+                                              "cards":  [
+                                                            "boots_anchor"
+                                                        ],
+                                              "deckCounts":  {
+                                                                 "boots_anchor":  1
+                                                             }
+                                          }
+                     },
+    "relicLibrary":  {
+                         "blood_pact_relic":  { "key": "blood_pact_relic", "name": "\u8840\u5951\u5492\u7269", "outgoingDamageHealFlat": 1, "turnStartSelfDamage": 1, "incomingDamageBonus": 1, "cards": [ "relic_blood_pact" ], "deckCounts": { "relic_blood_pact": 1 } },
+                         "chaos_relic":  { "key": "chaos_relic", "name": "\u6df7\u6c8c\u5492\u7269", "outgoingDamageCritChance": 5, "outgoingDamageCritBonusDie": "1d6", "turnStartNegativeEffect": "chaos", "turnStartNegativeChance": 12, "turnStartNegativePower": 1, "cards": [ "relic_chaos_burst" ], "deckCounts": { "relic_chaos_burst": 1 } },
+                         "sunder_relic":  { "key": "sunder_relic", "name": "\u7834\u7532\u5492\u7269", "ignoreTargetReductionFlat": 1, "turnStartNegativeEffect": "vulnerable", "turnStartNegativeChance": 18, "turnStartNegativePower": 2, "cards": [ "relic_sunder_brand" ], "deckCounts": { "relic_sunder_brand": 1 } },
+                         "haste_relic":  { "key": "haste_relic", "name": "\u6025\u901f\u5492\u7269", "moveBonus": 1, "hazardDamageBonus": 1, "outgoingAttackFailChance": 10, "cards": [ "relic_haste_step" ], "deckCounts": { "relic_haste_step": 1 } }
+                     },
     "cardLibrary":  {
                         "greatsword_crush":  {
                                                  "name":  "碾压打击",
@@ -1492,6 +1667,10 @@
                                                     },
                                          "text":  "恢复 4 并获得 2 格挡。"
                                      },
+                        "relic_blood_pact":  { "name": "\u8840\u5951\u65a9", "source": "\u5492\u7269\u6280\u80fd", "template": "direct_damage", "config": { "damage": "1d8", "range": 1, "target": "enemy", "lifestealFlat": 2, "quick": true }, "text": "\u514d\u8d39\u5492\u7269\u724c\u3002\u8fd1\u6218\u9020\u6210 1D8 \u4f24\u5bb3\uff0c\u5e76\u56fa\u5b9a\u5438\u8840 2\u3002", "negativeOnDraw": false },
+                        "relic_chaos_burst":  { "name": "\u6df7\u6c8c\u7206\u88c2", "source": "\u5492\u7269\u6280\u80fd", "template": "aoe", "config": { "damage": "2d6", "range": 3, "radius": 1, "spell": true, "quick": true }, "text": "\u514d\u8d39\u5492\u7269\u724c\u30023 \u683c\u5185\u8303\u56f4\u9020\u6210 2D6 \u6cd5\u672f\u4f24\u5bb3\u3002", "negativeOnDraw": false },
+                        "relic_sunder_brand":  { "name": "\u7834\u7532\u70d9\u5370", "source": "\u5492\u7269\u6280\u80fd", "template": "direct_damage", "config": { "damage": "1d6+3", "range": 3, "target": "enemy", "quick": true, "negativeEffects": [ { "negativeEffectType": "vulnerable", "vulnerableBonus": 1, "vulnerableScope": "any", "vulnerableDuration": "next" } ] }, "text": "\u514d\u8d39\u5492\u7269\u724c\u3002\u9020\u6210 1D6+3 \u4f24\u5bb3\uff0c\u5e76\u8ba9\u76ee\u6807\u4e0b\u4e00\u6b21\u53d7\u4f24 +1\u3002", "negativeOnDraw": false },
+                        "relic_haste_step":  { "name": "\u6025\u901f\u6298\u8dc3", "source": "\u5492\u7269\u6280\u80fd", "template": "teleport", "config": { "range": 4, "target": "tile", "quick": true }, "text": "\u514d\u8d39\u5492\u7269\u724c\u3002\u79fb\u52a8\u5230 4 \u683c\u5185\u7a7a\u4f4d\u3002", "negativeOnDraw": false },
                         "trap_token":  {
                                            "name":  "陷阱触发",
                                            "source":  "负面牌",
@@ -1517,9 +1696,79 @@
                                                                                     "moveMultiplier":  0.5
                                                                                 }
                                                             },
-                                                 "text":  "抽到即爆炸并减速。",
+                                                 "text":  "使用后爆炸并减速。",
                                                  "negativeOnDraw":  true
                                              },
+                        "negative_fumble":  {
+                                                "name":  "Fumble / 手忙脚乱",
+                                                "source":  "负面牌",
+                                                "template":  "negative_effect",
+                                                "config":  {
+                                                               "negativeEffectType":  "fumble",
+                                                               "fumbleBucket":  "random"
+                                                           },
+                                                "text":  "使用后失去一个随机行动机会。",
+                                                "negativeOnDraw":  true
+                                            },
+                        "negative_vulnerable":  {
+                                                    "name":  "Vulnerable / 破绽",
+                                                    "source":  "负面牌",
+                                                    "template":  "negative_effect",
+                                                    "config":  {
+                                                                   "negativeEffectType":  "vulnerable",
+                                                                   "vulnerableBonus":  2,
+                                                                   "vulnerableScope":  "any",
+                                                                   "vulnerableDuration":  "next"
+                                                               },
+                                                    "text":  "使用后下次受到任意伤害 +2。",
+                                                    "negativeOnDraw":  true
+                                                },
+                        "negative_clumsy":  {
+                                                "name":  "Clumsy / 笨拙",
+                                                "source":  "负面牌",
+                                                "template":  "negative_effect",
+                                                "config":  {
+                                                               "negativeEffectType":  "clumsy",
+                                                               "clumsyChance":  25,
+                                                               "clumsyScope":  "any",
+                                                               "clumsyDuration":  "next"
+                                                           },
+                                                "text":  "使用后下一次攻击或技能有 25% 几率失败。",
+                                                "negativeOnDraw":  true
+                                            },
+                        "negative_panic":  {
+                                              "name":  "Panic / 惊慌",
+                                              "source":  "负面牌",
+                                              "template":  "negative_effect",
+                                              "config":  {
+                                                             "negativeEffectType":  "panic",
+                                                             "panicMode":  "random_attack"
+                                                         },
+                                              "text":  "使用后随机弃掉一张攻击牌。",
+                                              "negativeOnDraw":  true
+                                          },
+                        "negative_chaos":  {
+                                              "name":  "Chaos / 混乱",
+                                              "source":  "负面牌",
+                                              "template":  "negative_effect",
+                                              "config":  {
+                                                             "negativeEffectType":  "chaos",
+                                                             "chaosCharges":  1
+                                                         },
+                                              "text":  "使用后下一次伤害攻击会打到自己。",
+                                              "negativeOnDraw":  true
+                                          },
+                        "negative_blood":  {
+                                             "name":  "Blood / 生命代价",
+                                             "source":  "负面牌",
+                                             "template":  "negative_effect",
+                                             "config":  {
+                                                            "negativeEffectType":  "blood",
+                                                            "bloodDamage":  1
+                                                        },
+                                             "text":  "使用后失去指定生命。",
+                                             "negativeOnDraw":  true
+                                         },
                         "hammer_break":  {
                                              "name":  "重击",
                                              "source":  "武器技能",
@@ -1690,6 +1939,69 @@
                                                           },
                                                "text":  "恢复 3 并获得 1D4 格挡。"
                                            },
+                        "armor_guard_step":  {
+                                                 "name":  "守势步伐",
+                                                 "source":  "护甲技能",
+                                                 "template":  "self_buff",
+                                                 "config":  {
+                                                                "block":  "1d4",
+                                                                "consumeOn":  "immediate"
+                                                            },
+                                                 "text":  "获得 1D4 格挡。"
+                                             },
+                        "armor_brace":  {
+                                            "name":  "稳固防守",
+                                            "source":  "护甲技能",
+                                            "template":  "self_buff",
+                                            "config":  {
+                                                           "block":  "2",
+                                                           "counterDamage":  "1d4",
+                                                           "consumeOn":  "until_triggered"
+                                                       },
+                                            "text":  "获得 2 格挡，并准备一次反击。"
+                                        },
+                        "armor_bulwark":  {
+                                              "name":  "壁垒姿态",
+                                              "source":  "护甲技能",
+                                              "template":  "self_buff",
+                                              "config":  {
+                                                             "block":  "1d6",
+                                                             "disarmAttackerOnHit":  1,
+                                                             "consumeOn":  "until_triggered"
+                                                         },
+                                              "text":  "获得 1D6 格挡，被击中后缴械攻击者。"
+                                          },
+                        "boots_dash":  {
+                                           "name":  "疾行",
+                                           "source":  "靴子技能",
+                                           "template":  "teleport",
+                                           "config":  {
+                                                          "range":  3,
+                                                          "target":  "tile"
+                                                      },
+                                           "text":  "移动到 3 格内空位。"
+                                       },
+                        "boots_sidestep":  {
+                                               "name":  "侧步",
+                                               "source":  "靴子技能",
+                                               "template":  "teleport",
+                                               "config":  {
+                                                              "range":  2,
+                                                              "target":  "tile"
+                                                          },
+                                               "text":  "移动到 2 格内空位。"
+                                           },
+                        "boots_anchor":  {
+                                             "name":  "扎根",
+                                             "source":  "靴子技能",
+                                             "template":  "self_buff",
+                                             "config":  {
+                                                            "block":  "1d4",
+                                                            "dodgeNext":  true,
+                                                            "consumeOn":  "until_triggered"
+                                                        },
+                                             "text":  "获得 1D4 格挡，并闪避下一次伤害。"
+                                         },
                         "hunter_trap":  {
                                             "name":  "束缚陷阱",
                                             "source":  "职业技能",

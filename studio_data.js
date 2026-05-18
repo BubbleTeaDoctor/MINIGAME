@@ -16,7 +16,8 @@ window.DEFAULT_STUDIO_DATA = {
     weapon_basic_inflicts_status: { label: "普攻附带状态", desc: "普通攻击附带 DOT 或状态。", fields: [["statusType","状态类型","text"],["statusValue","状态数值","text"],["durationTurns","持续回合","number"]] },
     activated_token_scaling_block: { label: "已激活 token 提供格挡", desc: "按 token 数量提供格挡。", fields: [["tokenType","token 类型","text"],["ratio","比例","number"],["rounding","取整方式","text"],["rewardType","奖励类型","text"]] },
     life_for_card_draw_once_per_turn: { label: "支付生命抽牌", desc: "每回合可支付生命额外抽牌。", fields: [["lifeCost","生命消耗","number"],["drawCount","抽牌数量","number"],["oncePerTurn","每回合一次","boolean"]] },
-    skip_basic_attack_then_gain_bonus: { label: "未普攻获得增益", desc: "本回合未普攻，则下次获得伤害加成。", fields: [["checkAt","检查时机","text"],["bonusType","加成类型","text"],["bonusValue","加成数值","number"],["consumeOn","何时消耗","text"]] }
+    skip_basic_attack_then_gain_bonus: { label: "未普攻获得增益", desc: "本回合未普攻，则下次获得伤害加成。", fields: [["checkAt","检查时机","text"],["bonusType","加成类型","text"],["bonusValue","加成数值","number"],["consumeOn","何时消耗","text"]] },
+    negative_effect: { label: "负面牌：通用负面效果", desc: "使用后触发一个可配置的负面效果。", fields: [["negativeEffectType","负面效果","negativeEffectType"],["fumbleBucket","Fumble：失去机会","fumbleBucket"],["vulnerableBonus","Vulnerable：额外受伤","number"],["vulnerableScope","Vulnerable：伤害类型","vulnerableScope"],["vulnerableDuration","Vulnerable：持续","vulnerableDuration"],["clumsyChance","Clumsy：失败率 %","number"],["clumsyScope","Clumsy：影响范围","clumsyScope"],["clumsyDuration","Clumsy：持续","clumsyDuration"],["panicMode","Panic：弃牌方式","panicMode"],["chaosCharges","Chaos：次数","number"],["bloodDamage","Blood：失去生命","text"]] }
   },
   statuses: {
     none: { label: "无" },
@@ -40,9 +41,10 @@ window.DEFAULT_STUDIO_DATA = {
     weapon_basic_inflicts_status: { statusType: "burn", statusValue: "1d4", durationTurns: 2 },
     activated_token_scaling_block: { tokenType: "undead_token", ratio: 0.5, rounding: "ceil", rewardType: "gain_block_each_turn" },
     life_for_card_draw_once_per_turn: { lifeCost: 4, drawCount: 1, oncePerTurn: true },
-    skip_basic_attack_then_gain_bonus: { checkAt: "end_of_turn", bonusType: "flat_damage", bonusValue: 5, consumeOn: "next_basic_attack_or_class_skill" }
+    skip_basic_attack_then_gain_bonus: { checkAt: "end_of_turn", bonusType: "flat_damage", bonusValue: 5, consumeOn: "next_basic_attack_or_class_skill" },
+    negative_effect: { negativeEffectType: "fumble", fumbleBucket: "random", vulnerableBonus: 2, vulnerableScope: "any", vulnerableDuration: "next", clumsyChance: 25, clumsyScope: "any", clumsyDuration: "next", panicMode: "random_attack", chaosCharges: 1, bloodDamage: 1 }
   },
-  ruleDefaults: { drawPerTurn: 3, meleeMove: 5, rangedMove: 3, buckets: { class_or_guardian: 1, weapon_or_accessory: 1, move: 1, basic_attack: 1, block: 1 } },
+  ruleDefaults: { drawPerTurn: 3, meleeMove: 5, rangedMove: 3, buckets: { class_or_guardian: 1, weapon_or_accessory: 1, equipment_skill: 1, move: 1, basic_attack: 1, block: 1 } },
   weaponLibrary: {
     greatsword: { key: "greatsword", name: "巨剑", basic: { name: "巨剑普攻", damage: "2d6", range: 1, straight: false, type: "近战" }, cards: ["greatsword_crush","weapon_charge"] },
     longbow: { key: "longbow", name: "长弓", basic: { name: "长弓普攻", damage: "1d6", range: 6, straight: true, type: "远程直线" }, cards: ["bow_pin","bow_step"] },
@@ -52,6 +54,22 @@ window.DEFAULT_STUDIO_DATA = {
     lincoln: { key: "lincoln", name: "林肯法球", cards: ["acc_nullify"] },
     trapbag: { key: "trapbag", name: "口袋陷阱", cards: ["acc_trap"] },
     hope: { key: "hope", name: "希望曙光", cards: ["acc_hope"] }
+  },
+  armorLibrary: {
+    light_armor: { key: "light_armor", name: "轻甲", maxHp: 50, damageReductionFlat: 0, damageReductionRoll: "1d4", incomingDamageBonus: 0, outgoingAttackFailChance: 0, cards: ["armor_guard_step"] },
+    medium_armor: { key: "medium_armor", name: "中甲", maxHp: 55, damageReductionFlat: 2, damageReductionRoll: "", incomingDamageBonus: 0, outgoingAttackFailChance: 0, cards: ["armor_brace"] },
+    heavy_armor: { key: "heavy_armor", name: "重甲", maxHp: 65, damageReductionFlat: 0, damageReductionRoll: "", incomingDamageBonus: 0, outgoingAttackFailChance: 10, cards: ["armor_bulwark"] }
+  },
+  bootsLibrary: {
+    swift_boots: { key: "swift_boots", name: "轻便靴", moveBase: 5, hazardDamageReduction: 0, forcedMoveResistance: 0, incomingDamageBonus: 1, outgoingAttackFailChance: 0, cards: ["boots_dash"] },
+    trail_boots: { key: "trail_boots", name: "标准靴", moveBase: 4, hazardDamageReduction: 1, forcedMoveResistance: 0, incomingDamageBonus: 0, outgoingAttackFailChance: 0, cards: ["boots_sidestep"] },
+    anchor_boots: { key: "anchor_boots", name: "重靴", moveBase: 4, hazardDamageReduction: 2, forcedMoveResistance: 1, incomingDamageBonus: 0, outgoingAttackFailChance: 5, cards: ["boots_anchor"] }
+  },
+  relicLibrary: {
+    blood_pact_relic: { key: "blood_pact_relic", name: "血契咒物", outgoingDamageHealFlat: 1, turnStartSelfDamage: 1, incomingDamageBonus: 1, cards: ["relic_blood_pact"] },
+    chaos_relic: { key: "chaos_relic", name: "混沌咒物", outgoingDamageCritChance: 5, outgoingDamageCritBonusDie: "1d6", turnStartNegativeEffect: "chaos", turnStartNegativeChance: 12, turnStartNegativePower: 1, cards: ["relic_chaos_burst"] },
+    sunder_relic: { key: "sunder_relic", name: "破甲咒物", ignoreTargetReductionFlat: 1, turnStartNegativeEffect: "vulnerable", turnStartNegativeChance: 18, turnStartNegativePower: 2, cards: ["relic_sunder_brand"] },
+    haste_relic: { key: "haste_relic", name: "急速咒物", moveBonus: 1, hazardDamageBonus: 1, outgoingAttackFailChance: 10, cards: ["relic_haste_step"] }
   },
   cardLibrary: {
     greatsword_crush: { name: "碾压打击", source: "武器技能", template: "direct_damage", config: { damage: "1d6+1", range: 1, target: "enemy" }, text: "近战造成 1D6+1 伤害。" },
@@ -63,8 +81,24 @@ window.DEFAULT_STUDIO_DATA = {
     acc_nullify: { name: "法术无效", source: "饰品技能", template: "self_buff", config: { consumeOn: "next_spell_hit", durationTurns: null }, text: "抵消下一次法术。" },
     acc_trap: { name: "尖刺陷阱", source: "饰品技能", template: "insert_negative_card_into_target_deck", config: { insertCardKey: "trap_token", insertCount: 1, triggerCondition: "place_on_tile", shuffleIntoDeck: false }, text: "在地图上放置陷阱。" },
     acc_hope: { name: "曙光", source: "饰品技能", template: "self_buff", config: { heal: 4, block: "2", consumeOn: "immediate" }, text: "恢复 4 并获得 2 格挡。" },
+    armor_guard_step: { name: "守势步伐", source: "护甲技能", template: "self_buff", config: { block: "1d4", consumeOn: "immediate" }, text: "获得 1D4 格挡。" },
+    armor_brace: { name: "稳固防守", source: "护甲技能", template: "self_buff", config: { block: "2", counterDamage: "1d4", consumeOn: "until_triggered" }, text: "获得 2 格挡，并准备一次反击。" },
+    armor_bulwark: { name: "壁垒姿态", source: "护甲技能", template: "self_buff", config: { block: "1d6", disarmAttackerOnHit: 1, consumeOn: "until_triggered" }, text: "获得 1D6 格挡，被击中后缴械攻击者。" },
+    boots_dash: { name: "疾行", source: "靴子技能", template: "teleport", config: { range: 3, target: "tile" }, text: "移动到 3 格内空位。" },
+    boots_sidestep: { name: "侧步", source: "靴子技能", template: "teleport", config: { range: 2, target: "tile" }, text: "移动到 2 格内空位。" },
+    boots_anchor: { name: "扎根", source: "靴子技能", template: "self_buff", config: { block: "1d4", dodgeNext: true, consumeOn: "until_triggered" }, text: "获得 1D4 格挡，并闪避下一次伤害。" },
+    relic_blood_pact: { name: "血契斩", source: "咒物技能", template: "direct_damage", config: { damage: "1d8", range: 1, target: "enemy", lifestealFlat: 2, quick: true }, text: "免费咒物牌。近战造成 1D8 伤害，并固定吸血 2。" },
+    relic_chaos_burst: { name: "混沌爆裂", source: "咒物技能", template: "aoe", config: { damage: "2d6", range: 3, radius: 1, spell: true, quick: true }, text: "免费咒物牌。3 格内范围造成 2D6 法术伤害。" },
+    relic_sunder_brand: { name: "破甲烙印", source: "咒物技能", template: "direct_damage", config: { damage: "1d6+3", range: 3, target: "enemy", quick: true, negativeEffects: [{ negativeEffectType: "vulnerable", vulnerableBonus: 1, vulnerableScope: "any", vulnerableDuration: "next" }] }, text: "免费咒物牌。造成 1D6+3 伤害，并让目标下一次受伤 +1。" },
+    relic_haste_step: { name: "急速折跃", source: "咒物技能", template: "teleport", config: { range: 4, target: "tile", quick: true }, text: "免费咒物牌。移动到 4 格内空位。" },
     trap_token: { name: "陷阱触发", source: "负面牌", template: "direct_damage", config: { damage: "2d6", range: 0, target: "self" }, text: "触发陷阱，受到 2D6 伤害。", negativeOnDraw: true },
-    necro_bomb_token: { name: "骨炸弹", source: "负面牌", template: "direct_damage", config: { damage: "2d6", range: 0, target: "self" }, text: "抽到即爆炸并减速。", negativeOnDraw: true }
+    necro_bomb_token: { name: "骨炸弹", source: "负面牌", template: "direct_damage", config: { damage: "2d6", range: 0, target: "self" }, text: "使用后爆炸并减速。", negativeOnDraw: true },
+    negative_fumble: { name: "Fumble / 手忙脚乱", source: "负面牌", template: "negative_effect", config: { negativeEffectType: "fumble", fumbleBucket: "random" }, text: "使用后失去一个随机行动机会。", negativeOnDraw: true },
+    negative_vulnerable: { name: "Vulnerable / 破绽", source: "负面牌", template: "negative_effect", config: { negativeEffectType: "vulnerable", vulnerableBonus: 2, vulnerableScope: "any", vulnerableDuration: "next" }, text: "使用后下次受到任意伤害 +2。", negativeOnDraw: true },
+    negative_clumsy: { name: "Clumsy / 笨拙", source: "负面牌", template: "negative_effect", config: { negativeEffectType: "clumsy", clumsyChance: 25, clumsyScope: "any", clumsyDuration: "next" }, text: "使用后下一次攻击或技能有 25% 几率失败。", negativeOnDraw: true },
+    negative_panic: { name: "Panic / 惊慌", source: "负面牌", template: "negative_effect", config: { negativeEffectType: "panic", panicMode: "random_attack" }, text: "使用后随机弃掉一张攻击牌。", negativeOnDraw: true },
+    negative_chaos: { name: "Chaos / 混乱", source: "负面牌", template: "negative_effect", config: { negativeEffectType: "chaos", chaosCharges: 1 }, text: "使用后下一次伤害攻击会打到自己。", negativeOnDraw: true },
+    negative_blood: { name: "Blood / 生命代价", source: "负面牌", template: "negative_effect", config: { negativeEffectType: "blood", bloodDamage: 1 }, text: "使用后失去指定生命。", negativeOnDraw: true }
   },
   professions: {
     warrior: {

@@ -1,4 +1,4 @@
-
+﻿
 (() => {
   const $ = id => document.getElementById(id);
   const deep = o => JSON.parse(JSON.stringify(o));
@@ -21,8 +21,8 @@
     tickTiming: [['turn_start','turn_start'],['turn_end','turn_end'],['on_draw','on_draw']],
     rounding: [['floor','floor'],['ceil','ceil'],['round','round']],
     durationTurns: [['1','1'],['2','2'],['3','3'],['4','4'],['5','5'],['6','6'],['7','7'],['8','8'],['9','9'],['10','10']],
-    origin: [['','(空)'],['职业技能','职业技能'],['武器技能','武器技能'],['饰品技能','饰品技能'],['职业被动','职业被动']],
-    refundBucket: [['','不返还'],['class_or_guardian','返还职业卡次数'],['weapon_or_accessory','返还武器/饰品卡次数'],['basic_attack','返还普通攻击次数']],
+    origin: [['','(空)'],['职业技能','职业技能'],['武器技能','武器技能'],['饰品技能','饰品技能'],['护甲技能','护甲技能'],['靴子技能','靴子技能'],['咒物技能','咒物技能'],['职业被动','职业被动']],
+    refundBucket: [['','不返还'],['class_or_guardian','返还职业卡次数'],['weapon_or_accessory','返还武器卡次数'],['equipment_skill','返还装备卡次数'],['basic_attack','返还普通攻击次数']],
     controlType: [['stun','stun'],['root','root'],['disarm','disarm'],['sheep','sheep'],['silence','silence']],
     stackRule: [['refresh','refresh'],['stack','stack'],['replace','replace'],['refresh_duration','refresh_duration']],
     triggerCondition: [['on_hit','on_hit'],['on_draw','on_draw'],['on_enter','on_enter'],['turn_start','turn_start'],['turn_end','turn_end']],
@@ -34,14 +34,36 @@
     attackType: [['basic','basic'],['spell','spell'],['any','any']],
     onDrawEffect: [['damage','damage'],['discard','discard'],['status','status']],
     bonusType: [['buffBasic','buffBasic'],['bonusDie','bonusDie'],['draw','draw'],['block','block']],
-    affectedBuckets: [['class','class'],['weapon','weapon'],['accessory','accessory']],
-    exceptionBuckets: [['class','class'],['weapon','weapon'],['accessory','accessory']],
+    affectedBuckets: [['class','class'],['weapon','weapon'],['accessory','accessory'],['equipment','equipment']],
+    exceptionBuckets: [['class','class'],['weapon','weapon'],['accessory','accessory'],['equipment','equipment']],
+    negativeEffectType: [['fumble','Fumble / 手忙脚乱'],['vulnerable','Vulnerable / 破绽'],['clumsy','Clumsy / 笨拙'],['panic','Panic / 惊慌'],['chaos','Chaos / 混乱'],['blood','Blood / 生命代价']],
+    fumbleBucket: [['random','随机行动机会'],['basic_attack','普通攻击机会'],['weapon_or_accessory','武器技能机会'],['class_or_guardian','职业技能机会'],['equipment_skill','装备技能机会']],
+    vulnerableScope: [['any','任意伤害'],['attack','攻击伤害'],['basic','普通攻击'],['spell','法术伤害'],['hazard','地形/黑洞/尖刺'],['trap','陷阱'],['negative','负面牌']],
+    vulnerableDuration: [['next','下次'],['permanent','永久']],
+    clumsyScope: [['any','下一次攻击或技能'],['attack','下一次攻击'],['skill','下一次技能']],
+    clumsyDuration: [['next','下次'],['permanent','永久']],
+    panicMode: [['random_attack','随机弃一张攻击牌'],['highest_damage','弃掉最高伤害牌']],
+    turnStartNegativeEffect: [['','无'],['fumble','Fumble / 手忙脚乱'],['vulnerable','Vulnerable / 破绽'],['clumsy','Clumsy / 笨拙'],['panic','Panic / 惊慌'],['chaos','Chaos / 混乱'],['blood','Blood / 生命代价']],
   };
 
   function currentRuleset(){ return state.rulesetCache; }
+  function equipmentScopeInfo(scope = state.scope){
+    if(scope === 'weapon_cards') return { label: '武器', library: 'weaponLibrary', source: '武器技能', entity: 'weapon' };
+    if(scope === 'accessory_cards') return { label: '饰品', library: 'accessoryLibrary', source: '饰品技能', entity: 'accessory' };
+    if(scope === 'armor_cards') return { label: '护甲', library: 'armorLibrary', source: '护甲技能', entity: 'armor' };
+    if(scope === 'boots_cards') return { label: '靴子', library: 'bootsLibrary', source: '靴子技能', entity: 'boots' };
+    if(scope === 'relic_cards') return { label: '咒物', library: 'relicLibrary', source: '咒物技能', entity: 'relic' };
+    return null;
+  }
+  function isEquipmentCardScope(scope = state.scope){
+    return !!equipmentScopeInfo(scope);
+  }
   function currentEntityCollection(){
     if (state.scope === 'weapon_cards') return currentRuleset().data.weaponLibrary || {};
     if (state.scope === 'accessory_cards') return currentRuleset().data.accessoryLibrary || {};
+    if (state.scope === 'armor_cards') return currentRuleset().data.armorLibrary || {};
+    if (state.scope === 'boots_cards') return currentRuleset().data.bootsLibrary || {};
+    if (state.scope === 'relic_cards') return currentRuleset().data.relicLibrary || {};
     if (state.scope === 'negative_cards') return { negative_cards: { name: '负面牌库', cards: [] } };
     return currentRuleset().data.professions || {};
   }
@@ -52,7 +74,7 @@
     if (!entity) return {};
     if (state.scope === 'cards') return entity.cards || {};
     if (state.scope === 'passives') return entity.passives || {};
-    if (state.scope === 'weapon_cards' || state.scope === 'accessory_cards') {
+    if (isEquipmentCardScope()) {
       const out = {};
       (entity.cards || []).forEach(cardKey => {
         if (currentRuleset().data.cardLibrary?.[cardKey]) out[cardKey] = currentRuleset().data.cardLibrary[cardKey];
@@ -69,12 +91,11 @@
     return {};
   }
   function currentEntityLabel(){
-    if (state.scope === 'weapon_cards') return '武器';
-    if (state.scope === 'accessory_cards') return '饰品';
+    const equipment = equipmentScopeInfo();
+    if (equipment) return equipment.label;
     if (state.scope === 'negative_cards') return '负面牌';
     return '职业';
-  }
-  function currentEntityName(){
+  }  function currentEntityName(){
     return state.scope === 'negative_cards' ? '负面牌库' : (currentEntity()?.name || state.profession);
   }
 
@@ -129,6 +150,32 @@
       { range: 3, tokenName: '陷阱', tokenKind: 'trap_once_negative', durationTurns: 2, damage: '2d6', insertCardKey: '', insertCount: 1, attackRange: 4, controlType: '', controlDuration: 1, blocking: false },
       rs.data.templateDefaults.create_map_token || {}
     );
+
+    rs.data.templates.negative_effect = Object.assign(
+      {},
+      rs.data.templates.negative_effect || {},
+      {
+        label: '负面牌：通用负面效果',
+        desc: '使用后触发一个可配置的负面效果，如失去行动机会、破绽、笨拙、惊慌、混乱或生命代价。',
+        fields: [
+          ['negativeEffectType','负面效果','negativeEffectType'],
+          ['fumbleBucket','Fumble：失去机会','fumbleBucket'],
+          ['vulnerableBonus','Vulnerable：额外受伤','number'],
+          ['vulnerableScope','Vulnerable：伤害类型','vulnerableScope'],
+          ['vulnerableDuration','Vulnerable：持续','vulnerableDuration'],
+          ['clumsyChance','Clumsy：失败率 %','number'],
+          ['clumsyScope','Clumsy：影响范围','clumsyScope'],
+          ['clumsyDuration','Clumsy：持续','clumsyDuration'],
+          ['panicMode','Panic：弃牌方式','panicMode'],
+          ['chaosCharges','Chaos：次数','number'],
+          ['bloodDamage','Blood：失去生命','text']
+        ]
+      }
+    );
+    rs.data.templateDefaults.negative_effect = Object.assign(
+      { negativeEffectType: 'fumble', fumbleBucket: 'random', vulnerableBonus: 2, vulnerableScope: 'any', vulnerableDuration: 'next', clumsyChance: 25, clumsyScope: 'any', clumsyDuration: 'next', panicMode: 'random_attack', chaosCharges: 1, bloodDamage: 1 },
+      rs.data.templateDefaults.negative_effect || {}
+    );
     return rs;
   }
 
@@ -150,8 +197,9 @@
     state.rulesetId = id;
     STUDIO_RUNTIME.setActiveRulesetId(id);
     state.rulesetCache = mergeLatestSchemasIntoRuleset(deep(STUDIO_RUNTIME.findRuleset(id)));
-    if (!state.rulesetCache.data.professions[state.profession]) {
-      state.profession = Object.keys(state.rulesetCache.data.professions)[0];
+    const collection = currentEntityCollection();
+    if (!collection[state.profession]) {
+      state.profession = Object.keys(collection)[0];
     }
   }
 
@@ -192,7 +240,7 @@
     } else if (state.scope === 'passives') {
       entity.passives[state.entryKey] = deep(normalized);
       currentRuleset().data.cardLibrary[state.entryKey] = deep(normalized);
-    } else if (state.scope === 'weapon_cards' || state.scope === 'accessory_cards') {
+    } else if (isEquipmentCardScope()) {
       currentRuleset().data.cardLibrary[state.entryKey] = deep(normalized);
       entity.cards = entity.cards || [];
       if (!entity.cards.includes(state.entryKey)) entity.cards.push(state.entryKey);
@@ -320,7 +368,7 @@
     Object.entries(collection).forEach(([key, val]) => {
       const o = document.createElement('option');
       o.value = key;
-      const kind = state.scope === 'weapon_cards' ? 'weapon' : state.scope === 'accessory_cards' ? 'accessory' : state.scope === 'negative_cards' ? 'card' : 'profession';
+      const kind = equipmentScopeInfo()?.entity || (state.scope === 'negative_cards' ? 'card' : 'profession');
       o.textContent = I18N().entity(kind, key, val.name);
       sel.appendChild(o);
     });
@@ -631,6 +679,71 @@
     return wrap;
   }
 
+  function negativeEffectsEditor(effects, onChange) {
+    const wrap = document.createElement('div');
+    wrap.className = 'form-host';
+    const list = Array.isArray(effects) ? effects : [];
+    const fields = [
+      ['negativeEffectType','负面效果','negativeEffectType'],
+      ['fumbleBucket','Fumble：失去机会','fumbleBucket'],
+      ['vulnerableBonus','Vulnerable：额外受伤','number'],
+      ['vulnerableScope','Vulnerable：伤害类型','vulnerableScope'],
+      ['vulnerableDuration','Vulnerable：持续','vulnerableDuration'],
+      ['clumsyChance','Clumsy：失败率 %','number'],
+      ['clumsyScope','Clumsy：影响范围','clumsyScope'],
+      ['clumsyDuration','Clumsy：持续','clumsyDuration'],
+      ['panicMode','Panic：弃牌方式','panicMode'],
+      ['chaosCharges','Chaos：次数','number'],
+      ['bloodDamage','Blood：失去生命','text']
+    ];
+
+    function renderRow(effect, idx) {
+      const box = document.createElement('div');
+      box.className = 'panel';
+      box.style.padding = '12px';
+      box.innerHTML = `<div class="chip">负面效果 ${idx + 1}</div>`;
+      const grid = document.createElement('div');
+      grid.className = 'field-grid';
+      fields.forEach(([key, label, type]) => {
+        const field = document.createElement('div');
+        field.className = 'field';
+        const lab = document.createElement('label');
+        lab.textContent = label;
+        field.appendChild(lab);
+        field.appendChild(makeInput(key, type, effect[key], v => {
+          effect[key] = v;
+          onChange(list);
+        }));
+        grid.appendChild(field);
+      });
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'danger';
+      del.textContent = '删除这个负面效果';
+      del.onclick = () => {
+        list.splice(idx, 1);
+        onChange(list);
+        renderForm();
+      };
+      box.appendChild(grid);
+      box.appendChild(del);
+      return box;
+    }
+
+    list.forEach((effect, idx) => wrap.appendChild(renderRow(effect, idx)));
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'secondary';
+    add.textContent = '添加负面效果';
+    add.onclick = () => {
+      list.push({ negativeEffectType: 'fumble', fumbleBucket: 'random', vulnerableBonus: 2, vulnerableScope: 'any', vulnerableDuration: 'next', clumsyChance: 25, clumsyScope: 'any', clumsyDuration: 'next', panicMode: 'random_attack', chaosCharges: 1, bloodDamage: 1 });
+      onChange(list);
+      renderForm();
+    };
+    wrap.appendChild(add);
+    return wrap;
+  }
+
   function initTemplateConfig(templateKey) {
     ensureEditableRuleset();
     state.current.template = templateKey;
@@ -662,13 +775,15 @@
     const lines = [];
     lines.push(`Name: ${I18N().entity('card', state.entryKey, c.name)}`);
     lines.push(`Key: ${state.entryKey}`);
-    lines.push(`Source: ${I18N().entity('origin', c.source || (state.scope === 'cards' ? '职业技能' : state.scope === 'passives' ? '职业被动' : state.scope === 'weapon_cards' ? '武器技能' : '饰品技能'), c.source || (state.scope === 'cards' ? '职业技能' : state.scope === 'passives' ? '职业被动' : state.scope === 'weapon_cards' ? '武器技能' : '饰品技能'))}`);
+    const fallbackSource = state.scope === 'cards' ? '职业技能' : state.scope === 'passives' ? '职业被动' : equipmentScopeInfo()?.source || '饰品技能';
+    lines.push(`Source: ${I18N().entity('origin', c.source || fallbackSource, c.source || fallbackSource)}`);
     lines.push(`Template: ${I18N().entity('template', c.template, tpl?.label || c.template)}`);
     if (c.config.damage) lines.push(`Damage: ${c.config.damage}`);
     if (c.config.range != null) lines.push(`Range: ${c.config.range}`);
     if (c.config.radius != null) lines.push(`Radius: ${c.config.radius}`);
     if (c.config.buffBasic != null) lines.push(`Bonus: ${c.config.buffBasic}`);
     if (c.config.consumeOn) lines.push(`Consume On: ${c.config.consumeOn}`);
+    if (c.config.quick) lines.push('Quick: yes');
     if (c.config.dodgeNext) lines.push('Dodge: next damage');
     if (c.config.counterDamage) lines.push(`Counter Fixed: ${c.config.counterDamage}`);
     if (c.config.counterUseTakenDamage) lines.push('Counter: taken damage');
@@ -676,7 +791,10 @@
     if (c.config.reactiveMoveTrigger) lines.push(`Reactive Move: ${c.config.reactiveMoveTrigger} / ${c.config.reactiveMoveMaxDistance || 0}`);
     if (c.config.healOnDamaged) lines.push(`Heal On Damaged: ${c.config.healOnDamaged}`);
     if (c.config.disarmAttackerOnHit) lines.push(`Disarm Attacker: ${c.config.disarmAttackerOnHit}`);
+    if (c.config.lifestealPercent) lines.push(`Lifesteal: ${c.config.lifestealPercent}%`);
+    if (c.config.lifestealFlat) lines.push(`Lifesteal Flat: ${c.config.lifestealFlat}`);
     if (c.config.applyTemplate) lines.push(`Status Template: ${c.config.applyTemplate}`);
+    if (Array.isArray(c.config.negativeEffects) && c.config.negativeEffects.length) lines.push(`Negative Effects: ${c.config.negativeEffects.map(x => x.negativeEffectType || x.effectType).join(', ')}`);
     if (c.config.modes) lines.push(`Modes: ${c.config.modes.length}`);
     if (c.text) lines.push(`Description: ${c.text}`);
     $('friendly-preview').textContent = lines.join('\n');
@@ -713,10 +831,161 @@
     renderFriendlyPreview();
   }
 
+  function relicNegativeValueMeta(effectType) {
+    const map = {
+      vulnerable: { label: '破绽数值：下次额外受伤', placeholder: '例如 2' },
+      clumsy: { label: '笨拙数值：失败率 %', placeholder: '例如 25' },
+      chaos: { label: '混乱数值：触发次数', placeholder: '例如 1' },
+      blood: { label: 'Blood 数值：失去生命', placeholder: '例如 3' },
+    };
+    return map[effectType] || null;
+  }
+
+  function renderEntityField(grid, entity, key, label, type, onAfterChange = null) {
+    const field = document.createElement('div');
+    field.className = 'field';
+    const lab = document.createElement('label');
+    lab.textContent = label;
+    field.appendChild(lab);
+    field.appendChild(makeInput(key, type, entity[key], v => {
+      ensureEditableRuleset();
+      const target = currentEntity();
+      if (type === 'number') target[key] = Number(v || 0);
+      else target[key] = v;
+      if (onAfterChange) onAfterChange(target);
+      renderSummary();
+      renderFriendlyPreview();
+    }));
+    grid.appendChild(field);
+    return field;
+  }
+
+  function renderRelicEntityFields(host, entity, info) {
+    const box = document.createElement('div');
+    box.className = 'panel';
+    box.style.padding = '12px';
+    const title = document.createElement('div');
+    title.className = 'chip';
+    title.textContent = `${info.label}固定效果`;
+    box.appendChild(title);
+
+    const positiveTitle = document.createElement('div');
+    positiveTitle.className = 'muted';
+    positiveTitle.style.marginTop = '8px';
+    positiveTitle.textContent = '正面效果：常驻生效。';
+    box.appendChild(positiveTitle);
+    const positiveGrid = document.createElement('div');
+    positiveGrid.className = 'field-grid';
+    [
+      ['outgoingDamageHealFlat','每次造成伤害回血','number'],
+      ['outgoingDamageCritChance','造成伤害暴击率 %','number'],
+      ['outgoingDamageCritBonusDie','暴击追加骰','text'],
+      ['outgoingDamageCritMultiplier','暴击倍率','number'],
+      ['ignoreTargetReductionFlat','造成伤害无视减伤','number'],
+      ['moveBonus','每回合移动距离加成','number'],
+    ].forEach(([key, label, type]) => renderEntityField(positiveGrid, entity, key, label, type));
+    box.appendChild(positiveGrid);
+
+    const costTitle = document.createElement('div');
+    costTitle.className = 'muted';
+    costTitle.style.marginTop = '12px';
+    costTitle.textContent = '常驻代价：永久生效，不需要触发检定。';
+    box.appendChild(costTitle);
+    const costGrid = document.createElement('div');
+    costGrid.className = 'field-grid';
+    [
+      ['turnStartSelfDamage','每回合开始失去生命（固定代价）','number'],
+      ['incomingDamageBonus','永久额外受到伤害','number'],
+      ['hazardDamageBonus','永久额外受到地形伤害','number'],
+      ['outgoingAttackFailChance','永久攻击/技能失败率 %','number'],
+    ].forEach(([key, label, type]) => renderEntityField(costGrid, entity, key, label, type));
+    box.appendChild(costGrid);
+
+    const negativeTitle = document.createElement('div');
+    negativeTitle.className = 'muted';
+    negativeTitle.style.marginTop = '12px';
+    negativeTitle.textContent = '回合开始负面：先选择负面效果，再配置触发率和该效果需要的数值。';
+    box.appendChild(negativeTitle);
+    const negativeGrid = document.createElement('div');
+    negativeGrid.className = 'field-grid';
+    renderEntityField(negativeGrid, entity, 'turnStartNegativeEffect', '回合开始负面效果', 'turnStartNegativeEffect', () => {
+      renderForm();
+    });
+    const effectType = String(entity.turnStartNegativeEffect || '');
+    if(effectType){
+      renderEntityField(negativeGrid, entity, 'turnStartNegativeChance', '触发率 %', 'number');
+      const meta = relicNegativeValueMeta(effectType);
+      if(meta){
+        const field = renderEntityField(negativeGrid, entity, 'turnStartNegativePower', meta.label, 'number');
+        field.querySelector('input')?.setAttribute('placeholder', meta.placeholder);
+      }
+    }
+    box.appendChild(negativeGrid);
+    host.appendChild(box);
+  }
+
+  function renderEquipmentEntityFields(host) {
+    const info = equipmentScopeInfo();
+    const entity = currentEntity();
+    if (!info || !entity) return;
+    if (info.entity === 'relic') {
+      renderRelicEntityFields(host, entity, info);
+      return;
+    }
+    const fieldsByType = {
+      armor: [
+        ['maxHp','生命值','number'],
+        ['damageReductionFlat','固定减伤','number'],
+        ['damageReductionRoll','骰子减伤','text'],
+        ['incomingDamageBonus','额外受到伤害','number'],
+        ['outgoingAttackFailChance','攻击/技能失败率 %','number'],
+      ],
+      boots: [
+        ['moveBase','移动距离','number'],
+        ['hazardDamageReduction','地形/陷阱伤害减少','number'],
+        ['forcedMoveResistance','强制位移抗性','number'],
+        ['incomingDamageBonus','额外受到伤害','number'],
+        ['hazardDamageBonus','额外受到地形伤害','number'],
+        ['outgoingAttackFailChance','攻击/技能失败率 %','number'],
+      ],
+    };
+    const fields = fieldsByType[info.entity];
+    if (!fields) return;
+    const box = document.createElement('div');
+    box.className = 'panel';
+    box.style.padding = '12px';
+    const title = document.createElement('div');
+    title.className = 'chip';
+    title.textContent = `${info.label}固定效果`;
+    box.appendChild(title);
+    const grid = document.createElement('div');
+    grid.className = 'field-grid';
+    fields.forEach(([key, label, type]) => {
+      const field = document.createElement('div');
+      field.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      field.appendChild(lab);
+      field.appendChild(makeInput(key, type, entity[key], v => {
+        ensureEditableRuleset();
+        const target = currentEntity();
+        if (type === 'number') target[key] = Number(v || 0);
+        else target[key] = v;
+        renderSummary();
+        renderFriendlyPreview();
+      }));
+      grid.appendChild(field);
+    });
+    box.appendChild(grid);
+    host.appendChild(box);
+  }
+
   function renderForm() {
     if (!state.current) {
       $('form-title').textContent = '没有可编辑条目';
-      $('form-host').innerHTML = '';
+      const host = $('form-host');
+      host.innerHTML = '';
+      renderEquipmentEntityFields(host);
       $('friendly-preview').textContent = '';
       $('json-preview').value = '';
       renderStorageInfo();
@@ -732,8 +1001,9 @@
 
     const host = $('form-host');
     host.innerHTML = '';
-    const kind = state.scope === 'weapon_cards' ? 'weapon' : state.scope === 'accessory_cards' ? 'accessory' : 'profession';
+    const kind = equipmentScopeInfo()?.entity || 'profession';
     $('form-title').textContent = `${I18N().entity(kind, state.profession, currentEntityName())} / ${I18N().entity('card', state.entryKey, state.current.name)}`;
+    renderEquipmentEntityFields(host);
     const tpl = currentRuleset().data.templates[state.current.template];
     const note = document.createElement('div');
     note.className = 'muted';
@@ -742,7 +1012,13 @@
     const descField = document.createElement('div');
     descField.className = 'field';
     const descLab = document.createElement('label');
-    descLab.textContent = state.scope === 'cards' ? '卡牌描述' : state.scope === 'passives' ? '被动描述' : state.scope === 'weapon_cards' ? '武器卡描述' : '饰品卡描述';
+    descLab.textContent = state.scope === 'cards'
+      ? '卡牌描述'
+      : state.scope === 'passives'
+        ? '被动描述'
+        : state.scope === 'negative_cards'
+          ? '负面牌描述'
+          : `${equipmentScopeInfo()?.label || '饰品'}卡描述`;
     descField.appendChild(descLab);
     const descArea = document.createElement('textarea');
     descArea.rows = 3;
@@ -781,6 +1057,63 @@
       grid.appendChild(field);
     });
     host.appendChild(grid);
+
+    const quickField = document.createElement('div');
+    quickField.className = 'field';
+    const quickLabel = document.createElement('label');
+    quickLabel.textContent = '快速 / Quick（不占用行动桶）';
+    quickField.appendChild(quickLabel);
+    quickField.appendChild(makeInput('quick', 'boolean', !!state.current.config.quick, v => {
+      ensureEditableRuleset();
+      if(v) state.current.config.quick = true;
+      else delete state.current.config.quick;
+      syncCurrentEntryToCache();
+      renderFriendlyPreview();
+    }));
+    host.appendChild(quickField);
+
+    const negativeField = document.createElement('div');
+    negativeField.className = 'field';
+    const negativeLabel = document.createElement('label');
+    negativeLabel.textContent = '附加负面效果（可选，给任意技能添加代价）';
+    negativeField.appendChild(negativeLabel);
+    negativeField.appendChild(negativeEffectsEditor(state.current.config.negativeEffects || [], v => {
+      ensureEditableRuleset();
+      if(v.length) state.current.config.negativeEffects = v;
+      else delete state.current.config.negativeEffects;
+      syncCurrentEntryToCache();
+      renderFriendlyPreview();
+    }));
+    host.appendChild(negativeField);
+
+    const lifestealField = document.createElement('div');
+    lifestealField.className = 'field';
+    const lifestealLabel = document.createElement('label');
+    lifestealLabel.textContent = '附加吸血效果（可选，按实际伤害回血）';
+    lifestealField.appendChild(lifestealLabel);
+    const lifestealGrid = document.createElement('div');
+    lifestealGrid.className = 'field-grid';
+    [
+      ['lifestealPercent','吸血比例 %','number'],
+      ['lifestealFlat','固定吸血','number']
+    ].forEach(([key, label, type]) => {
+      const field = document.createElement('div');
+      field.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      field.appendChild(lab);
+      field.appendChild(makeInput(key, type, state.current.config[key] || 0, v => {
+        ensureEditableRuleset();
+        const n = Number(v || 0);
+        if(n > 0) state.current.config[key] = n;
+        else delete state.current.config[key];
+        syncCurrentEntryToCache();
+        renderFriendlyPreview();
+      }));
+      lifestealGrid.appendChild(field);
+    });
+    lifestealField.appendChild(lifestealGrid);
+    host.appendChild(lifestealField);
     renderStatusFields();
     renderStorageInfo();
     renderRulesetMeta();
@@ -840,6 +1173,66 @@
     persistRuleset(true, '新饰品已创建。');
   }
 
+  function createArmor() {
+    ensureEditableRuleset();
+    const key = (window.prompt('请输入新护甲 key，例如 light_armor / medium_armor / heavy_armor') || '').trim();
+    if (!key) return;
+    const rs = currentRuleset();
+    rs.data.armorLibrary = rs.data.armorLibrary || {};
+    if (rs.data.armorLibrary[key]) return alert('护甲 key 已存在。');
+    const displayName = (window.prompt('请输入护甲显示名称') || key).trim() || key;
+    rs.data.armorLibrary[key] = { key, name: displayName, maxHp: 55, damageReductionFlat: 2, damageReductionRoll: '', incomingDamageBonus: 0, outgoingAttackFailChance: 0, cards: [] };
+    state.scope = 'armor_cards';
+    state.profession = key;
+    state.entryKey = null;
+    persistRuleset(true, '新护甲已创建。');
+  }
+
+  function createBoots() {
+    ensureEditableRuleset();
+    const key = (window.prompt('请输入新靴子 key，例如 swift_boots / trail_boots / anchor_boots') || '').trim();
+    if (!key) return;
+    const rs = currentRuleset();
+    rs.data.bootsLibrary = rs.data.bootsLibrary || {};
+    if (rs.data.bootsLibrary[key]) return alert('靴子 key 已存在。');
+    const displayName = (window.prompt('请输入靴子显示名称') || key).trim() || key;
+    rs.data.bootsLibrary[key] = { key, name: displayName, moveBase: 4, hazardDamageReduction: 1, forcedMoveResistance: 0, incomingDamageBonus: 0, outgoingAttackFailChance: 0, cards: [] };
+    state.scope = 'boots_cards';
+    state.profession = key;
+    state.entryKey = null;
+    persistRuleset(true, '新靴子已创建。');
+  }
+
+  function createRelic() {
+    ensureEditableRuleset();
+    const key = (window.prompt('请输入新咒物 key，例如 blood_pact_relic / chaos_relic') || '').trim();
+    if (!key) return;
+    const rs = currentRuleset();
+    rs.data.relicLibrary = rs.data.relicLibrary || {};
+    if (rs.data.relicLibrary[key]) return alert('咒物 key 已存在。');
+    const displayName = (window.prompt('请输入咒物显示名称') || key).trim() || key;
+    rs.data.relicLibrary[key] = {
+      key,
+      name: displayName,
+      outgoingDamageHealFlat: 0,
+      outgoingDamageCritChance: 0,
+      outgoingDamageCritBonusDie: '',
+      ignoreTargetReductionFlat: 0,
+      moveBonus: 0,
+      turnStartSelfDamage: 0,
+      incomingDamageBonus: 0,
+      hazardDamageBonus: 0,
+      outgoingAttackFailChance: 0,
+      turnStartNegativeEffect: '',
+      turnStartNegativeChance: 0,
+      turnStartNegativePower: 1,
+      cards: []
+    };
+    state.scope = 'relic_cards';
+    state.profession = key;
+    state.entryKey = null;
+    persistRuleset(true, '新咒物已创建。');
+  }
   function createProfession() {
     ensureEditableRuleset();
     const key = (window.prompt('请输入新职业 key，例如 monk / engineer / druid2') || '').trim();
@@ -890,10 +1283,10 @@
     const collection = entries();
     if (collection[newKey]) return alert('key 已存在。');
     const templateKey = 'direct_damage';
-    const source = state.scope === 'cards' ? '职业技能' : state.scope === 'passives' ? '职业被动' : state.scope === 'weapon_cards' ? '武器技能' : state.scope === 'accessory_cards' ? '饰品技能' : '负面牌';
+    const source = state.scope === 'cards' ? '职业技能' : state.scope === 'passives' ? '职业被动' : equipmentScopeInfo()?.source || '负面牌';
     const chosenTemplate = state.scope === 'negative_cards' ? 'negative_direct_damage' : templateKey;
     const entry = { name: newKey, source, template: chosenTemplate, config: deep(currentRuleset().data.templateDefaults[chosenTemplate]), text: '', negativeOnDraw: state.scope === 'negative_cards' };
-    if (state.scope === 'weapon_cards' || state.scope === 'accessory_cards' || state.scope === 'negative_cards') {
+    if (isEquipmentCardScope() || state.scope === 'negative_cards') {
       currentRuleset().data.cardLibrary[newKey] = deep(entry);
       currentEntity().cards = currentEntity().cards || [];
       currentEntity().cards.push(newKey);
@@ -914,7 +1307,7 @@
     const newKey = (typed && typed !== state.entryKey) ? typed : `${state.entryKey}_copy`;
     const collection = entries();
     if (collection[newKey]) return alert('key 已存在。');
-    if (state.scope === 'weapon_cards' || state.scope === 'accessory_cards' || state.scope === 'negative_cards') {
+    if (isEquipmentCardScope() || state.scope === 'negative_cards') {
       currentRuleset().data.cardLibrary[newKey] = deep(state.current);
       currentRuleset().data.cardLibrary[newKey].name = `${state.current.name} Copy`;
       if (state.scope !== 'negative_cards') { currentEntity().cards = currentEntity().cards || []; currentEntity().cards.push(newKey); }
@@ -937,7 +1330,7 @@
     if (newKey === state.entryKey) return alert('请输入不同的 key。');
     const collection = entries();
     if (collection[newKey]) return alert('key 已存在。');
-    if (state.scope === 'weapon_cards' || state.scope === 'accessory_cards' || state.scope === 'negative_cards') {
+    if (isEquipmentCardScope() || state.scope === 'negative_cards') {
       currentRuleset().data.cardLibrary[newKey] = deep(currentRuleset().data.cardLibrary[state.entryKey]);
       delete currentRuleset().data.cardLibrary[state.entryKey];
       if (state.scope !== 'negative_cards') currentEntity().cards = (currentEntity().cards || []).map(k => k === state.entryKey ? newKey : k);
@@ -959,7 +1352,7 @@
     const collection = entries();
     const keys = Object.keys(collection);
     if (keys.length <= 1) return alert('至少保留一个条目。');
-    if (state.scope === 'weapon_cards' || state.scope === 'accessory_cards' || state.scope === 'negative_cards') {
+    if (isEquipmentCardScope() || state.scope === 'negative_cards') {
       delete currentRuleset().data.cardLibrary[state.entryKey];
       if (state.scope !== 'negative_cards') {
         currentEntity().cards = (currentEntity().cards || []).filter(k => k !== state.entryKey);
@@ -1044,7 +1437,7 @@
 
     $('ruleset-select').onchange = () => {
       loadRulesetIntoState($('ruleset-select').value);
-      state.profession = Object.keys(state.rulesetCache.data.professions)[0];
+      state.profession = Object.keys(currentEntityCollection())[0];
       renderProfessions();
       renderEntries();
       renderForm();
@@ -1083,6 +1476,9 @@
     if ($('btn-new-profession')) $('btn-new-profession').onclick = createProfession;
     if ($('btn-new-weapon')) $('btn-new-weapon').onclick = createWeapon;
     if ($('btn-new-accessory')) $('btn-new-accessory').onclick = createAccessory;
+    if ($('btn-new-armor')) $('btn-new-armor').onclick = createArmor;
+    if ($('btn-new-boots')) $('btn-new-boots').onclick = createBoots;
+    if ($('btn-new-relic')) $('btn-new-relic').onclick = createRelic;
     $('btn-new').onclick = createEntry;
     $('btn-rename-entry').onclick = renameEntry;
     $('btn-duplicate').onclick = duplicateEntry;

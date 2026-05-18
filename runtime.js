@@ -119,6 +119,30 @@ window.STUDIO_RUNTIME = (() => {
         data.accessoryLibrary[k].cards = mergeArrayUnique(v.cards || [], data.accessoryLibrary[k].cards || []);
       }
     });
+    data.armorLibrary = data.armorLibrary || {};
+    Object.entries(baseData.armorLibrary || {}).forEach(([k, v]) => {
+      if (!data.armorLibrary[k]) data.armorLibrary[k] = deep(v);
+      else {
+        data.armorLibrary[k] = Object.assign({}, deep(v), data.armorLibrary[k]);
+        data.armorLibrary[k].cards = mergeArrayUnique(v.cards || [], data.armorLibrary[k].cards || []);
+      }
+    });
+    data.bootsLibrary = data.bootsLibrary || {};
+    Object.entries(baseData.bootsLibrary || {}).forEach(([k, v]) => {
+      if (!data.bootsLibrary[k]) data.bootsLibrary[k] = deep(v);
+      else {
+        data.bootsLibrary[k] = Object.assign({}, deep(v), data.bootsLibrary[k]);
+        data.bootsLibrary[k].cards = mergeArrayUnique(v.cards || [], data.bootsLibrary[k].cards || []);
+      }
+    });
+    data.relicLibrary = data.relicLibrary || {};
+    Object.entries(baseData.relicLibrary || {}).forEach(([k, v]) => {
+      if (!data.relicLibrary[k]) data.relicLibrary[k] = deep(v);
+      else {
+        data.relicLibrary[k] = Object.assign({}, deep(v), data.relicLibrary[k]);
+        data.relicLibrary[k].cards = mergeArrayUnique(v.cards || [], data.relicLibrary[k].cards || []);
+      }
+    });
     data.professions = data.professions || {};
     Object.entries(baseData.professions || {}).forEach(([k, v]) => {
       if (!data.professions[k]) data.professions[k] = deep(v);

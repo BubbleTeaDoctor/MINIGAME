@@ -119,11 +119,14 @@
     return bridgeState.initPromise;
   }
 
-  async function roll(notation) {
+  async function roll(notation, options = {}) {
     try {
       await waitForHostReady();
       const box = await ensureDiceBox();
       updateHostResolution();
+      if (typeof options.isCanceled === 'function' && options.isCanceled()) {
+        throw new Error(`Dice Box roll canceled before start: ${notation}`);
+      }
       box.show();
       if (typeof box.resizeWorld === 'function') box.resizeWorld();
       await box.updateConfig({
@@ -132,7 +135,14 @@
         offscreen: false,
         suspendSimulation: false,
       });
+      if (typeof options.isCanceled === 'function' && options.isCanceled()) {
+        box.hide('dice-box-canvas--hide');
+        throw new Error(`Dice Box roll canceled before animation: ${notation}`);
+      }
       bridgeState.lastError = null;
+      if (typeof options.onStarted === 'function') {
+        options.onStarted({ notation });
+      }
       const results = await box.roll(notation, { theme: 'diceOfRolling' });
       bridgeState.lastInfo = `roll:${notation}:${Array.isArray(results) ? results.length : 0}`;
       return results;
