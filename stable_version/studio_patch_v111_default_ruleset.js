@@ -1,9 +1,9 @@
 (() => {
-  // Generated from external v1.2 ruleset. Keep this as the final default ruleset patch.
+  // Generated from external v1.2 ruleset, with card art paths normalized for GitHub Pages.
   const exportedRuleset = {
-  "id": "rs_mou28t0m_5sz",
+  "id": "default-v12-card-art-fixed",
   "name": "职业加强 v 1.2",
-  "editable": true,
+  "editable": false,
   "data": {
     "version": "0.9.1",
     "templates": {
@@ -1624,7 +1624,8 @@
           "x": 0,
           "y": 125,
           "scale": 1.25
-        }
+        },
+        "art": "assets/card_art/碾压打击.png"
       },
       "weapon_charge": {
         "name": "武器冲锋",
@@ -1656,7 +1657,8 @@
             "slow": 1
           }
         },
-        "text": "直线 1D4 伤害并减速。"
+        "text": "直线 1D4 伤害并减速。",
+        "art": "assets/card_art/bow_pin.png"
       },
       "bow_step": {
         "name": "滑步",
@@ -1666,7 +1668,8 @@
           "range": 2,
           "target": "tile"
         },
-        "text": "移动到 2 格内空位。"
+        "text": "移动到 2 格内空位。",
+        "art": "assets/card_art/bow_step.png"
       },
       "dagger_step": {
         "name": "滑步",
@@ -1743,7 +1746,8 @@
             "size": 54,
             "y": 10
           }
-        }
+        },
+        "art": "assets/card_art/acc_nullify.png"
       },
       "acc_trap": {
         "name": "尖刺陷阱",
@@ -1772,7 +1776,8 @@
           "title": {
             "y": 6
           }
-        }
+        },
+        "art": "assets/card_art/acc_trap.png"
       },
       "acc_hope": {
         "name": "曙光",
@@ -1793,7 +1798,8 @@
           "title": {
             "y": 6
           }
-        }
+        },
+        "art": "assets/card_art/acc_hope.png"
       },
       "relic_blood_pact": {
         "name": "血契斩",
@@ -1911,7 +1917,8 @@
           }
         },
         "text": "抽到即爆炸并减速。",
-        "negativeOnDraw": true
+        "negativeOnDraw": true,
+        "art": "assets/card_art/骨炸弹.png"
       },
       "negative_fumble": {
         "name": "Fumble / 手忙脚乱",
@@ -2048,7 +2055,8 @@
           "range": 1,
           "target": "enemy"
         },
-        "text": "近战造成 1D8 伤害。"
+        "text": "近战造成 1D8 伤害。",
+        "art": "assets/card_art/hammer_break.png"
       },
       "wand_burst": {
         "name": "点燃",
@@ -2112,7 +2120,8 @@
           "x": -5,
           "y": 97,
           "scale": 1
-        }
+        },
+        "art": "assets/card_art/图腾震击.png"
       },
       "acc_blood_phial": {
         "name": "嗜血药剂",
@@ -2133,7 +2142,8 @@
           "title": {
             "y": 5
           }
-        }
+        },
+        "art": "assets/card_art/acc_blood_phial.png"
       },
       "acc_time_rewind": {
         "name": "时光倒流",
@@ -2166,7 +2176,8 @@
           "title": {
             "y": 6
           }
-        }
+        },
+        "art": "assets/card_art/acc_time_rewind.png"
       },
       "acc_void_core": {
         "name": "虚空轰炸",
@@ -2189,7 +2200,8 @@
           "title": {
             "y": 7
           }
-        }
+        },
+        "art": "assets/card_art/acc_void_core.png"
       },
       "acc_holy_icon": {
         "name": "圣火",
@@ -2216,7 +2228,8 @@
           "title": {
             "y": 9
           }
-        }
+        },
+        "art": "assets/card_art/acc_holy_icon.png"
       },
       "hunter_snare_token": {
         "name": "束缚陷阱",
@@ -2232,7 +2245,8 @@
           }
         },
         "text": "抽到即触发，受到 2D6 伤害并减速。",
-        "negativeOnDraw": true
+        "negativeOnDraw": true,
+        "art": "assets/card_art/束缚陷阱.png"
       },
       "acc_lincoln_guard": {
         "name": "护幕",
@@ -2252,7 +2266,8 @@
           "title": {
             "y": 9
           }
-        }
+        },
+        "art": "assets/card_art/acc_lincoln_guard.png"
       },
       "acc_trap_spike": {
         "name": "追猎陷阱",
@@ -2275,7 +2290,8 @@
           "title": {
             "y": 7
           }
-        }
+        },
+        "art": "assets/card_art/acc_trap_spike.png"
       },
       "acc_hope_guard": {
         "name": "晨光庇护",
@@ -2297,7 +2313,8 @@
           "title": {
             "y": 6
           }
-        }
+        },
+        "art": "assets/card_art/acc_hope_guard.png"
       },
       "armor_guard_step": {
         "name": "闪避",
@@ -2308,7 +2325,8 @@
           "consumeOn": "immediate",
           "dodgeNext": true
         },
-        "text": "获得1次闪避，持续一回合\n"
+        "text": "获得1次闪避，持续一回合\n",
+        "art": "assets/card_art/闪避.png"
       },
       "armor_brace": {
         "name": "稳固防守",
@@ -2324,7 +2342,8 @@
           "x": 0,
           "y": 0,
           "scale": 1
-        }
+        },
+        "art": "assets/card_art/稳固防守.png"
       },
       "armor_bulwark": {
         "name": "壁垒姿态",
@@ -2335,7 +2354,8 @@
           "disarmAttackerOnHit": 1,
           "consumeOn": "until_triggered"
         },
-        "text": "获得 1D6 格挡，被击中后缴械攻击者。"
+        "text": "获得 1D6 格挡，被击中后缴械攻击者。",
+        "art": "assets/card_art/壁垒姿态.png"
       },
       "boots_dash": {
         "name": "疾行",
@@ -2345,7 +2365,8 @@
           "range": 3,
           "target": "tile"
         },
-        "text": "移动到 3 格内空位。"
+        "text": "移动到 3 格内空位。",
+        "art": "assets/card_art/疾行.png"
       },
       "boots_sidestep": {
         "name": "侧步",
@@ -2365,7 +2386,8 @@
           "desc": {
             "y": 45
           }
-        }
+        },
+        "art": "assets/card_art/侧步.png"
       },
       "boots_anchor": {
         "name": "扎根",
@@ -2376,7 +2398,8 @@
           "dodgeNext": true,
           "consumeOn": "until_triggered"
         },
-        "text": "获得 1D4 格挡，并闪避下一次伤害。"
+        "text": "获得 1D4 格挡，并闪避下一次伤害。",
+        "art": "assets/card_art/扎根.png"
       },
       "hunter_trap": {
         "name": "束缚陷阱",
@@ -2399,7 +2422,8 @@
           "desc": {
             "y": 68
           }
-        }
+        },
+        "art": "assets/card_art/束缚陷阱.png"
       },
       "hunter_command": {
         "name": "杀戮命令",
@@ -2436,7 +2460,8 @@
           "healOnDamaged": "1D5",
           "counterDamage": "5"
         },
-        "text": "在受伤后回复1D5，同时获得格挡1D5，并对攻击者反伤5点伤害。"
+        "text": "在受伤后回复1D5，同时获得格挡1D5，并对攻击者反伤5点伤害。",
+        "art": "assets/card_art/圣光庇护.png"
       },
       "priest_judgement": {
         "name": "审判",
@@ -2505,7 +2530,8 @@
           "desc": {
             "y": 20
           }
-        }
+        },
+        "art": "assets/card_art/亡者军势.png"
       },
       "lock_bloodpact": {
         "name": "血契",
@@ -2526,7 +2552,8 @@
           "desc": {
             "y": 32
           }
-        }
+        },
+        "art": "assets/card_art/血契.png"
       },
       "lock_doom": {
         "name": "厄运",
@@ -2539,7 +2566,8 @@
           "triggerCondition": "on_hit",
           "shuffleIntoDeck": true
         },
-        "text": "诅咒对方，当对方抽到厄运降临时，受到大量伤害。"
+        "text": "诅咒对方，当对方抽到厄运降临时，受到大量伤害。",
+        "art": "assets/card_art/厄运.png"
       },
       "sword_focus": {
         "name": "心眼",
@@ -2550,7 +2578,8 @@
           "block": "1d4",
           "consumeOn": "next_basic_attack"
         },
-        "text": "获得少量格挡，下次普攻 +2。"
+        "text": "获得少量格挡，下次普攻 +2。",
+        "art": "assets/card_art/心眼.png"
       },
       "shaman_tide": {
         "name": "潮汐之涌",
@@ -2852,7 +2881,8 @@
           "desc": {
             "y": 67
           }
-        }
+        },
+        "art": "assets/card_art/反击架势.png"
       },
       "sword_shadowstep": {
         "name": "影踏",
@@ -2879,7 +2909,8 @@
             "isControlTag": true
           }
         },
-        "text": "将敌人击晕"
+        "text": "将敌人击晕",
+        "art": "assets/card_art/hammer_quake.png"
       },
       "wand_shield": {
         "name": "*快速*奥术护盾",
@@ -2932,7 +2963,8 @@
           "consumeOn": "until_triggered",
           "counterUseTakenDamage": true
         },
-        "text": "获得 1D6 格挡，并反击受到的伤害。"
+        "text": "获得 1D6 格挡，并反击受到的伤害。",
+        "art": "assets/card_art/反击图腾.png"
       },
       "acc_blood_surge": {
         "name": "沸血",
@@ -2955,7 +2987,8 @@
           "title": {
             "y": 6
           }
-        }
+        },
+        "art": "assets/card_art/acc_blood_surge.png"
       },
       "acc_time_echo": {
         "name": "预判",
@@ -2976,7 +3009,8 @@
           "title": {
             "y": 7
           }
-        }
+        },
+        "art": "assets/card_art/acc_time_echo.png"
       },
       "acc_void_blast": {
         "name": "虚空传送",
@@ -2996,7 +3030,8 @@
           "title": {
             "y": 8
           }
-        }
+        },
+        "art": "assets/card_art/acc_void_blast.png"
       },
       "acc_holy_guard": {
         "name": "圣光守护",
@@ -3017,7 +3052,8 @@
           "title": {
             "y": 8
           }
-        }
+        },
+        "art": "assets/card_art/acc_holy_guard.png"
       },
       "warrior_passive": {
         "name": "战士被动",
@@ -3274,7 +3310,8 @@
             "size": 58
           }
         },
-        "cardText": "1D6伤害\nDOT3回合\n每回合1D6"
+        "cardText": "1D6伤害\nDOT3回合\n每回合1D6",
+        "art": "assets/card_art/腐蚀.png"
       },
       "武僧_passive": {
         "name": "连击",
@@ -3436,7 +3473,8 @@
           "title": {
             "y": 8
           }
-        }
+        },
+        "art": "assets/card_art/口袋炮塔.png"
       },
       "sword_parry": {
         "name": "见切",
@@ -3452,7 +3490,8 @@
           "x": 0,
           "y": 0,
           "scale": 1
-        }
+        },
+        "art": "assets/card_art/见切.png"
       },
       "warrior_charge": {
         "name": "冲锋",
@@ -3474,7 +3513,8 @@
           "desc": {
             "size": 60
           }
-        }
+        },
+        "art": "assets/card_art/冲锋.png"
       },
       "warrior_rage": {
         "name": "暴怒/强力射击",
@@ -3600,7 +3640,8 @@
             "x": -2
           }
         },
-        "cardText": "造成1D10伤害\n下一回合最多造成10次流血，每次1点伤害"
+        "cardText": "造成1D10伤害\n下一回合最多造成10次流血，每次1点伤害",
+        "art": "assets/card_art/割裂.png"
       },
       "warrior_hamstring": {
         "name": "断筋",
@@ -3631,7 +3672,8 @@
             "size": 64,
             "y": 36
           }
-        }
+        },
+        "art": "assets/card_art/断筋.png"
       },
       "mage_fireball": {
         "name": "火球",
@@ -3657,7 +3699,8 @@
           "y": 0,
           "scale": 1
         },
-        "cardText": "直线飞出的火球，造成2D8伤害并点燃1回合，1D6伤害。"
+        "cardText": "直线飞出的火球，造成2D8伤害并点燃1回合，1D6伤害。",
+        "art": "assets/card_art/火球.png"
       },
       "mage_nova": {
         "name": "冰霜新星",
@@ -3683,7 +3726,8 @@
           "x": 0,
           "y": 139,
           "scale": 1.25
-        }
+        },
+        "art": "assets/card_art/冰霜新星.png"
       },
       "mage_blink": {
         "name": "闪现*快速*",
@@ -3733,7 +3777,8 @@
           "x": -17,
           "y": 137,
           "scale": 1.3
-        }
+        },
+        "art": "assets/card_art/相位转移.png"
       },
       "rogue_ambush": {
         "name": "偷袭*快速*",
@@ -3812,7 +3857,8 @@
           "desc": {
             "y": 87
           }
-        }
+        },
+        "art": "assets/card_art/缴械.png"
       },
       "rogue_assassinate": {
         "name": "刺杀",
@@ -3843,7 +3889,8 @@
           "desc": {
             "y": 30
           }
-        }
+        },
+        "art": "assets/card_art/刺杀.png"
       },
       "rogue_step": {
         "name": "瞬步",
@@ -3886,7 +3933,8 @@
           "desc": {
             "y": 42
           }
-        }
+        },
+        "art": "assets/card_art/血腥合剂.png"
       },
       "rogue_feast": {
         "name": "杀戮盛宴",
@@ -3914,7 +3962,8 @@
           "desc": {
             "y": 54
           }
-        }
+        },
+        "art": "assets/card_art/杀戮盛宴.png"
       },
       "priest_pain": {
         "name": "痛苦",
@@ -3937,7 +3986,8 @@
           "x": 0,
           "y": 0,
           "scale": 1
-        }
+        },
+        "art": "assets/card_art/痛苦.png"
       },
       "priest_smite": {
         "name": "惩戒化身",
@@ -3964,7 +4014,8 @@
           "desc": {
             "size": 56
           }
-        }
+        },
+        "art": "assets/card_art/惩戒化身.png"
       },
       "priest_heal": {
         "name": "快速治疗*快速*",
@@ -4013,7 +4064,8 @@
             "y": 31
           }
         },
-        "cardText": "命中后向对方牌库\n塞入2张炸弹牌"
+        "cardText": "命中后向对方牌库\n塞入2张炸弹牌",
+        "art": "assets/card_art/埋骨炸弹.png"
       },
       "necro_burst": {
         "name": "*快速*亡灵爆发",
@@ -4124,7 +4176,8 @@
           "target": "enemy",
           "spell": true
         },
-        "text": "造成 2D8 法术伤害。"
+        "text": "造成 2D8 法术伤害。",
+        "art": "assets/card_art/灵魂火.png"
       },
       "doom": {
         "name": "Doom",
@@ -4140,7 +4193,8 @@
           "x": 0,
           "y": 0,
           "scale": 1
-        }
+        },
+        "art": "assets/card_art/doom.png"
       },
       "lock_nightdash": {
         "name": "暗夜冲刺",
@@ -4150,7 +4204,8 @@
           "damage": "1d6",
           "range": 5
         },
-        "text": "冲向目标并造成 1D6 伤害。"
+        "text": "冲向目标并造成 1D6 伤害。",
+        "art": "assets/card_art/暗夜冲刺.png"
       },
       "sword_read": {
         "name": "*快速*看破",
@@ -4206,7 +4261,8 @@
           "bonusDamage": "10",
           "consumeMark": true
         },
-        "text": "若目标被标记，则造成更高伤害并移除标记。"
+        "text": "若目标被标记，则造成更高伤害并移除标记。",
+        "art": "assets/card_art/燕返.png"
       },
       "sword_flash": {
         "name": "一闪",
@@ -4221,7 +4277,8 @@
           "x": 0,
           "y": 44,
           "scale": 1
-        }
+        },
+        "art": "assets/card_art/一闪.png"
       },
       "hunter_mark": {
         "name": "*快速*猎人印记",
@@ -4287,7 +4344,8 @@
             "y": 68
           }
         },
-        "cardText": "基础1d12\n标记目标额外1d14"
+        "cardText": "基础1d12\n标记目标额外1d14",
+        "art": "assets/card_art/狙击.png"
       },
       "hunter_disengage": {
         "name": "逃脱",
@@ -4307,7 +4365,8 @@
           "desc": {
             "y": 72
           }
-        }
+        },
+        "art": "assets/card_art/逃脱.png"
       },
       "飞龙在天": {
         "name": "飞龙在天",
@@ -4393,7 +4452,8 @@
           "basicAttackCapDelta": 0
         },
         "text": "打磨利刃，增加下一次普通攻击伤害 1D8。",
-        "negativeOnDraw": false
+        "negativeOnDraw": false,
+        "art": "assets/card_art/打磨利刃.png"
       },
       "变羊": {
         "name": "变羊",
@@ -4422,7 +4482,8 @@
           "desc": {
             "y": 16
           }
-        }
+        },
+        "art": "assets/card_art/变羊.png"
       },
       "shaman_earthshield": {
         "name": "大地之盾",
@@ -4456,7 +4517,8 @@
             "y": 28
           }
         },
-        "cardText": "沿直线在远距离造成 1D10 法术伤害"
+        "cardText": "沿直线在远距离造成 1D10 法术伤害",
+        "art": "assets/card_art/骨矛.png"
       },
       "lock_leech": {
         "name": "吸血",
@@ -4525,7 +4587,8 @@
           "y": 0,
           "scale": 1
         },
-        "cardTemplate": "monk"
+        "cardTemplate": "monk",
+        "art": "assets/card_art/一醉方休.png"
       },
       "快速修理": {
         "name": "快速修理",
@@ -4559,7 +4622,8 @@
           "title": {
             "y": 9
           }
-        }
+        },
+        "art": "assets/card_art/快速修理.png"
       },
       "mage_lightning": {
         "name": "雷击",
@@ -4581,7 +4645,8 @@
           "desc": {
             "y": 41
           }
-        }
+        },
+        "art": "assets/card_art/雷击.png"
       },
       "招架": {
         "name": "招架",
@@ -4605,7 +4670,8 @@
           "consumeOn": "immediate"
         },
         "text": "获得1d4格挡，并使下一次普通攻击额外获得2点伤害",
-        "negativeOnDraw": false
+        "negativeOnDraw": false,
+        "art": "assets/card_art/招架.png"
       },
       "吸血射击": {
         "name": "吸血射击",
@@ -4620,7 +4686,8 @@
           "lifestealPercent": 100
         },
         "text": "造成一次武器伤害并吸血",
-        "negativeOnDraw": false
+        "negativeOnDraw": false,
+        "art": "assets/card_art/吸血射击.png"
       },
       "投掷": {
         "name": "投掷",
@@ -4664,7 +4731,8 @@
           "desc": {
             "y": 42
           }
-        }
+        },
+        "art": "assets/card_art/神圣立场.png"
       },
       "shaman_shock": {
         "name": "震击",
@@ -4692,7 +4760,8 @@
           "desc": {
             "y": 40
           }
-        }
+        },
+        "art": "assets/card_art/震击.png"
       },
       "shaman_windfury": {
         "name": "风怒",
@@ -4737,7 +4806,8 @@
           "title": {
             "size": 43
           }
-        }
+        },
+        "art": "assets/card_art/召唤骷髅.png"
       },
       "necro_bonedragon": {
         "name": "召唤骨龙",
@@ -4757,7 +4827,8 @@
           "desc": {
             "y": 55
           }
-        }
+        },
+        "art": "assets/card_art/召唤骨龙.png"
       },
       "hunter_aimed": {
         "name": "瞄准射击",
@@ -4779,7 +4850,8 @@
           "desc": {
             "y": 62
           }
-        }
+        },
+        "art": "assets/card_art/瞄准射击.png"
       }
     },
     "professions": {
@@ -7249,6 +7321,6 @@
     }
   }
 };
-  window.DEFAULT_STUDIO_RULESET_NAME = exportedRuleset.name || "职业加强 v1.2";
+  window.DEFAULT_STUDIO_RULESET_NAME = exportedRuleset.name || "职业加强 v 1.2";
   window.DEFAULT_STUDIO_DATA = exportedRuleset.data || {};
 })();
