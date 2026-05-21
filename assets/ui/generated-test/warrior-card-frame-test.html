@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warrior Card Frame Layer Test</title>
+  <style>
+    :root {
+      --frame-w: 1085;
+      --frame-h: 1449;
+      --card-w: 280px;
+      --bg: #1f1c18;
+      --ink: #f8edcf;
+      --muted: #dac79a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(171, 94, 39, .16), transparent 32rem),
+        linear-gradient(135deg, #241a12, #15120f 55%, #221711);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+      padding: 28px;
+    }
+
+    .test-grid {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 24px;
+    }
+
+    .sample {
+      display: grid;
+      gap: 10px;
+    }
+
+    .sample h2 {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .warrior-card {
+      position: relative;
+      width: var(--card-w);
+      aspect-ratio: 1085 / 1449;
+      overflow: visible;
+      isolation: isolate;
+    }
+
+    .warrior-card > img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .warrior-card .base { z-index: 0; }
+    .warrior-card .content { z-index: 1; }
+    .warrior-card .overlay { z-index: 2; }
+
+    .card-slot,
+    .text-slot {
+      position: absolute;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    .art-slot {
+      left: calc(190 / var(--frame-w) * 100%);
+      top: calc(300 / var(--frame-h) * 100%);
+      width: calc(712 / var(--frame-w) * 100%);
+      height: calc(672 / var(--frame-h) * 100%);
+      border-radius: calc(28 / var(--frame-w) * 100%);
+      background:
+        radial-gradient(circle at 50% 34%, rgba(255, 230, 160, .55), transparent 18%),
+        linear-gradient(145deg, rgba(92, 22, 17, .95), rgba(34, 16, 14, .98) 42%, rgba(128, 48, 22, .95)),
+        repeating-linear-gradient(45deg, rgba(255,255,255,.08) 0 2px, transparent 2px 18px);
+    }
+
+    .art-slot::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(120deg, transparent 0 42%, rgba(255, 220, 120, .22) 46%, transparent 52%),
+        radial-gradient(circle at 28% 78%, rgba(240, 82, 44, .42), transparent 24%);
+    }
+
+    .name-slot {
+      left: calc(246 / var(--frame-w) * 100%);
+      top: calc(214 / var(--frame-h) * 100%);
+      width: calc(578 / var(--frame-w) * 100%);
+      height: calc(36 / var(--frame-h) * 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff4c7;
+      font-family: Georgia, "Microsoft YaHei", serif;
+      font-size: calc(var(--card-w) * .054);
+      font-weight: 800;
+      line-height: 1;
+      text-align: center;
+      text-shadow: 0 2px 0 #1d0d06, 0 0 5px rgba(255, 205, 97, .65);
+      white-space: nowrap;
+    }
+
+    .desc-slot {
+      left: calc(240 / var(--frame-w) * 100%);
+      top: calc(1020 / var(--frame-h) * 100%);
+      width: calc(600 / var(--frame-w) * 100%);
+      height: calc(215 / var(--frame-h) * 100%);
+      color: #fff0c4;
+      font-size: calc(var(--card-w) * .041);
+      line-height: 1.38;
+      text-shadow: 0 1px 0 #130907, 0 0 4px rgba(0,0,0,.7);
+      overflow-wrap: anywhere;
+    }
+
+    .desc-slot.compact {
+      font-size: calc(var(--card-w) * .036);
+      line-height: 1.26;
+      display: -webkit-box;
+      -webkit-line-clamp: 7;
+      -webkit-box-orient: vertical;
+    }
+
+    .desc-slot.mobile-rules {
+      display: none;
+    }
+
+    .debug .art-slot { background: rgba(237, 28, 36, .84); }
+    .debug .desc-slot { background: rgba(0, 162, 232, .84); }
+    .debug .name-slot { background: rgba(255, 242, 0, .88); color: #111; text-shadow: none; }
+
+    .desktop { --card-w: 178px; }
+    .mobile { --card-w: 86px; }
+
+    .detail {
+      --card-w: 240px;
+    }
+  </style>
+</head>
+<body>
+  <main class="test-grid">
+    <section class="sample">
+      <h2>Large Render</h2>
+      <article class="warrior-card">
+        <img class="base" src="warrior-card-frame-transparent-exact.png" alt="">
+        <div class="card-slot art-slot"></div>
+        <div class="text-slot name-slot">武器冲锋</div>
+        <div class="text-slot desc-slot">冲向目标造成 1D6 伤害。若本回合已经移动，额外获得 2 点护甲。</div>
+        <img class="overlay" src="warrior-card-frame-overlay-geometric.png" alt="">
+      </article>
+    </section>
+
+    <section class="sample">
+      <h2>Desktop Hand Size</h2>
+      <article class="warrior-card desktop">
+        <img class="base" src="warrior-card-frame-transparent-exact.png" alt="">
+        <div class="card-slot art-slot"></div>
+        <div class="text-slot name-slot">武器冲锋</div>
+        <div class="text-slot desc-slot">冲向目标造成 1D6 伤害。若本回合已经移动，额外获得 2 点护甲。</div>
+        <img class="overlay" src="warrior-card-frame-overlay-geometric.png" alt="">
+      </article>
+    </section>
+
+    <section class="sample">
+      <h2>Mobile Hand Size</h2>
+      <article class="warrior-card mobile">
+        <img class="base" src="warrior-card-frame-transparent-exact.png" alt="">
+        <div class="card-slot art-slot"></div>
+        <div class="text-slot name-slot">武器冲锋</div>
+        <div class="text-slot desc-slot mobile-rules">冲向目标造成 1D6 伤害。</div>
+        <img class="overlay" src="warrior-card-frame-overlay-geometric.png" alt="">
+      </article>
+    </section>
+
+    <section class="sample">
+      <h2>Debug Areas</h2>
+      <article class="warrior-card debug">
+        <img class="base" src="warrior-card-frame-transparent-exact.png" alt="">
+        <div class="card-slot art-slot"></div>
+        <div class="text-slot name-slot">标题安全区</div>
+        <div class="text-slot desc-slot">说明文字安全区：内容在下层，边框和角花在上层。</div>
+        <img class="overlay" src="warrior-card-frame-overlay-geometric.png" alt="">
+      </article>
+    </section>
+
+    <section class="sample">
+      <h2>Long Text Stress</h2>
+      <article class="warrior-card detail">
+        <img class="base" src="warrior-card-frame-transparent-exact.png" alt="">
+        <div class="card-slot art-slot"></div>
+        <div class="text-slot name-slot">钢铁突进</div>
+        <div class="text-slot desc-slot compact">移动至 2 格内空位并攻击相邻目标，造成 1D6 伤害。若本回合已移动，额外获得 2 护甲；若目标带有标记，再抽 1 张牌。每回合限一次。</div>
+        <img class="overlay" src="warrior-card-frame-overlay-geometric.png" alt="">
+      </article>
+    </section>
+  </main>
+</body>
+</html>

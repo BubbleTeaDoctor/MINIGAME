@@ -1,0 +1,26 @@
+{
+  "canvas": {
+    "width": 1086,
+    "height": 1448
+  },
+  "name": {
+    "x": 150,
+    "y": 92,
+    "w": 786,
+    "h": 150
+  },
+  "art": {
+    "x": 160,
+    "y": 300,
+    "w": 766,
+    "h": 530
+  },
+  "text": {
+    "x": 150,
+    "y": 955,
+    "w": 786,
+    "h": 315
+  },
+  "safe_margin": 48,
+  "notes": "Transparent frame asset. All future card frames should keep these exact canvas and slot coordinates."
+}

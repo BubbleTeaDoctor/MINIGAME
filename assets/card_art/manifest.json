@@ -1,0 +1,558 @@
+{
+    "images":  [
+                   {
+                       "name":  "acc_blood_phial",
+                       "label":  "acc_blood_phial",
+                       "file":  "acc_blood_phial.png",
+                       "path":  "assets/card_art/acc_blood_phial.png"
+                   },
+                   {
+                       "name":  "acc_blood_surge",
+                       "label":  "acc_blood_surge",
+                       "file":  "acc_blood_surge.png",
+                       "path":  "assets/card_art/acc_blood_surge.png"
+                   },
+                   {
+                       "name":  "acc_holy_guard",
+                       "label":  "acc_holy_guard",
+                       "file":  "acc_holy_guard.png",
+                       "path":  "assets/card_art/acc_holy_guard.png"
+                   },
+                   {
+                       "name":  "acc_holy_icon",
+                       "label":  "acc_holy_icon",
+                       "file":  "acc_holy_icon.png",
+                       "path":  "assets/card_art/acc_holy_icon.png"
+                   },
+                   {
+                       "name":  "acc_hope",
+                       "label":  "acc_hope",
+                       "file":  "acc_hope.png",
+                       "path":  "assets/card_art/acc_hope.png"
+                   },
+                   {
+                       "name":  "acc_hope_guard",
+                       "label":  "acc_hope_guard",
+                       "file":  "acc_hope_guard.png",
+                       "path":  "assets/card_art/acc_hope_guard.png"
+                   },
+                   {
+                       "name":  "acc_lincoln_guard",
+                       "label":  "acc_lincoln_guard",
+                       "file":  "acc_lincoln_guard.png",
+                       "path":  "assets/card_art/acc_lincoln_guard.png"
+                   },
+                   {
+                       "name":  "acc_nullify",
+                       "label":  "acc_nullify",
+                       "file":  "acc_nullify.png",
+                       "path":  "assets/card_art/acc_nullify.png"
+                   },
+                   {
+                       "name":  "acc_time_echo",
+                       "label":  "acc_time_echo",
+                       "file":  "acc_time_echo.png",
+                       "path":  "assets/card_art/acc_time_echo.png"
+                   },
+                   {
+                       "name":  "acc_time_rewind",
+                       "label":  "acc_time_rewind",
+                       "file":  "acc_time_rewind.png",
+                       "path":  "assets/card_art/acc_time_rewind.png"
+                   },
+                   {
+                       "name":  "acc_trap",
+                       "label":  "acc_trap",
+                       "file":  "acc_trap.png",
+                       "path":  "assets/card_art/acc_trap.png"
+                   },
+                   {
+                       "name":  "acc_trap_spike",
+                       "label":  "acc_trap_spike",
+                       "file":  "acc_trap_spike.png",
+                       "path":  "assets/card_art/acc_trap_spike.png"
+                   },
+                   {
+                       "name":  "acc_void_blast",
+                       "label":  "acc_void_blast",
+                       "file":  "acc_void_blast.png",
+                       "path":  "assets/card_art/acc_void_blast.png"
+                   },
+                   {
+                       "name":  "acc_void_core",
+                       "label":  "acc_void_core",
+                       "file":  "acc_void_core.png",
+                       "path":  "assets/card_art/acc_void_core.png"
+                   },
+                   {
+                       "name":  "bow_pin",
+                       "label":  "bow_pin",
+                       "file":  "bow_pin.png",
+                       "path":  "assets/card_art/bow_pin.png"
+                   },
+                   {
+                       "name":  "bow_step",
+                       "label":  "bow_step",
+                       "file":  "bow_step.png",
+                       "path":  "assets/card_art/bow_step.png"
+                   },
+                   {
+                       "name":  "ChatGPT Image 2026年5月20日 02_23_05 (3)",
+                       "label":  "ChatGPT Image 2026年5月20日 02_23_05 (3)",
+                       "file":  "ChatGPT Image 2026年5月20日 02_23_05 (3).png",
+                       "path":  "assets/card_art/ChatGPT Image 2026年5月20日 02_23_05 (3).png"
+                   },
+                   {
+                       "name":  "ChatGPT Image 2026年5月20日 02_23_05 (4)",
+                       "label":  "ChatGPT Image 2026年5月20日 02_23_05 (4)",
+                       "file":  "ChatGPT Image 2026年5月20日 02_23_05 (4).png",
+                       "path":  "assets/card_art/ChatGPT Image 2026年5月20日 02_23_05 (4).png"
+                   },
+                   {
+                       "name":  "ChatGPT Image 2026年5月20日 02_23_06 (5)",
+                       "label":  "ChatGPT Image 2026年5月20日 02_23_06 (5)",
+                       "file":  "ChatGPT Image 2026年5月20日 02_23_06 (5).png",
+                       "path":  "assets/card_art/ChatGPT Image 2026年5月20日 02_23_06 (5).png"
+                   },
+                   {
+                       "name":  "ChatGPT Image 2026年5月20日 02_23_06 (6)",
+                       "label":  "ChatGPT Image 2026年5月20日 02_23_06 (6)",
+                       "file":  "ChatGPT Image 2026年5月20日 02_23_06 (6).png",
+                       "path":  "assets/card_art/ChatGPT Image 2026年5月20日 02_23_06 (6).png"
+                   },
+                   {
+                       "name":  "ChatGPT Image 2026年5月20日 02_23_06 (7)",
+                       "label":  "ChatGPT Image 2026年5月20日 02_23_06 (7)",
+                       "file":  "ChatGPT Image 2026年5月20日 02_23_06 (7).png",
+                       "path":  "assets/card_art/ChatGPT Image 2026年5月20日 02_23_06 (7).png"
+                   },
+                   {
+                       "name":  "ChatGPT Image 2026年5月20日 03_36_10 (2)",
+                       "label":  "ChatGPT Image 2026年5月20日 03_36_10 (2)",
+                       "file":  "ChatGPT Image 2026年5月20日 03_36_10 (2).png",
+                       "path":  "assets/card_art/ChatGPT Image 2026年5月20日 03_36_10 (2).png"
+                   },
+                   {
+                       "name":  "ChatGPT Image 2026年5月20日 04_09_52 (3)",
+                       "label":  "ChatGPT Image 2026年5月20日 04_09_52 (3)",
+                       "file":  "ChatGPT Image 2026年5月20日 04_09_52 (3).png",
+                       "path":  "assets/card_art/ChatGPT Image 2026年5月20日 04_09_52 (3).png"
+                   },
+                   {
+                       "name":  "hammer_break",
+                       "label":  "hammer_break",
+                       "file":  "hammer_break.png",
+                       "path":  "assets/card_art/hammer_break.png"
+                   },
+                   {
+                       "name":  "hammer_quake",
+                       "label":  "hammer_quake",
+                       "file":  "hammer_quake.png",
+                       "path":  "assets/card_art/hammer_quake.png"
+                   },
+                   {
+                       "name":  "weapon_charge",
+                       "label":  "weapon_charge",
+                       "file":  "weapon_charge.png",
+                       "path":  "assets/card_art/weapon_charge.png"
+                   },
+                   {
+                       "name":  "暗夜冲刺",
+                       "label":  "暗夜冲刺",
+                       "file":  "暗夜冲刺.png",
+                       "path":  "assets/card_art/暗夜冲刺.png"
+                   },
+                   {
+                       "name":  "暴怒",
+                       "label":  "暴怒",
+                       "file":  "暴怒.png",
+                       "path":  "assets/card_art/暴怒.png"
+                   },
+                   {
+                       "name":  "冰霜新星",
+                       "label":  "冰霜新星",
+                       "file":  "冰霜新星.png",
+                       "path":  "assets/card_art/冰霜新星.png"
+                   },
+                   {
+                       "name":  "惩戒化身",
+                       "label":  "惩戒化身",
+                       "file":  "惩戒化身.png",
+                       "path":  "assets/card_art/惩戒化身.png"
+                   },
+                   {
+                       "name":  "冲锋",
+                       "label":  "冲锋",
+                       "file":  "冲锋.png",
+                       "path":  "assets/card_art/冲锋.png"
+                   },
+                   {
+                       "name":  "刺杀",
+                       "label":  "刺杀",
+                       "file":  "刺杀.png",
+                       "path":  "assets/card_art/刺杀.png"
+                   },
+                   {
+                       "name":  "打磨利刃",
+                       "label":  "打磨利刃",
+                       "file":  "打磨利刃.png",
+                       "path":  "assets/card_art/打磨利刃.png"
+                   },
+                   {
+                       "name":  "点燃 [wand_burst]",
+                       "label":  "点燃 [wand_burst]",
+                       "file":  "点燃 [wand_burst].png",
+                       "path":  "assets/card_art/点燃 [wand_burst].png"
+                   },
+                   {
+                       "name":  "断筋",
+                       "label":  "断筋",
+                       "file":  "断筋.png",
+                       "path":  "assets/card_art/断筋.png"
+                   },
+                   {
+                       "name":  "厄运",
+                       "label":  "厄运",
+                       "file":  "厄运.png",
+                       "path":  "assets/card_art/厄运.png"
+                   },
+                   {
+                       "name":  "恶魔变身",
+                       "label":  "恶魔变身",
+                       "file":  "恶魔变身.png",
+                       "path":  "assets/card_art/恶魔变身.png"
+                   },
+                   {
+                       "name":  "二连斩",
+                       "label":  "二连斩",
+                       "file":  "二连斩.png",
+                       "path":  "assets/card_art/二连斩.png"
+                   },
+                   {
+                       "name":  "反击架势",
+                       "label":  "反击架势",
+                       "file":  "反击架势.png",
+                       "path":  "assets/card_art/反击架势.png"
+                   },
+                   {
+                       "name":  "反击图腾",
+                       "label":  "反击图腾",
+                       "file":  "反击图腾.png",
+                       "path":  "assets/card_art/反击图腾.png"
+                   },
+                   {
+                       "name":  "腐蚀",
+                       "label":  "腐蚀",
+                       "file":  "腐蚀.png",
+                       "path":  "assets/card_art/腐蚀.png"
+                   },
+                   {
+                       "name":  "割裂",
+                       "label":  "割裂",
+                       "file":  "割裂.png",
+                       "path":  "assets/card_art/割裂.png"
+                   },
+                   {
+                       "name":  "滑步 [dagger_step]",
+                       "label":  "滑步 [dagger_step]",
+                       "file":  "滑步 [dagger_step].png",
+                       "path":  "assets/card_art/滑步 [dagger_step].png"
+                   },
+                   {
+                       "name":  "混沌爆裂 [relic_chaos_burst]",
+                       "label":  "混沌爆裂 [relic_chaos_burst]",
+                       "file":  "混沌爆裂 [relic_chaos_burst].png",
+                       "path":  "assets/card_art/混沌爆裂 [relic_chaos_burst].png"
+                   },
+                   {
+                       "name":  "火球",
+                       "label":  "火球",
+                       "file":  "火球.png",
+                       "path":  "assets/card_art/火球.png"
+                   },
+                   {
+                       "name":  "急速折跃 [relic_haste_step]",
+                       "label":  "急速折跃 [relic_haste_step]",
+                       "file":  "急速折跃 [relic_haste_step].png",
+                       "path":  "assets/card_art/急速折跃 [relic_haste_step].png"
+                   },
+                   {
+                       "name":  "见切",
+                       "label":  "见切",
+                       "file":  "见切.png",
+                       "path":  "assets/card_art/见切.png"
+                   },
+                   {
+                       "name":  "缴械",
+                       "label":  "缴械",
+                       "file":  "缴械.png",
+                       "path":  "assets/card_art/缴械.png"
+                   },
+                   {
+                       "name":  "狙击",
+                       "label":  "狙击",
+                       "file":  "狙击.png",
+                       "path":  "assets/card_art/狙击.png"
+                   },
+                   {
+                       "name":  "看破",
+                       "label":  "看破",
+                       "file":  "看破.png",
+                       "path":  "assets/card_art/看破.png"
+                   },
+                   {
+                       "name":  "口袋炮塔",
+                       "label":  "口袋炮塔",
+                       "file":  "口袋炮塔.png",
+                       "path":  "assets/card_art/口袋炮塔.png"
+                   },
+                   {
+                       "name":  "快速奥术护盾 [wand_shield]",
+                       "label":  "快速奥术护盾 [wand_shield]",
+                       "file":  "快速奥术护盾 [wand_shield].png",
+                       "path":  "assets/card_art/快速奥术护盾 [wand_shield].png"
+                   },
+                   {
+                       "name":  "快速毒刃 [dagger_poison]",
+                       "label":  "快速毒刃 [dagger_poison]",
+                       "file":  "快速毒刃 [dagger_poison].png",
+                       "path":  "assets/card_art/快速毒刃 [dagger_poison].png"
+                   },
+                   {
+                       "name":  "快速修理",
+                       "label":  "快速修理",
+                       "file":  "快速修理.png",
+                       "path":  "assets/card_art/快速修理.png"
+                   },
+                   {
+                       "name":  "快速治疗",
+                       "label":  "快速治疗",
+                       "file":  "快速治疗.png",
+                       "path":  "assets/card_art/快速治疗.png"
+                   },
+                   {
+                       "name":  "雷击",
+                       "label":  "雷击",
+                       "file":  "雷击.png",
+                       "path":  "assets/card_art/雷击.png"
+                   },
+                   {
+                       "name":  "猎人印记",
+                       "label":  "猎人印记",
+                       "file":  "猎人印记.png",
+                       "path":  "assets/card_art/猎人印记.png"
+                   },
+                   {
+                       "name":  "灵魂火",
+                       "label":  "灵魂火",
+                       "file":  "灵魂火.png",
+                       "path":  "assets/card_art/灵魂火.png"
+                   },
+                   {
+                       "name":  "乱舞 [twin_flurry]",
+                       "label":  "乱舞 [twin_flurry]",
+                       "file":  "乱舞 [twin_flurry].png",
+                       "path":  "assets/card_art/乱舞 [twin_flurry].png"
+                   },
+                   {
+                       "name":  "埋骨炸弹",
+                       "label":  "埋骨炸弹",
+                       "file":  "埋骨炸弹.png",
+                       "path":  "assets/card_art/埋骨炸弹.png"
+                   },
+                   {
+                       "name":  "瞄准射击",
+                       "label":  "瞄准射击",
+                       "file":  "瞄准射击.png",
+                       "path":  "assets/card_art/瞄准射击.png"
+                   },
+                   {
+                       "name":  "碾压打击",
+                       "label":  "碾压打击",
+                       "file":  "碾压打击.png",
+                       "path":  "assets/card_art/碾压打击.png"
+                   },
+                   {
+                       "name":  "破甲烙印 [relic_sunder_brand]",
+                       "label":  "破甲烙印 [relic_sunder_brand]",
+                       "file":  "破甲烙印 [relic_sunder_brand].png",
+                       "path":  "assets/card_art/破甲烙印 [relic_sunder_brand].png"
+                   },
+                   {
+                       "name":  "杀戮盛宴",
+                       "label":  "杀戮盛宴",
+                       "file":  "杀戮盛宴.png",
+                       "path":  "assets/card_art/杀戮盛宴.png"
+                   },
+                   {
+                       "name":  "闪现",
+                       "label":  "闪现",
+                       "file":  "闪现.png",
+                       "path":  "assets/card_art/闪现.png"
+                   },
+                   {
+                       "name":  "射击",
+                       "label":  "射击",
+                       "file":  "射击.png",
+                       "path":  "assets/card_art/射击.png"
+                   },
+                   {
+                       "name":  "神圣立场",
+                       "label":  "神圣立场",
+                       "file":  "神圣立场.png",
+                       "path":  "assets/card_art/神圣立场.png"
+                   },
+                   {
+                       "name":  "圣光庇护",
+                       "label":  "圣光庇护",
+                       "file":  "圣光庇护.png",
+                       "path":  "assets/card_art/圣光庇护.png"
+                   },
+                   {
+                       "name":  "束缚陷阱",
+                       "label":  "束缚陷阱",
+                       "file":  "束缚陷阱.png",
+                       "path":  "assets/card_art/束缚陷阱.png"
+                   },
+                   {
+                       "name":  "双刃突进 [twin_dash]",
+                       "label":  "双刃突进 [twin_dash]",
+                       "file":  "双刃突进 [twin_dash].png",
+                       "path":  "assets/card_art/双刃突进 [twin_dash].png"
+                   },
+                   {
+                       "name":  "逃脱",
+                       "label":  "逃脱",
+                       "file":  "逃脱.png",
+                       "path":  "assets/card_art/逃脱.png"
+                   },
+                   {
+                       "name":  "痛苦",
+                       "label":  "痛苦",
+                       "file":  "痛苦.png",
+                       "path":  "assets/card_art/痛苦.png"
+                   },
+                   {
+                       "name":  "偷袭",
+                       "label":  "偷袭",
+                       "file":  "偷袭.png",
+                       "path":  "assets/card_art/偷袭.png"
+                   },
+                   {
+                       "name":  "投掷 [投掷]",
+                       "label":  "投掷 [投掷]",
+                       "file":  "投掷 [投掷].png",
+                       "path":  "assets/card_art/投掷 [投掷].png"
+                   },
+                   {
+                       "name":  "投掷2",
+                       "label":  "投掷2",
+                       "file":  "投掷2.png",
+                       "path":  "assets/card_art/投掷2.png"
+                   },
+                   {
+                       "name":  "突进",
+                       "label":  "突进",
+                       "file":  "突进.png",
+                       "path":  "assets/card_art/突进.png"
+                   },
+                   {
+                       "name":  "图腾点燃",
+                       "label":  "图腾点燃",
+                       "file":  "图腾点燃.png",
+                       "path":  "assets/card_art/图腾点燃.png"
+                   },
+                   {
+                       "name":  "图腾震击",
+                       "label":  "图腾震击",
+                       "file":  "图腾震击.png",
+                       "path":  "assets/card_art/图腾震击.png"
+                   },
+                   {
+                       "name":  "亡灵爆发",
+                       "label":  "亡灵爆发",
+                       "file":  "亡灵爆发.png",
+                       "path":  "assets/card_art/亡灵爆发.png"
+                   },
+                   {
+                       "name":  "亡者军势",
+                       "label":  "亡者军势",
+                       "file":  "亡者军势.png",
+                       "path":  "assets/card_art/亡者军势.png"
+                   },
+                   {
+                       "name":  "武器冲锋",
+                       "label":  "武器冲锋",
+                       "file":  "武器冲锋.png",
+                       "path":  "assets/card_art/武器冲锋.png"
+                   },
+                   {
+                       "name":  "吸血射击",
+                       "label":  "吸血射击",
+                       "file":  "吸血射击.png",
+                       "path":  "assets/card_art/吸血射击.png"
+                   },
+                   {
+                       "name":  "相位转移",
+                       "label":  "相位转移",
+                       "file":  "相位转移.png",
+                       "path":  "assets/card_art/相位转移.png"
+                   },
+                   {
+                       "name":  "心眼",
+                       "label":  "心眼",
+                       "file":  "心眼.png",
+                       "path":  "assets/card_art/心眼.png"
+                   },
+                   {
+                       "name":  "血契斩 [relic_blood_pact]",
+                       "label":  "血契斩 [relic_blood_pact]",
+                       "file":  "血契斩 [relic_blood_pact].png",
+                       "path":  "assets/card_art/血契斩 [relic_blood_pact].png"
+                   },
+                   {
+                       "name":  "血腥合剂",
+                       "label":  "血腥合剂",
+                       "file":  "血腥合剂.png",
+                       "path":  "assets/card_art/血腥合剂.png"
+                   },
+                   {
+                       "name":  "燕返",
+                       "label":  "燕返",
+                       "file":  "燕返.png",
+                       "path":  "assets/card_art/燕返.png"
+                   },
+                   {
+                       "name":  "一闪",
+                       "label":  "一闪",
+                       "file":  "一闪.png",
+                       "path":  "assets/card_art/一闪.png"
+                   },
+                   {
+                       "name":  "招架 [招架]",
+                       "label":  "招架 [招架]",
+                       "file":  "招架 [招架].png",
+                       "path":  "assets/card_art/招架 [招架].png"
+                   },
+                   {
+                       "name":  "招架",
+                       "label":  "招架",
+                       "file":  "招架.png",
+                       "path":  "assets/card_art/招架.png"
+                   },
+                   {
+                       "name":  "召唤骨龙",
+                       "label":  "召唤骨龙",
+                       "file":  "召唤骨龙.png",
+                       "path":  "assets/card_art/召唤骨龙.png"
+                   },
+                   {
+                       "name":  "召唤骷髅",
+                       "label":  "召唤骷髅",
+                       "file":  "召唤骷髅.png",
+                       "path":  "assets/card_art/召唤骷髅.png"
+                   }
+               ],
+    "count":  92,
+    "generatedAt":  "2026-05-20T04:57:30.5358340+10:00"
+}

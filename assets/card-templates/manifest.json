@@ -1,0 +1,103 @@
+{
+  "templates": {
+    "accessory": {
+      "key": "accessory",
+      "label": "Accessory",
+      "config": "assets/card-templates/accessory/config.json",
+      "frame": "assets/card-templates/accessory/frame_processed.png",
+      "preview": "assets/card-templates/accessory/preview.png"
+    },
+    "assassin": {
+      "key": "assassin",
+      "label": "Assassin / Rogue",
+      "config": "assets/card-templates/assassin/config.json",
+      "frame": "assets/card-templates/assassin/frame_processed.png",
+      "preview": "assets/card-templates/assassin/preview.png"
+    },
+    "gear": {
+      "key": "gear",
+      "label": "Gear",
+      "config": "assets/card-templates/gear/config.json",
+      "frame": "assets/card-templates/gear/frame_processed.png",
+      "preview": "assets/card-templates/gear/preview.png"
+    },
+    "hunter": {
+      "key": "hunter",
+      "label": "Hunter",
+      "config": "assets/card-templates/hunter/config.json",
+      "frame": "assets/card-templates/hunter/frame_processed.png",
+      "preview": "assets/card-templates/hunter/preview.png"
+    },
+    "mage": {
+      "key": "mage",
+      "label": "Mage",
+      "config": "assets/card-templates/mage/config.json",
+      "frame": "assets/card-templates/mage/frame_processed.png",
+      "preview": "assets/card-templates/mage/preview.png"
+    },
+    "monk": {
+      "key": "monk",
+      "label": "Monk",
+      "config": "assets/card-templates/monk/config.json",
+      "frame": "assets/card-templates/monk/frame_processed.png",
+      "preview": "assets/card-templates/monk/preview.png"
+    },
+    "necro": {
+      "key": "necro",
+      "label": "Necromancer",
+      "config": "assets/card-templates/necro/config.json",
+      "frame": "assets/card-templates/necro/frame_processed.png",
+      "preview": "assets/card-templates/necro/preview.png"
+    },
+    "priest": {
+      "key": "priest",
+      "label": "Priest",
+      "config": "assets/card-templates/priest/config.json",
+      "frame": "assets/card-templates/priest/frame_processed.png",
+      "preview": "assets/card-templates/priest/preview.png"
+    },
+    "relic": {
+      "key": "relic",
+      "label": "Relic",
+      "config": "assets/card-templates/relic/config.json",
+      "frame": "assets/card-templates/relic/frame_processed.png",
+      "preview": "assets/card-templates/relic/preview.png"
+    },
+    "samurai": {
+      "key": "samurai",
+      "label": "Samurai",
+      "config": "assets/card-templates/samurai/config.json",
+      "frame": "assets/card-templates/samurai/frame_processed.png",
+      "preview": "assets/card-templates/samurai/preview.png"
+    },
+    "shaman": {
+      "key": "shaman",
+      "label": "Shaman",
+      "config": "assets/card-templates/shaman/config.json",
+      "frame": "assets/card-templates/shaman/frame_processed.png",
+      "preview": "assets/card-templates/shaman/preview.png"
+    },
+    "warlock": {
+      "key": "warlock",
+      "label": "Warlock",
+      "config": "assets/card-templates/warlock/config.json",
+      "frame": "assets/card-templates/warlock/frame_processed.png",
+      "preview": "assets/card-templates/warlock/preview.png"
+    },
+    "warrior": {
+      "key": "warrior",
+      "label": "Warrior",
+      "config": "assets/card-templates/warrior/config.json",
+      "frame": "assets/card-templates/warrior/frame_processed.png",
+      "preview": "assets/card-templates/warrior/preview.png"
+    },
+    "weapon": {
+      "key": "weapon",
+      "label": "Weapon",
+      "config": "assets/card-templates/weapon/config.json",
+      "frame": "assets/card-templates/weapon/frame_processed.png",
+      "preview": "assets/card-templates/weapon/preview.png"
+    }
+  },
+  "defaultTemplate": "warrior"
+}

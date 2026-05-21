@@ -1,0 +1,26 @@
+{
+  "canvas": {
+    "width": 1086,
+    "height": 1448
+  },
+  "name": {
+    "x": 205,
+    "y": 190,
+    "w": 672,
+    "h": 88
+  },
+  "art": {
+    "x": 200,
+    "y": 330,
+    "w": 681,
+    "h": 570
+  },
+  "text": {
+    "x": 218,
+    "y": 1000,
+    "w": 646,
+    "h": 230
+  },
+  "asset": "warrior-card-frame-standard.png",
+  "notes": "Adjusted to the generated frame actual visual slots, not the original requested coordinates."
+}

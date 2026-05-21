@@ -98,6 +98,16 @@ body.pixel-ui .game-theme .card::before {
     opacity: 0.1;
     pointer-events: none;
 }
+body.pixel-ui .game-theme .card.card-full-art {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+}
+body.pixel-ui .game-theme .card.card-full-art::before {
+    display: none !important;
+}
 body.pixel-ui .game-theme .card-name {
     color: #f7efcc !important;
     text-shadow: 1px 1px 0 #000;
@@ -436,4 +446,48 @@ body.ui-edit-mode::after {
 
 #btn-confirm-layout-inner:hover {
     box-shadow: 0 0 40px rgba(100,220,100,0.5), 0 6px 0 rgba(0,0,0,0.5) !important;
+}
+
+/* New UI art pack: action buttons only */
+body.pixel-ui {
+    --ui-art-button-move: url("assets/ui/new-ui/button-move.png");
+    --ui-art-button-attack: url("assets/ui/new-ui/button-attack.png");
+    --ui-art-button-end: url("assets/ui/new-ui/button-end.png");
+    --ui-art-button-cancel: url("assets/ui/new-ui/button-cancel.png");
+    --ui-art-button-confirm: url("assets/ui/new-ui/button-confirm.png");
+    --ui-art-button-ability: url("assets/ui/new-ui/ability.png");
+}
+
+body.pixel-ui #action-panel button {
+    width: 58px !important;
+    height: 58px !important;
+    min-width: 58px !important;
+    min-height: 58px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    background-size: contain !important;
+    box-shadow: none !important;
+    image-rendering: auto;
+}
+body.pixel-ui #action-panel button .u-icon,
+body.pixel-ui #action-panel button .u-text {
+    display: none !important;
+}
+body.pixel-ui #btn-move { background-image: var(--ui-art-button-move) !important; }
+body.pixel-ui #btn-basic-attack { background-image: var(--ui-art-button-attack) !important; }
+body.pixel-ui #btn-end-turn { background-image: var(--ui-art-button-end) !important; }
+body.pixel-ui #btn-cancel { background-image: var(--ui-art-button-cancel) !important; }
+body.pixel-ui #btn-confirm-move { background-image: var(--ui-art-button-confirm) !important; }
+body.pixel-ui #btn-passive { background-image: var(--ui-art-button-ability) !important; }
+
+@media (max-width: 860px) {
+    body.pixel-ui #action-panel button {
+        width: 50px !important;
+        height: 50px !important;
+        min-width: 50px !important;
+        min-height: 50px !important;
+    }
 }

@@ -95,8 +95,676 @@
     if (equipment) return equipment.label;
     if (state.scope === 'negative_cards') return '负面牌';
     return '职业';
-  }  function currentEntityName(){
+  }
+  function currentEntityName(){
     return state.scope === 'negative_cards' ? '负面牌库' : (currentEntity()?.name || state.profession);
+  }
+
+  function defaultCardArtForCurrent() {
+    if (state.scope === 'cards' || state.scope === 'passives') {
+      const portraitKey = {
+        warrior: 'warrior',
+        mage: 'mage',
+        rogue: 'rogue',
+        priest: 'priest',
+        shaman: 'shaman',
+        necro: 'necro',
+        necromancer: 'necro',
+        warlock: 'warlock',
+        hunter: 'hunter',
+        monk: 'monk',
+        samurai: 'swordsman',
+        swordsman: 'swordsman',
+        assassin: 'rogue'
+      }[String(state.profession || '').toLowerCase()] || String(state.profession || 'warrior').toLowerCase();
+      return `assets/portraits/${portraitKey}-select.png`;
+    }
+    return 'assets/portraits/warrior-select.png';
+  }
+
+  function normalizeArtName(value) {
+    return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+  }
+
+  function findMatchingCardArt(card = state.current, artManifest = null) {
+    const images = artManifest?.images || [];
+    if (!card || !images.length) return '';
+    const candidates = [
+      card.name,
+      state.entryKey,
+      String(state.entryKey || '').replace(/^[a-z]+_/, '')
+    ].map(normalizeArtName).filter(Boolean);
+    const exact = images.find(img => candidates.includes(normalizeArtName(img.name)) || candidates.includes(normalizeArtName(img.label)));
+    return exact?.path || '';
+  }
+
+  function cardArtPath(card = state.current, artManifest = null) {
+    return (card && String(card.art || '').trim()) || findMatchingCardArt(card, artManifest) || defaultCardArtForCurrent();
+  }
+
+  function assetUrl(path) {
+    const value = String(path || '').trim();
+    if (!value || /^(data:|blob:|https?:)/i.test(value)) return value;
+    return value.split('/').map(part => encodeURIComponent(part)).join('/');
+  }
+
+  function ensureCardArtTransform(card = state.current) {
+    if (!card) return { x: 0, y: 0, scale: 1 };
+    card.artTransform = card.artTransform || {};
+    const t = card.artTransform;
+    t.x = Number(t.x || 0);
+    t.y = Number(t.y || 0);
+    t.scale = Number(t.scale || 1) || 1;
+    return t;
+  }
+
+  function ensureCardTextTransform(card = state.current) {
+    if (!card) return { title: {}, desc: {} };
+    card.textTransform = card.textTransform || {};
+    card.textTransform.title = card.textTransform.title || {};
+    card.textTransform.desc = card.textTransform.desc || {};
+    return card.textTransform;
+  }
+
+  function cardTextTransformFor(role, card = state.current) {
+    return card?.textTransform?.[role] || {};
+  }
+
+  function setCardTextTransformValue(role, key, value) {
+    const textTransform = ensureCardTextTransform();
+    if (value === '' || value == null) delete textTransform[role][key];
+    else textTransform[role][key] = value;
+    const normalize = obj => Object.entries(obj).filter(([, v]) => {
+      if (typeof v === 'string') return v.trim() !== '';
+      return Number(v || 0) !== 0;
+    });
+    if (!normalize(textTransform.title).length) delete textTransform.title;
+    if (!normalize(textTransform.desc).length) delete textTransform.desc;
+    if (!Object.keys(textTransform).length) delete state.current.textTransform;
+  }
+
+  const CARD_FONT_OPTIONS = [
+    ['', '默认'],
+    ['SimHei', '黑体 / SimHei'],
+    ['Microsoft YaHei', '微软雅黑'],
+    ['KaiTi', '楷体 / KaiTi'],
+    ['SimSun', '宋体 / SimSun'],
+    ['FangSong', '仿宋 / FangSong'],
+    ['serif', 'Serif'],
+    ['sans-serif', 'Sans-serif']
+  ];
+
+  function cardFontFamily(role, fontKey) {
+    const fonts = {
+      SimHei: `"SimHei", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif`,
+      'Microsoft YaHei': `"Microsoft YaHei UI", "Microsoft YaHei", sans-serif`,
+      KaiTi: `"KaiTi", "STKaiti", "Microsoft YaHei", serif`,
+      SimSun: `"SimSun", "Songti SC", serif`,
+      FangSong: `"FangSong", "STFangsong", serif`,
+      serif: `serif`,
+      'sans-serif': `sans-serif`
+    };
+    if (fontKey && fonts[fontKey]) return fonts[fontKey];
+    return role === 'title'
+      ? `"Microsoft YaHei UI", "Microsoft YaHei", "SimHei", sans-serif`
+      : `serif`;
+  }
+
+  const CARD_TEMPLATE_MANIFEST_URL = 'assets/card-templates/manifest.json';
+  const CARD_ART_MANIFEST_URL = 'assets/card_art/manifest.json';
+  let cardTemplateManifestPromise = null;
+  const cardTemplateConfigCache = {};
+
+  function loadCardTemplateManifest() {
+    if (!cardTemplateManifestPromise) {
+      cardTemplateManifestPromise = fetch(CARD_TEMPLATE_MANIFEST_URL)
+        .then(res => {
+          if (!res.ok) throw new Error(`card template manifest ${res.status}`);
+          return res.json();
+        })
+        .catch(() => ({ templates: {}, defaultTemplate: 'warrior' }));
+    }
+    return cardTemplateManifestPromise;
+  }
+
+  function loadCardArtManifest() {
+    return fetch(`${CARD_ART_MANIFEST_URL}?v=${Date.now()}`, { cache: 'no-store' })
+      .then(res => {
+        if (!res.ok) throw new Error(`card art manifest ${res.status}`);
+        return res.json();
+      })
+      .catch(() => ({ images: [] }));
+  }
+
+  function loadCardTemplateConfig(entry) {
+    if (!entry?.config) return Promise.resolve(null);
+    if (!cardTemplateConfigCache[entry.key]) {
+      cardTemplateConfigCache[entry.key] = fetch(entry.config)
+        .then(res => {
+          if (!res.ok) throw new Error(`card template config ${res.status}`);
+          return res.json();
+        })
+        .catch(() => null);
+    }
+    return cardTemplateConfigCache[entry.key];
+  }
+
+  function inferCardTemplateKey() {
+    if (state.scope === 'weapon_cards') return 'weapon';
+    if (state.scope === 'accessory_cards') return 'accessory';
+    if (state.scope === 'armor_cards' || state.scope === 'boots_cards') return 'gear';
+    if (state.scope === 'relic_cards') return 'relic';
+    if (state.scope === 'negative_cards') return 'warlock';
+    const professionKey = String(state.profession || '').toLowerCase();
+    return {
+      warrior: 'warrior',
+      mage: 'mage',
+      rogue: 'assassin',
+      assassin: 'assassin',
+      priest: 'priest',
+      shaman: 'shaman',
+      necro: 'necro',
+      necromancer: 'necro',
+      warlock: 'warlock',
+      hunter: 'hunter',
+      monk: 'monk',
+      samurai: 'samurai',
+      swordsman: 'samurai'
+    }[professionKey] || 'warrior';
+  }
+
+  function resolveCardTemplateKey(manifest) {
+    const templates = manifest?.templates || {};
+    const requested = String(state.current?.cardTemplate || '').trim();
+    const inferred = inferCardTemplateKey();
+    return templates[requested] ? requested : templates[inferred] ? inferred : manifest?.defaultTemplate || Object.keys(templates)[0] || '';
+  }
+
+  function cardTemplateLabel(entry) {
+    return entry?.label || entry?.key || 'template';
+  }
+
+  function applyTemplateBox(el, box, dim) {
+    el.style.position = 'absolute';
+    el.style.left = `${(Number(box.x || 0) / dim.width) * 100}%`;
+    el.style.top = `${(Number(box.y || 0) / dim.height) * 100}%`;
+    el.style.width = `${(Number(box.w || 0) / dim.width) * 100}%`;
+    el.style.height = `${(Number(box.h || 0) / dim.height) * 100}%`;
+  }
+
+  function scaledCardFontSize(baseSize, dim, text, role) {
+    const size = Number(baseSize || (role === 'title' ? 48 : 30));
+    return `${(size / dim.width) * 100}cqw`;
+  }
+
+  function renderFullCardPreview(host, entry, cfg, artManifest = null) {
+    host.innerHTML = '';
+    if (!entry || !cfg) {
+      const empty = document.createElement('div');
+      empty.className = 'muted';
+      empty.textContent = '未找到卡牌模板配置。';
+      host.appendChild(empty);
+      return;
+    }
+    const dim = cfg.imageDimensions || { width: 1086, height: 1448 };
+    const card = state.current || {};
+    const artTransform = ensureCardArtTransform(card);
+    const titleText = card.name || state.entryKey || '';
+    const faceText = card.cardText || card.text || '';
+
+    const preview = document.createElement('div');
+    preview.style.width = 'min(100%, 300px)';
+    preview.style.aspectRatio = `${dim.width} / ${dim.height}`;
+    preview.style.position = 'relative';
+    preview.style.containerType = 'inline-size';
+    preview.style.overflow = 'visible';
+    preview.style.background = 'transparent';
+    preview.style.margin = '6px auto 0';
+
+    if (cfg.artBox) {
+      const artSlot = document.createElement('div');
+      applyTemplateBox(artSlot, cfg.artBox, dim);
+      artSlot.style.overflow = 'hidden';
+      artSlot.style.zIndex = '1';
+      artSlot.style.background = '#111';
+      const art = document.createElement('img');
+      art.src = assetUrl(cardArtPath(card, artManifest));
+      art.alt = '';
+      art.style.position = 'absolute';
+      art.style.left = `calc(50% + ${(artTransform.x / Number(cfg.artBox.w || 1)) * 100}%)`;
+      art.style.top = `calc(50% + ${(artTransform.y / Number(cfg.artBox.h || 1)) * 100}%)`;
+      art.style.width = '100%';
+      art.style.height = 'auto';
+      art.style.minHeight = '100%';
+      art.style.objectFit = 'cover';
+      art.style.transform = `translate(-50%, -50%) scale(${artTransform.scale})`;
+      art.style.transformOrigin = 'center';
+      artSlot.appendChild(art);
+      preview.appendChild(artSlot);
+    }
+
+    function addBackground(box, conf, role) {
+      if (!box || !conf?.bgImage) return;
+      const bgSlot = document.createElement('div');
+      applyTemplateBox(bgSlot, box, dim);
+      bgSlot.style.overflow = 'hidden';
+      bgSlot.style.zIndex = '2';
+      const bg = document.createElement('img');
+      bg.src = conf.bgImage;
+      bg.alt = '';
+      bg.style.position = 'absolute';
+      bg.style.left = '50%';
+      bg.style.top = '50%';
+      const fillScale = Math.max(role === 'desc' ? 1.5 : 1, Number(conf.bgTransform?.scale || 1));
+      bg.style.width = `${fillScale * 100}%`;
+      bg.style.height = `${fillScale * 100}%`;
+      bg.style.objectFit = 'fill';
+      bg.style.transform = `translate(calc(-50% + ${Number(conf.bgTransform?.x || 0) / Number(box.w || 1) * 100}%), calc(-50% + ${Number(conf.bgTransform?.y || 0) / Number(box.h || 1) * 100}%))`;
+      bg.style.transformOrigin = 'center';
+      bgSlot.appendChild(bg);
+      preview.appendChild(bgSlot);
+    }
+
+    addBackground(cfg.titleBox, cfg.textConfigs?.title, 'title');
+    addBackground(cfg.textBox, cfg.textConfigs?.desc, 'desc');
+
+    function addText(box, conf, text, role) {
+      if (!box) return;
+      const override = cardTextTransformFor(role, card);
+      const baseOffsetX = Number(conf?.offset?.x || 0);
+      const baseOffsetY = Number(conf?.offset?.y || 0);
+      const offsetX = baseOffsetX + Number(override.x || 0);
+      const offsetY = baseOffsetY + Number(override.y || 0);
+      const sizeOverride = Number(override.size || 0);
+      const baseSize = sizeOverride > 0 ? sizeOverride : role === 'desc' ? 60 : role === 'title' ? 55 : conf?.size;
+      const layer = document.createElement('div');
+      applyTemplateBox(layer, box, dim);
+      layer.style.zIndex = '3';
+      layer.style.overflow = 'hidden';
+      layer.style.display = 'flex';
+      layer.style.alignItems = role === 'title' ? 'center' : 'flex-start';
+      layer.style.justifyContent = 'center';
+      layer.style.textAlign = 'center';
+      layer.style.pointerEvents = 'none';
+      const inner = document.createElement('div');
+      if (role === 'title') {
+        Array.from(String(text || '')).forEach(char => {
+          const span = document.createElement('span');
+          span.textContent = char;
+          inner.appendChild(span);
+        });
+      } else {
+        inner.textContent = text;
+      }
+      inner.style.position = 'relative';
+      inner.style.left = `${(offsetX / Number(box.w || 1)) * 100}%`;
+      inner.style.top = `${(offsetY / Number(box.h || 1)) * 100}%`;
+      inner.style.width = role === 'title' ? '48%' : '92%';
+      inner.style.whiteSpace = 'pre-wrap';
+      inner.style.overflowWrap = 'break-word';
+      inner.style.lineHeight = role === 'title' ? '1' : '1.18';
+      inner.style.fontFamily = cardFontFamily(role, override.font);
+      inner.style.fontSize = scaledCardFontSize(baseSize, dim, text, role);
+      inner.style.color = conf?.color || '#fff';
+      inner.style.fontWeight = role === 'title' ? '900' : '500';
+      if (role === 'title') {
+        inner.style.display = 'flex';
+        inner.style.alignItems = 'center';
+        inner.style.justifyContent = 'space-between';
+      }
+      inner.style.textShadow = role === 'title'
+        ? '0 1px 1px #000, 0 0 2px #000'
+        : '0 1px 2px #000, 0 0 3px #000';
+      if (role === 'title' || conf?.strokeWidth) {
+        const stroke = role === 'title' ? Number(conf?.strokeWidth || 1.2) * 0.45 : Number(conf?.strokeWidth || 0.9);
+        inner.style.webkitTextStroke = `${(stroke / dim.width) * 100}cqw rgba(30, 12, 2, .72)`;
+      }
+      layer.appendChild(inner);
+      preview.appendChild(layer);
+    }
+
+    addText(cfg.titleBox, cfg.textConfigs?.title, titleText, 'title');
+    addText(cfg.textBox, cfg.textConfigs?.desc, faceText, 'desc');
+
+    const frame = document.createElement('img');
+    frame.src = entry.frame;
+    frame.alt = '';
+    frame.style.position = 'absolute';
+    frame.style.inset = '0';
+    frame.style.width = '100%';
+    frame.style.height = '100%';
+    frame.style.zIndex = '4';
+    frame.style.pointerEvents = 'none';
+    preview.appendChild(frame);
+    host.appendChild(preview);
+  }
+
+  function renderCardVisualFields(host) {
+    if (!state.current || state.scope === 'passives') return;
+    ensureCardArtTransform();
+
+    const section = document.createElement('div');
+    section.className = 'field';
+    const title = document.createElement('label');
+    title.textContent = '卡面显示设置';
+    section.appendChild(title);
+
+    const templateField = document.createElement('div');
+    templateField.className = 'field';
+    const templateLabel = document.createElement('label');
+    templateLabel.textContent = '卡牌模板';
+    templateField.appendChild(templateLabel);
+    const templateSelect = document.createElement('select');
+    const autoOption = document.createElement('option');
+    autoOption.value = '';
+    autoOption.textContent = `自动（${inferCardTemplateKey()}）`;
+    templateSelect.appendChild(autoOption);
+    templateSelect.value = state.current.cardTemplate || '';
+    templateField.appendChild(templateSelect);
+    section.appendChild(templateField);
+
+    const cardTextField = document.createElement('div');
+    cardTextField.className = 'field';
+    const cardTextLabel = document.createElement('label');
+    cardTextLabel.textContent = '卡面短文本（留空则使用上方完整描述）';
+    cardTextField.appendChild(cardTextLabel);
+    const cardTextArea = document.createElement('textarea');
+    cardTextArea.rows = 3;
+    cardTextArea.value = state.current.cardText || '';
+    cardTextArea.placeholder = '例：恢复 1D8。\n被动：每第 4 次治疗，额外恢复 1D6。';
+    cardTextArea.oninput = () => {
+      ensureEditableRuleset();
+      state.current.cardText = cardTextArea.value;
+      if (!state.current.cardText) delete state.current.cardText;
+      syncCurrentEntryToCache();
+      renderFriendlyPreview();
+      refreshPreview();
+    };
+    cardTextField.appendChild(cardTextArea);
+
+    const artGrid = document.createElement('div');
+    artGrid.className = 'field-grid';
+    const artPathField = document.createElement('div');
+    artPathField.className = 'field';
+    const artPathLabel = document.createElement('label');
+    artPathLabel.textContent = '插图路径（留空则使用默认职业立绘）';
+    artPathField.appendChild(artPathLabel);
+    const artInput = document.createElement('input');
+    artInput.type = 'text';
+    artInput.value = state.current.art || '';
+    artInput.placeholder = defaultCardArtForCurrent();
+    artPathField.appendChild(artInput);
+    const artSelect = document.createElement('select');
+    const artAuto = document.createElement('option');
+    artAuto.value = '';
+    artAuto.textContent = '自动匹配同名插图';
+    artSelect.appendChild(artAuto);
+    artPathField.appendChild(artSelect);
+    const artFile = document.createElement('input');
+    artFile.type = 'file';
+    artFile.accept = 'image/*';
+    artFile.onchange = () => {
+      const file = artFile.files && artFile.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        ensureEditableRuleset();
+        state.current.art = String(reader.result || '');
+        artInput.value = state.current.art;
+        syncCurrentEntryToCache();
+        renderFriendlyPreview();
+        refreshPreview();
+      };
+      reader.readAsDataURL(file);
+    };
+    artPathField.appendChild(artFile);
+    const artHint = document.createElement('div');
+    artHint.className = 'muted';
+    artHint.textContent = '可填写项目内路径；也可临时选择图片并以内嵌 data URL 保存。后续正式图建议放入 assets/card_art 后改为路径。';
+    artPathField.appendChild(artHint);
+    artGrid.appendChild(artPathField);
+
+    [
+      ['scale', '插图缩放', 'number', '0.05'],
+      ['x', '插图 X 偏移', 'number', '1'],
+      ['y', '插图 Y 偏移', 'number', '1']
+    ].forEach(([key, label, type, step]) => {
+      const field = document.createElement('div');
+      field.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      field.appendChild(lab);
+      const input = document.createElement('input');
+      input.type = type;
+      input.step = step;
+      input.value = state.current.artTransform?.[key] ?? (key === 'scale' ? 1 : 0);
+      input.oninput = () => {
+        ensureEditableRuleset();
+        const t = ensureCardArtTransform();
+        t[key] = key === 'scale' ? Math.max(0.1, Number(input.value || 1)) : Number(input.value || 0);
+        syncCurrentEntryToCache();
+        renderFriendlyPreview();
+        refreshPreview();
+      };
+      field.appendChild(input);
+      artGrid.appendChild(field);
+    });
+    section.appendChild(artGrid);
+
+    const textGrid = document.createElement('div');
+    textGrid.className = 'field-grid';
+    textGrid.appendChild(cardTextField);
+    cardTextField.style.gridColumn = '1 / -1';
+    const textAdjustHint = document.createElement('div');
+    textAdjustHint.className = 'muted';
+    textAdjustHint.style.gridColumn = '1 / -1';
+    textAdjustHint.textContent = '文字位置默认读取模板坐标；下面的数值是在模板基础上的每卡微调。标题字号填 0 使用默认 55，描述字号填 0 使用默认 60。';
+    textGrid.appendChild(textAdjustHint);
+    const textControlInputs = [];
+    [
+      ['title', '标题字体'],
+      ['desc', '描述字体']
+    ].forEach(([role, label]) => {
+      const field = document.createElement('div');
+      field.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      field.appendChild(lab);
+      const select = document.createElement('select');
+      CARD_FONT_OPTIONS.forEach(([value, text]) => {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = text;
+        select.appendChild(opt);
+      });
+      select.value = cardTextTransformFor(role).font || (role === 'title' ? 'Microsoft YaHei' : 'serif');
+      select.onchange = () => {
+        ensureEditableRuleset();
+        setCardTextTransformValue(role, 'font', select.value);
+        syncCurrentEntryToCache();
+        renderFriendlyPreview();
+        refreshPreview();
+      };
+      field.appendChild(select);
+      textGrid.appendChild(field);
+    });
+    [
+      ['title', '标题文字 X 偏移', 'x', '1'],
+      ['title', '标题文字 Y 偏移', 'y', '1'],
+      ['title', '标题字号覆盖', 'size', '1'],
+      ['desc', '描述文字 X 偏移', 'x', '1'],
+      ['desc', '描述文字 Y 偏移', 'y', '1'],
+      ['desc', '描述字号覆盖', 'size', '1']
+    ].forEach(([role, label, key, step]) => {
+      const field = document.createElement('div');
+      field.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      field.appendChild(lab);
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.step = step;
+      input.value = cardTextTransformFor(role)[key] ?? (key === 'size' ? (role === 'desc' ? 60 : role === 'title' ? 55 : 0) : 0);
+      input.placeholder = '模板值';
+      input.oninput = () => {
+        ensureEditableRuleset();
+        const value = key === 'size' ? Math.max(0, Number(input.value || 0)) : Number(input.value || 0);
+        setCardTextTransformValue(role, key, value);
+        syncCurrentEntryToCache();
+        renderFriendlyPreview();
+        refreshPreview();
+      };
+      field.appendChild(input);
+      textControlInputs.push({ role, key, input });
+      textGrid.appendChild(field);
+    });
+    const preview = document.createElement('div');
+    preview.className = 'summary-box';
+    preview.style.minHeight = '160px';
+    preview.style.display = 'flex';
+    preview.style.alignItems = 'center';
+    preview.style.gap = '12px';
+    preview.style.overflow = 'hidden';
+    const imgWrap = document.createElement('div');
+    imgWrap.style.width = '96px';
+    imgWrap.style.height = '132px';
+    imgWrap.style.flex = '0 0 auto';
+    imgWrap.style.overflow = 'hidden';
+    imgWrap.style.border = '1px solid rgba(255,255,255,.16)';
+    imgWrap.style.background = 'rgba(0,0,0,.28)';
+    const img = document.createElement('img');
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+    imgWrap.appendChild(img);
+    const meta = document.createElement('div');
+    meta.className = 'muted';
+    meta.style.whiteSpace = 'pre-wrap';
+    preview.appendChild(imgWrap);
+    preview.appendChild(meta);
+    section.appendChild(preview);
+
+    const fullPreviewField = document.createElement('div');
+    fullPreviewField.className = 'field';
+    const fullPreviewLabel = document.createElement('label');
+    fullPreviewLabel.textContent = '完整卡牌预览';
+    fullPreviewField.appendChild(fullPreviewLabel);
+    const fullPreviewLayout = document.createElement('div');
+    fullPreviewLayout.style.display = 'flex';
+    fullPreviewLayout.style.gap = '14px';
+    fullPreviewLayout.style.alignItems = 'flex-start';
+    fullPreviewLayout.style.flexWrap = 'wrap';
+    const fullPreview = document.createElement('div');
+    fullPreview.className = 'summary-box';
+    fullPreview.style.minHeight = '360px';
+    fullPreview.style.display = 'flex';
+    fullPreview.style.alignItems = 'center';
+    fullPreview.style.justifyContent = 'center';
+    fullPreview.style.overflow = 'visible';
+    fullPreview.style.flex = '1 1 360px';
+    fullPreviewLayout.appendChild(fullPreview);
+    textGrid.style.flex = '1 1 280px';
+    textGrid.style.margin = '0';
+    fullPreviewLayout.appendChild(textGrid);
+    fullPreviewField.appendChild(fullPreviewLayout);
+    section.appendChild(fullPreviewField);
+
+    function populateTemplateSelect(manifest) {
+      if (templateSelect.dataset.loaded) return;
+      const templates = manifest?.templates || {};
+      const inferred = inferCardTemplateKey();
+      autoOption.textContent = `自动（${cardTemplateLabel(templates[inferred])}）`;
+      Object.values(templates).forEach(entry => {
+        const opt = document.createElement('option');
+        opt.value = entry.key;
+        opt.textContent = cardTemplateLabel(entry);
+        templateSelect.appendChild(opt);
+      });
+      templateSelect.value = state.current.cardTemplate || '';
+      templateSelect.dataset.loaded = '1';
+    }
+
+    function populateArtSelect(artManifest) {
+      const previousValue = state.current.art || artSelect.value || '';
+      artSelect.innerHTML = '';
+      const artAuto = document.createElement('option');
+      artAuto.value = '';
+      artAuto.textContent = '自动匹配同名插图';
+      artSelect.appendChild(artAuto);
+      const images = artManifest?.images || [];
+      images.forEach(imgEntry => {
+        const opt = document.createElement('option');
+        opt.value = imgEntry.path;
+        opt.textContent = imgEntry.label || imgEntry.name || imgEntry.file;
+        artSelect.appendChild(opt);
+      });
+      artSelect.value = images.some(imgEntry => imgEntry.path === previousValue) ? previousValue : '';
+    }
+
+    function refreshPreview() {
+      const t = ensureCardArtTransform();
+      const artManifestPromise = loadCardArtManifest();
+      artManifestPromise.then(artManifest => {
+        if (!section.isConnected) return;
+        populateArtSelect(artManifest);
+        const currentArt = cardArtPath(state.current, artManifest);
+        img.src = assetUrl(currentArt);
+        artInput.placeholder = findMatchingCardArt(state.current, artManifest) || defaultCardArtForCurrent();
+        artSelect.value = state.current.art || '';
+        meta.textContent = `实际插图：${currentArt}\n卡面文本：${state.current.cardText || state.current.text || '（空）'}`;
+      });
+      img.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
+      fullPreview.textContent = '加载卡牌模板...';
+      Promise.all([loadCardTemplateManifest(), artManifestPromise]).then(([manifest, artManifest]) => {
+        if (!section.isConnected) return;
+        populateTemplateSelect(manifest);
+        populateArtSelect(artManifest);
+        const key = resolveCardTemplateKey(manifest);
+        const entry = manifest.templates?.[key];
+        return loadCardTemplateConfig(entry).then(cfg => {
+          if (!section.isConnected) return;
+          textControlInputs.forEach(({ role, key, input }) => {
+            const conf = cfg?.textConfigs?.[role] || {};
+            const templateValue = key === 'size' ? (role === 'desc' ? 60 : role === 'title' ? 55 : Number(conf.size || 0)) : Number(conf.offset?.[key] || 0);
+            input.placeholder = `模板 ${templateValue}`;
+            input.title = `${cardTemplateLabel(entry)} 模板基础值：${templateValue}`;
+          });
+          renderFullCardPreview(fullPreview, entry, cfg, artManifest);
+        });
+      });
+    }
+
+    artInput.oninput = () => {
+      ensureEditableRuleset();
+      state.current.art = artInput.value.trim();
+      if (!state.current.art) delete state.current.art;
+      syncCurrentEntryToCache();
+      renderFriendlyPreview();
+      refreshPreview();
+    };
+
+    artSelect.onchange = () => {
+      ensureEditableRuleset();
+      state.current.art = artSelect.value;
+      if (!state.current.art) delete state.current.art;
+      artInput.value = state.current.art || '';
+      syncCurrentEntryToCache();
+      renderFriendlyPreview();
+      refreshPreview();
+    };
+
+    templateSelect.onchange = () => {
+      ensureEditableRuleset();
+      if (templateSelect.value) state.current.cardTemplate = templateSelect.value;
+      else delete state.current.cardTemplate;
+      syncCurrentEntryToCache();
+      renderFriendlyPreview();
+      refreshPreview();
+    };
+
+    state.refreshCardVisualPreview = refreshPreview;
+    host.appendChild(section);
+    refreshPreview();
   }
 
 
@@ -797,6 +1465,14 @@
     if (Array.isArray(c.config.negativeEffects) && c.config.negativeEffects.length) lines.push(`Negative Effects: ${c.config.negativeEffects.map(x => x.negativeEffectType || x.effectType).join(', ')}`);
     if (c.config.modes) lines.push(`Modes: ${c.config.modes.length}`);
     if (c.text) lines.push(`Description: ${c.text}`);
+    if (c.cardText) lines.push(`Card Face Text: ${c.cardText}`);
+    if (state.scope !== 'passives') {
+      const t = c.artTransform || {};
+      lines.push(`Card Template: ${c.cardTemplate || `auto:${inferCardTemplateKey()}`}`);
+      lines.push(`Card Art: ${cardArtPath(c)}`);
+      lines.push(`Art Transform: scale ${t.scale || 1}, x ${t.x || 0}, y ${t.y || 0}`);
+      if (c.textTransform) lines.push(`Text Transform: ${JSON.stringify(c.textTransform)}`);
+    }
     $('friendly-preview').textContent = lines.join('\n');
     $('json-preview').value = JSON.stringify(state.current, null, 2);
   }
@@ -1028,9 +1704,11 @@
       state.current.text = descArea.value;
       syncCurrentEntryToCache();
       renderFriendlyPreview();
+      if (state.refreshCardVisualPreview) state.refreshCardVisualPreview();
     };
     descField.appendChild(descArea);
     host.appendChild(descField);
+    renderCardVisualFields(host);
     const grid = document.createElement('div');
     grid.className = 'field-grid';
     (tpl?.fields || []).forEach(([k, label, type]) => {
@@ -1465,6 +2143,7 @@
       syncCurrentEntryToCache();
       renderFriendlyPreview();
       renderSummary();
+      if (state.refreshCardVisualPreview) state.refreshCardVisualPreview();
     };
     $('template-select').onchange = () => initTemplateConfig($('template-select').value);
     $('status-template-select').onchange = renderStatusFields;

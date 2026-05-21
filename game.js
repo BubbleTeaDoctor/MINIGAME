@@ -415,8 +415,8 @@
       scale: 0.78,
       footOffset: 34,
       animations: {
-        idle: { file: 'assets/map/summons/gorgon/idle.png', frames: 7, duration: 900, loop: true },
-        attack: { file: 'assets/map/summons/gorgon/attack.png', frames: 16, duration: 720 }
+        idle: { file: 'assets/map/summons/bone-dragon-new/idle.png?v=boneDragonAi2', frames: 6, duration: 900, loop: true },
+        attack: { file: 'assets/map/summons/bone-dragon-new/attack.png?v=boneDragonAi2', frames: 8, duration: 720 }
       }
     }
   };
@@ -883,6 +883,10 @@
   function normalizeProfessionKey(professionKey){
     return PROFESSION_KEY_ALIASES[professionKey] || professionKey;
   }
+
+  function hasProfession(player, key){
+    return normalizeProfessionKey(player?.professionKey) === key;
+  }
   const ULTIMATE_CUTIN_DEFAULTS = {
     duration: 2850,
     hitStop: 250,
@@ -1075,6 +1079,9 @@
     customArenaBackdropName: '',
     boardZoom: 0.7,
     boardZoomAuto: true,
+    boardCenterQueued: false,
+    boardPanX: 0,
+    boardPanY: 0,
     battleLog: [],
     debugLog: [],
   };
@@ -2574,6 +2581,7 @@
     clearUltimateCutIn();
     startBattleAudio();
     document.body.classList.add('battle-running');
+    state.boardCenterQueued = true;
     relocateLanguageControls();
     syncArenaScreenBackdrop();
     const rulesetId = runRulesetFromId(savedRun?.rulesetId);
@@ -2654,13 +2662,20 @@
     applyRunRewardsToPlayer(state.players[0], stageIndex);
     $('setup-panel').classList.add('hidden');
     $('game-screen').classList.remove('hidden');
+    window.scrollTo?.(0, 0);
     spawnBattleChest();
     state.players.forEach(p=>drawCards(p, state.matchOptions.drawOpening + Number(p.drawOpeningBonus || 0)));
     state.players.forEach(p=>ensureHandLimit(p));
     log(`Arena Run ${stage.name}: ${stage.title}. Deck ${state.run.runDeck.length} cards.`);
     saveRunState();
+    setTimeout(centerBoardViewport, 120);
+    setTimeout(centerBoardViewport, 420);
+    setTimeout(centerBoardViewport, 820);
     startTurn();
     setTimeout(fitBoardZoom, 0);
+    setTimeout(centerBoardViewport, 120);
+    setTimeout(centerBoardViewport, 420);
+    setTimeout(centerBoardViewport, 820);
   }
 
   function finishRunBattle(winnerId){
@@ -2786,6 +2801,526 @@
     if(state.ruleset?.data) return state.ruleset.data;
     const id = $('ruleset-select')?.value || STUDIO_RUNTIME.getActiveRulesetId?.();
     return id ? STUDIO_RUNTIME.findRuleset(id)?.data : null;
+  }
+
+  const GAME_CARD_TEMPLATE_MANIFEST_URL = 'assets/card-templates/manifest.json';
+  const GAME_CARD_ART_MANIFEST_URL = 'assets/card_art/manifest.json';
+  let gameCardTemplateManifest = null;
+  let gameCardTemplateManifestPromise = null;
+  let gameCardArtManifest = null;
+  let gameCardArtManifestPromise = null;
+  const gameCardTemplateConfigs = {};
+  let gameCardTemplateRerenderQueued = false;
+
+  function assetUrl(path){
+    const value = String(path || '').trim();
+    if(!value || /^(data:|blob:|https?:)/i.test(value)) return value;
+    const [base, suffix = ''] = value.split(/([?#].*)/, 2);
+    return base.split('/').map(part => encodeURIComponent(part)).join('/') + suffix;
+  }
+
+  function loadGameCardTemplateManifest(){
+    if(gameCardTemplateManifest) return Promise.resolve(gameCardTemplateManifest);
+    if(!gameCardTemplateManifestPromise){
+      gameCardTemplateManifestPromise = fetch(GAME_CARD_TEMPLATE_MANIFEST_URL)
+        .then(res => {
+          if(!res.ok) throw new Error(`card template manifest ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          gameCardTemplateManifest = data || { templates:{}, defaultTemplate:'warrior' };
+          return gameCardTemplateManifest;
+        })
+        .catch(err => {
+          console.warn('Card template manifest unavailable.', err);
+          gameCardTemplateManifest = { templates:{}, defaultTemplate:'warrior' };
+          return gameCardTemplateManifest;
+        });
+    }
+    return gameCardTemplateManifestPromise;
+  }
+
+  function loadGameCardArtManifest(){
+    if(gameCardArtManifest) return Promise.resolve(gameCardArtManifest);
+    if(!gameCardArtManifestPromise){
+      gameCardArtManifestPromise = fetch(`${GAME_CARD_ART_MANIFEST_URL}?v=${Date.now()}`, { cache:'no-store' })
+        .then(res => {
+          if(!res.ok) throw new Error(`card art manifest ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          gameCardArtManifest = data || { images:[] };
+          return gameCardArtManifest;
+        })
+        .catch(err => {
+          console.warn('Card art manifest unavailable.', err);
+          gameCardArtManifest = { images:[] };
+          return gameCardArtManifest;
+        });
+    }
+    return gameCardArtManifestPromise;
+  }
+
+  function loadGameCardTemplateConfig(entry){
+    if(!entry?.key || !entry?.config) return Promise.resolve(null);
+    const cached = gameCardTemplateConfigs[entry.key];
+    if(cached?.value) return Promise.resolve(cached.value);
+    if(cached?.promise) return cached.promise;
+    const record = gameCardTemplateConfigs[entry.key] = {};
+    record.promise = fetch(entry.config)
+      .then(res => {
+        if(!res.ok) throw new Error(`card template config ${res.status}`);
+        return res.json();
+      })
+      .then(cfg => {
+        record.value = cfg;
+        return cfg;
+      })
+      .catch(err => {
+        console.warn(`Card template config unavailable: ${entry.key}`, err);
+        record.value = null;
+        return null;
+      });
+    return record.promise;
+  }
+
+  function scheduleHandCardTemplateRerender(){
+    if(gameCardTemplateRerenderQueued) return;
+    gameCardTemplateRerenderQueued = true;
+    requestAnimationFrame(() => {
+      gameCardTemplateRerenderQueued = false;
+      renderHand();
+    });
+  }
+
+  function inferGameCardTemplateKey(player, handItem, cardDef){
+    const requested = String(cardDef?.cardTemplate || '').trim();
+    if(requested) return requested;
+    const origin = String(handItem?.origin || cardDef?.source || '').toLowerCase();
+    if(origin.includes('weapon') || origin.includes('武器')) return 'weapon';
+    if(origin.includes('accessory') || origin.includes('饰品')) return 'accessory';
+    if(origin.includes('armor') || origin.includes('护甲') || origin.includes('boots') || origin.includes('靴')) return 'gear';
+    if(origin.includes('relic') || origin.includes('咒物')) return 'relic';
+    if(origin.includes('negative') || origin.includes('负面')) return 'warlock';
+    const professionKey = normalizeProfessionKey(String(player?.professionKey || '').toLowerCase());
+    return {
+      warrior: 'warrior',
+      mage: 'mage',
+      rogue: 'assassin',
+      assassin: 'assassin',
+      priest: 'priest',
+      shaman: 'shaman',
+      necro: 'necro',
+      necromancer: 'necro',
+      warlock: 'warlock',
+      hunter: 'hunter',
+      monk: 'monk',
+      samurai: 'samurai',
+      swordsman: 'samurai'
+    }[professionKey] || 'warrior';
+  }
+
+  function resolveGameCardTemplateEntry(player, handItem, cardDef){
+    const manifest = gameCardTemplateManifest;
+    const templates = manifest?.templates || {};
+    const key = inferGameCardTemplateKey(player, handItem, cardDef);
+    return templates[key] || templates[manifest?.defaultTemplate] || templates[Object.keys(templates)[0]] || null;
+  }
+
+  function cardFontFamily(role, fontKey){
+    const fonts = {
+      SimHei: `"SimHei", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif`,
+      'Microsoft YaHei': `"Microsoft YaHei UI", "Microsoft YaHei", sans-serif`,
+      KaiTi: `"KaiTi", "STKaiti", "Microsoft YaHei", serif`,
+      SimSun: `"SimSun", "Songti SC", serif`,
+      FangSong: `"FangSong", "STFangsong", serif`,
+      serif: `serif`,
+      'sans-serif': `sans-serif`
+    };
+    if(fontKey && fonts[fontKey]) return fonts[fontKey];
+    return role === 'title' ? `"Microsoft YaHei UI", "Microsoft YaHei", "SimHei", sans-serif` : `serif`;
+  }
+
+  function applyTemplateBox(el, box, dim){
+    el.style.position = 'absolute';
+    el.style.left = `${(Number(box?.x || 0) / dim.width) * 100}%`;
+    el.style.top = `${(Number(box?.y || 0) / dim.height) * 100}%`;
+    el.style.width = `${(Number(box?.w || 0) / dim.width) * 100}%`;
+    el.style.height = `${(Number(box?.h || 0) / dim.height) * 100}%`;
+  }
+
+  function scaledGameCardFontSize(baseSize, dim){
+    return `${(Number(baseSize || 30) / dim.width) * 100}cqw`;
+  }
+
+  function fallbackCardArtForPlayer(player){
+    return professionArtFor(player?.professionKey)?.select || 'assets/portraits/warrior-select.png';
+  }
+
+  function normalizeCardArtName(value){
+    return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+  }
+
+  function findMatchingGameCardArt(handItem, cardDef){
+    const images = gameCardArtManifest?.images || [];
+    if(!images.length || !cardDef) return '';
+    const cardKey = String(handItem?.cardKey || '');
+    const candidates = [cardDef.name, cardKey, cardKey.replace(/^[a-z]+_/, '')]
+      .map(normalizeCardArtName)
+      .filter(Boolean);
+    const exact = images.find(img => candidates.includes(normalizeCardArtName(img.name)) || candidates.includes(normalizeCardArtName(img.label)));
+    return exact?.path || '';
+  }
+
+  function gameCardArtPath(player, handItem, cardDef){
+    const explicit = String(cardDef?.art || '').trim();
+    if(explicit) return explicit;
+    if(!gameCardArtManifest) loadGameCardArtManifest().then(() => scheduleHandCardTemplateRerender());
+    return findMatchingGameCardArt(handItem, cardDef) || fallbackCardArtForPlayer(player);
+  }
+
+  function renderFallbackHandCard(button, displayName, displaySource, displayTemplate, faceText){
+    button.classList.remove('card-full-art');
+    button.innerHTML = `<div class="card-name">${escapeHtml(displayName)}</div>
+      <div class="card-meta">${escapeHtml(I18N().t('source','来源'))}：${escapeHtml(displaySource)} · ${escapeHtml(I18N().t('template','模板'))}：${escapeHtml(displayTemplate)}</div>
+      <div class="card-text">${escapeHtml(faceText)}</div>`;
+  }
+
+  function renderFullHandCard(button, player, handItem, cardDef, displayName, displaySource, displayTemplate, faceText){
+    if(!gameCardTemplateManifest){
+      loadGameCardTemplateManifest().then(() => scheduleHandCardTemplateRerender());
+      renderFallbackHandCard(button, displayName, displaySource, displayTemplate, faceText);
+      return;
+    }
+    const entry = resolveGameCardTemplateEntry(player, handItem, cardDef);
+    const cfg = gameCardTemplateConfigs[entry?.key]?.value;
+    if(!entry || !cfg){
+      if(entry) loadGameCardTemplateConfig(entry).then(() => scheduleHandCardTemplateRerender());
+      renderFallbackHandCard(button, displayName, displaySource, displayTemplate, faceText);
+      return;
+    }
+
+    const dim = cfg.imageDimensions || { width: 1086, height: 1448 };
+    const artTransform = cardDef.artTransform || {};
+    const textTransform = cardDef.textTransform || {};
+    const artPath = gameCardArtPath(player, handItem, cardDef);
+    button.classList.add('card-full-art');
+    button.style.setProperty('--full-card-ratio', `${dim.width} / ${dim.height}`);
+    button.innerHTML = '';
+
+    const face = document.createElement('div');
+    face.className = 'game-card-face';
+    face.style.aspectRatio = `${dim.width} / ${dim.height}`;
+    face.style.containerType = 'inline-size';
+
+    if(cfg.artBox){
+      const artSlot = document.createElement('div');
+      artSlot.className = 'game-card-art-slot';
+      applyTemplateBox(artSlot, cfg.artBox, dim);
+      const art = document.createElement('img');
+      art.src = assetUrl(artPath);
+      art.alt = '';
+      art.style.left = `calc(50% + ${(Number(artTransform.x || 0) / Number(cfg.artBox.w || 1)) * 100}%)`;
+      art.style.top = `calc(50% + ${(Number(artTransform.y || 0) / Number(cfg.artBox.h || 1)) * 100}%)`;
+      art.style.transform = `translate(-50%, -50%) scale(${Math.max(0.1, Number(artTransform.scale || 1))})`;
+      artSlot.appendChild(art);
+      face.appendChild(artSlot);
+    }
+
+    function addBackground(box, conf, role){
+      if(!box || !conf?.bgImage) return;
+      const slot = document.createElement('div');
+      slot.className = `game-card-bg game-card-${role}-bg`;
+      applyTemplateBox(slot, box, dim);
+      const bg = document.createElement('img');
+      bg.src = conf.bgImage;
+      bg.alt = '';
+      const fillScale = Math.max(role === 'desc' ? 1.5 : 1, Number(conf.bgTransform?.scale || 1));
+      bg.style.width = `${fillScale * 100}%`;
+      bg.style.height = `${fillScale * 100}%`;
+      bg.style.transform = `translate(calc(-50% + ${Number(conf.bgTransform?.x || 0) / Number(box.w || 1) * 100}%), calc(-50% + ${Number(conf.bgTransform?.y || 0) / Number(box.h || 1) * 100}%))`;
+      slot.appendChild(bg);
+      face.appendChild(slot);
+    }
+
+    function addText(box, conf, text, role){
+      if(!box) return;
+      const override = textTransform[role] || {};
+      const layer = document.createElement('div');
+      layer.className = `game-card-text-layer game-card-${role}-layer`;
+      applyTemplateBox(layer, box, dim);
+      const inner = document.createElement('div');
+      inner.className = `game-card-${role}-text`;
+      if(role === 'title'){
+        Array.from(String(text || '')).forEach(char => {
+          const span = document.createElement('span');
+          span.textContent = char;
+          inner.appendChild(span);
+        });
+      } else {
+        inner.textContent = text || '';
+      }
+      const offsetX = Number(conf?.offset?.x || 0) + Number(override.x || 0);
+      const offsetY = Number(conf?.offset?.y || 0) + Number(override.y || 0);
+      const baseSize = Number(override.size || 0) || (role === 'desc' ? 60 : role === 'title' ? 55 : Number(conf?.size || 30));
+      inner.style.left = `${(offsetX / Number(box.w || 1)) * 100}%`;
+      inner.style.top = `${(offsetY / Number(box.h || 1)) * 100}%`;
+      inner.style.fontFamily = cardFontFamily(role, override.font || (role === 'title' ? 'Microsoft YaHei' : 'serif'));
+      inner.style.fontSize = scaledGameCardFontSize(baseSize, dim);
+      inner.style.color = conf?.color || '#fff';
+      if(role === 'title' || conf?.strokeWidth){
+        const stroke = role === 'title' ? Number(conf?.strokeWidth || 1.2) * 0.45 : Number(conf?.strokeWidth || 0.9);
+        inner.style.webkitTextStroke = `${(stroke / dim.width) * 100}cqw rgba(30, 12, 2, .72)`;
+      }
+      layer.appendChild(inner);
+      face.appendChild(layer);
+    }
+
+    addBackground(cfg.titleBox, cfg.textConfigs?.title, 'title');
+    addBackground(cfg.textBox, cfg.textConfigs?.desc, 'desc');
+    addText(cfg.titleBox, cfg.textConfigs?.title, displayName, 'title');
+    addText(cfg.textBox, cfg.textConfigs?.desc, faceText, 'desc');
+
+    const frame = document.createElement('img');
+    frame.className = 'game-card-frame';
+    frame.src = assetUrl(entry.frame);
+    frame.alt = '';
+    face.appendChild(frame);
+    button.appendChild(face);
+  }
+
+  function closeCardInspect(){
+    const overlay = document.querySelector('.card-inspect-overlay');
+    overlay?._inspectZoomCleanup?.();
+    overlay?.remove();
+    document.removeEventListener('keydown', handleCardInspectKeydown);
+  }
+
+  function handleCardInspectKeydown(event){
+    if(event.key === 'Escape') closeCardInspect();
+  }
+
+  function fullCardEffectText(cardDef, fallbackText){
+    const candidates = [
+      cardDef?.fullText,
+      cardDef?.effectText,
+      cardDef?.description,
+      cardDef?.desc,
+      cardDef?.text,
+      fallbackText
+    ];
+    return String(candidates.find(value => String(value || '').trim()) || '').trim();
+  }
+
+  function clampNumber(value, min, max){
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function touchDistance(a, b){
+    return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  }
+
+  function touchCenter(a, b){
+    return {
+      x: (a.clientX + b.clientX) / 2,
+      y: (a.clientY + b.clientY) / 2
+    };
+  }
+
+  function setupCardInspectZoom(overlay, content){
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const state = {
+      scale: 1,
+      x: 0,
+      y: 0,
+      minScale: 0.82,
+      maxScale: 2.65,
+      pinchDistance: 0,
+      pinchScale: 1,
+      dragX: 0,
+      dragY: 0,
+      dragStartX: 0,
+      dragStartY: 0,
+      dragging: false
+    };
+    const apply = () => {
+      const rect = content.getBoundingClientRect();
+      const maxX = Math.max(0, (rect.width * (state.scale - 1)) / 2 + 48);
+      const maxY = Math.max(0, (rect.height * (state.scale - 1)) / 2 + 48);
+      state.x = clampNumber(state.x, -maxX, maxX);
+      state.y = clampNumber(state.y, -maxY, maxY);
+      content.style.setProperty('--inspect-scale', state.scale.toFixed(3));
+      content.style.setProperty('--inspect-x', `${state.x.toFixed(1)}px`);
+      content.style.setProperty('--inspect-y', `${state.y.toFixed(1)}px`);
+      content.style.transform = `translate3d(${state.x.toFixed(1)}px, ${state.y.toFixed(1)}px, 0) scale(${state.scale.toFixed(3)})`;
+      content.classList.toggle('is-zoomed', state.scale > 1.001);
+    };
+    const zoomAt = (nextScale, clientX, clientY) => {
+      const oldScale = state.scale;
+      nextScale = clampNumber(nextScale, state.minScale, state.maxScale);
+      if(Math.abs(nextScale - oldScale) < 0.001) return;
+      const rect = content.getBoundingClientRect();
+      const originX = Number.isFinite(clientX) ? clientX - (rect.left + rect.width / 2) : 0;
+      const originY = Number.isFinite(clientY) ? clientY - (rect.top + rect.height / 2) : 0;
+      const ratio = nextScale / oldScale;
+      state.x = originX - (originX - state.x) * ratio;
+      state.y = originY - (originY - state.y) * ratio;
+      state.scale = nextScale;
+      if(state.scale <= 1.001){
+        state.x = 0;
+        state.y = 0;
+      }
+      apply();
+    };
+    const panBy = (dx, dy) => {
+      if(state.scale <= 1.001) return;
+      state.x += dx;
+      state.y += dy;
+      apply();
+    };
+    overlay.addEventListener('wheel', event => {
+      event.preventDefault();
+      const step = Math.exp(-event.deltaY * 0.0015);
+      zoomAt(state.scale * step, event.clientX, event.clientY);
+    }, { passive:false, signal });
+    overlay.addEventListener('dblclick', event => {
+      event.preventDefault();
+      if(state.scale > 1.05) zoomAt(1, event.clientX, event.clientY);
+      else zoomAt(1.8, event.clientX, event.clientY);
+    }, { signal });
+    content.addEventListener('mousedown', event => {
+      if(event.button !== 0 || state.scale <= 1.001) return;
+      event.preventDefault();
+      state.dragging = true;
+      state.dragStartX = event.clientX;
+      state.dragStartY = event.clientY;
+      state.dragX = state.x;
+      state.dragY = state.y;
+      content.classList.add('is-dragging');
+    }, { signal });
+    window.addEventListener('mousemove', event => {
+      if(!state.dragging || event.buttons !== 1) return;
+      event.preventDefault();
+      state.x = state.dragX + event.clientX - state.dragStartX;
+      state.y = state.dragY + event.clientY - state.dragStartY;
+      apply();
+    }, { signal });
+    window.addEventListener('mouseup', () => {
+      state.dragging = false;
+      content.classList.remove('is-dragging');
+    }, { signal });
+    overlay.addEventListener('touchstart', event => {
+      if(event.touches.length === 2){
+        event.preventDefault();
+        state.pinchDistance = touchDistance(event.touches[0], event.touches[1]);
+        state.pinchScale = state.scale;
+        state.dragging = false;
+      } else if(event.touches.length === 1 && state.scale > 1.001){
+        state.dragging = true;
+        state.dragStartX = event.touches[0].clientX;
+        state.dragStartY = event.touches[0].clientY;
+        state.dragX = state.x;
+        state.dragY = state.y;
+      }
+    }, { passive:false, signal });
+    overlay.addEventListener('touchmove', event => {
+      if(event.touches.length === 2 && state.pinchDistance > 0){
+        event.preventDefault();
+        const center = touchCenter(event.touches[0], event.touches[1]);
+        const distance = touchDistance(event.touches[0], event.touches[1]);
+        zoomAt(state.pinchScale * (distance / state.pinchDistance), center.x, center.y);
+      } else if(event.touches.length === 1 && state.dragging){
+        event.preventDefault();
+        state.x = state.dragX + event.touches[0].clientX - state.dragStartX;
+        state.y = state.dragY + event.touches[0].clientY - state.dragStartY;
+        apply();
+      }
+    }, { passive:false, signal });
+    overlay.addEventListener('touchend', event => {
+      if(event.touches.length < 2) state.pinchDistance = 0;
+      if(event.touches.length === 0) state.dragging = false;
+    }, { passive:false, signal });
+    overlay._inspectZoomReset = () => {
+      state.scale = 1;
+      state.x = 0;
+      state.y = 0;
+      state.dragging = false;
+      state.pinchDistance = 0;
+      content.classList.remove('is-dragging');
+      apply();
+    };
+    overlay._inspectZoomCleanup = () => controller.abort();
+    apply();
+  }
+
+  function openCardInspect(player, handItem, cardDef, displayName, displaySource, displayTemplate, faceText){
+    closeCardInspect();
+    const overlay = document.createElement('div');
+    overlay.className = 'card-inspect-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', displayName || 'card preview');
+    const stage = document.createElement('div');
+    stage.className = 'card-inspect-stage';
+    const card = document.createElement('div');
+    card.className = 'card card-inspect-card';
+    renderFullHandCard(card, player, handItem, cardDef, displayName, displaySource, displayTemplate, faceText);
+    const artView = document.createElement('div');
+    artView.className = 'card-inspect-art-view';
+    const artImg = document.createElement('img');
+    artImg.src = assetUrl(gameCardArtPath(player, handItem, cardDef));
+    artImg.alt = displayName || '';
+    artView.appendChild(artImg);
+    const effectPanel = document.createElement('aside');
+    effectPanel.className = 'card-inspect-effect-panel';
+    const effectTitle = document.createElement('div');
+    effectTitle.className = 'card-inspect-effect-title';
+    effectTitle.textContent = displayName || '效果';
+    const effectBody = document.createElement('div');
+    effectBody.className = 'card-inspect-effect-body';
+    effectBody.textContent = fullCardEffectText(cardDef, faceText);
+    effectPanel.appendChild(effectTitle);
+    effectPanel.appendChild(effectBody);
+    const hint = document.createElement('div');
+    hint.className = 'card-inspect-hint';
+    hint.textContent = '右键 / Esc / 点击空白关闭';
+    const content = document.createElement('div');
+    content.className = 'card-inspect-content';
+    content.appendChild(card);
+    content.appendChild(effectPanel);
+    content.appendChild(artView);
+    const actions = document.createElement('div');
+    actions.className = 'card-inspect-actions';
+    const artToggle = document.createElement('button');
+    artToggle.type = 'button';
+    artToggle.className = 'card-inspect-toggle';
+    artToggle.textContent = decodeURIComponent('%E6%9F%A5%E7%9C%8B%E5%8E%9F%E7%94%BB');
+    artToggle.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const artMode = !content.classList.contains('is-art-mode');
+      content.classList.toggle('is-art-mode', artMode);
+      artToggle.textContent = artMode
+        ? decodeURIComponent('%E6%9F%A5%E7%9C%8B%E5%8D%A1%E7%89%8C')
+        : decodeURIComponent('%E6%9F%A5%E7%9C%8B%E5%8E%9F%E7%94%BB');
+      overlay._inspectZoomReset?.();
+    });
+    actions.appendChild(artToggle);
+    stage.appendChild(content);
+    stage.appendChild(actions);
+    stage.appendChild(hint);
+    overlay.appendChild(stage);
+    setupCardInspectZoom(overlay, content);
+    overlay.addEventListener('click', event => {
+      if(event.target === overlay) closeCardInspect();
+    });
+    overlay.addEventListener('contextmenu', event => {
+      event.preventDefault();
+      closeCardInspect();
+    });
+    document.body.appendChild(overlay);
+    document.addEventListener('keydown', handleCardInspectKeydown);
   }
 
   function professionArtFor(professionKey){
@@ -3230,11 +3765,39 @@
   }
 
   function getProfessionPassives(player){
-    const rsProf = state.ruleset?.data?.professions?.[player.professionKey];
+    const normalizedKey = normalizeProfessionKey(player?.professionKey);
+    const rsProf = state.ruleset?.data?.professions?.[player.professionKey] || state.ruleset?.data?.professions?.[normalizedKey];
     const direct = rsProf?.passives || player.profession?.passives || {};
     const out = Object.entries(direct).map(([k,v]) => Object.assign({ key:k }, deep(v)));
     pushDebug('getProfessionPassives', { player: player.label, professionKey: player.professionKey, passiveKeys: out.map(x => x.key) });
     return out;
+  }
+
+  function activatedTokenCount(player, tokenType){
+    const summons = player?.summons || {};
+    if(tokenType === 'undead_token'){
+      return Number(summons.skeleton || 0) + Number(summons.bone_dragon || 0);
+    }
+    return Number(summons[tokenType] || 0);
+  }
+
+  function applyActivatedTokenScalingBlock(player){
+    if(!player?.alive) return;
+    for(const passive of getProfessionPassives(player)){
+      if(passive?.template !== 'activated_token_scaling_block') continue;
+      const cfg = passive.config || {};
+      if(cfg.rewardType && cfg.rewardType !== 'gain_block_each_turn') continue;
+      const tokenType = cfg.tokenType || 'undead_token';
+      const count = activatedTokenCount(player, tokenType);
+      if(count <= 0) continue;
+      const scaled = count * Number(cfg.ratio ?? 1);
+      const rounding = String(cfg.rounding || 'ceil');
+      const block = rounding === 'floor' ? Math.floor(scaled) : rounding === 'round' ? Math.round(scaled) : Math.ceil(scaled);
+      if(block <= 0) continue;
+      player.block += block;
+      log(`${player.label} 的被动 ${passive.name || '死灵法师被动'} 根据 ${count} 个亡灵随从获得 ${block} 格挡。`);
+      pushDebug('activated_token_scaling_block.applied', { player: player.label, passiveKey: passive.key, tokenType, count, block });
+    }
   }
 
   function buildDeckFor(playerConfig) {
@@ -3776,8 +4339,8 @@
     if(template === 'mark_target_for_bonus') return { projectile: defaults.projectile, hit: 'stun-gold', anim: 'cast' };
     if(template === 'aoe') return { area: ctlFx || defaults.hit || 'explosion-red', hit: ctlFx || defaults.hit || 'explosion-red', anim: 'cast' };
     if(cfg.applyTemplate === 'dot_damage_over_time'){
-      if(caster?.professionKey === 'necro' || caster?.professionKey === 'warlock') return { projectile: defaults.projectile, hit: 'dark-skull', anim: 'cast' };
-      if(caster?.professionKey === 'mage') return { projectile: 'fire', hit: 'fire-hit', anim: 'cast' };
+      if(hasProfession(caster, 'necro') || hasProfession(caster, 'warlock')) return { projectile: defaults.projectile, hit: 'dark-skull', anim: 'cast' };
+      if(hasProfession(caster, 'mage')) return { projectile: 'fire', hit: 'fire-hit', anim: 'cast' };
       return { projectile: defaults.projectile, hit: 'bleed-red', anim: 'attack' };
     }
     if(ctlFx) return { projectile: defaults.projectile, hit: ctlFx, anim: cfg.spell ? 'cast' : 'attack' };
@@ -3794,8 +4357,8 @@
     if(template === 'teleport' || template === 'dash_hit') return 'voiceJump';
     if(cfg.heal || cfg.healOnDamaged) return 'voiceHeal';
     if(cfg.applyTemplate === 'dot_damage_over_time'){
-      if(caster?.professionKey === 'mage') return 'voiceBurn';
-      if(caster?.professionKey === 'warlock' || caster?.professionKey === 'necro') return 'voiceCorruption';
+      if(hasProfession(caster, 'mage')) return 'voiceBurn';
+      if(hasProfession(caster, 'warlock') || hasProfession(caster, 'necro')) return 'voiceCorruption';
       return 'voiceBurn';
     }
     const profile = visualProfileForCard(cardKey, cardDef, caster);
@@ -3946,7 +4509,7 @@
     } else {
       target.statuses.dot = dot;
     }
-    log(`${target.label} 获得 ${sourceName}：每回合 ${dot.damagePerTick}，持�?${dot.durationTurns} 回合。`);
+    log(`${target.label} 获得 ${sourceName}：每回合 ${dot.damagePerTick}，持续 ${dot.durationTurns} 回合。`);
   }
 
   function applyControlStatus(target, controlType, duration, sourceName = '控制'){
@@ -3986,13 +4549,25 @@
     }
   }
 
+  function cardAppliesStun(cardDef){
+    const cfg = cardDef?.config || {};
+    if(Number(cfg.stun || 0) > 0) return true;
+    if(String(cfg.controlType || '') === 'stun') return true;
+    if(Number(cfg.apply?.stun || 0) > 0 || String(cfg.apply?.controlType || '') === 'stun') return true;
+    if(Number(cfg.applyConfig?.stun || 0) > 0 || String(cfg.applyConfig?.controlType || '') === 'stun') return true;
+    if(cfg.applyTemplate === 'control_status'){
+      return String(cfg.applyConfig?.controlType || cfg.controlType || 'stun') === 'stun';
+    }
+    return false;
+  }
+
   function applySourceOnHitEffects(attacker, target, source, sourceName, opts = {}){
     if(!target || !source) return;
     applyStatusConfig(target, source.apply || {}, sourceName);
     applyTemplateEffect(target, source.applyTemplate, source.applyConfig || {}, sourceName, attacker, source);
     const passive = attacker?.profession?.passives?.shaman_passive;
     const sourceHasOwnDot = source.applyTemplate === 'dot_damage_over_time';
-    if(opts.includeBasicPassive && !sourceHasOwnDot && attacker?.professionKey === 'shaman' && passive?.template === 'weapon_basic_inflicts_status'){
+    if(opts.includeBasicPassive && !sourceHasOwnDot && hasProfession(attacker, 'shaman') && passive?.template === 'weapon_basic_inflicts_status'){
       const cfg = passive.config || {};
       if((cfg.statusType || 'burn') === 'burn'){
         applyDotEffect(target, {
@@ -4307,7 +4882,7 @@
   function basicProjectileFor(player){
     const presentation = weaponPresentation(player);
     const basic = getActiveBasicAttack(player);
-    if(player?.professionKey === 'mage' && presentation.kind === 'wand') return 'mageBasic';
+    if(hasProfession(player, 'mage') && presentation.kind === 'wand') return 'mageBasic';
     if(presentation.kind === 'wand') return 'fire';
     if(presentation.kind === 'bow' || Number(basic?.range || 1) > 1) return 'arrow';
     return '';
@@ -4823,7 +5398,7 @@ function maybeTriggerRunLowHpRecovery(player){
   const heal = rollOrValue(`${player.label} 绝境回复`, '1d10');
   player.hp = Math.min(player.maxHp, player.hp + heal);
   triggerSkillTileFx('heal-green', player.pos);
-  log(`${player.label} 的绝境回复恢�?${heal} 生命。`);
+  log(`${player.label} 的绝境回复恢复 ${heal} 生命。`);
 }
 
 function grantRunSpecialTileDodge(player, reason){
@@ -4831,7 +5406,7 @@ function grantRunSpecialTileDodge(player, reason){
   if(Number(player.buffs.runDodgeReductionCharges || 0) > 0) return;
   player.buffs.runDodgeReductionCharges = 1;
   triggerSkillTileFx('buff-gold', player.pos);
-  log(`${player.label} �?${reason || '特殊地格'} 获得危险步伐：下次受到伤�?-3。`);
+  log(`${player.label} 因 ${reason || '特殊地格'} 获得危险步伐：下次受到伤害 -3。`);
 }
 
 function takePureDamage(player, rawDamage, sourceName = '伤害'){
@@ -4978,19 +5553,13 @@ async function applyRewardList(player, rewards, labelPrefix){
       log(`${player.label} 的下次普攻 +${v}。`);
       } else if (reward.type === 'bonus_die' || reward.type === 'bonusDie') {
         player.buffs.nextBasicDie = reward.value;
-        log(`${player.label} 获得额外�?${reward.value}。`);
+        log(`${player.label} 获得额外骰 ${reward.value}。`);
       } else if (reward.type === 'draw') {
         drawCards(player, Number(reward.value || 1));
       } else if (reward.type === 'extra_basic_cap') {
         const v = Number(reward.value || 1);
         player.buffs.extraBasicCap = (player.buffs.extraBasicCap || 0) + v;
-        const refunded = Math.min(v, Number(player.turn?.basicSpent || 0));
-        if (refunded > 0) {
-          player.turn.basicSpent = Math.max(0, player.turn.basicSpent - refunded);
-          log(`${player.label} 立即返还 ${refunded} 次普通攻击次数。`);
-        } else {
-          log(`${player.label} 本回合额外获�?${v} 次普攻容量。`);
-        }
+        log(`${player.label} 本回合额外获得 ${v} 次普攻容量。`);
       } else if (reward.type === 'spell_immune') {
         player.buffs.spellImmune = true;
         log(`${player.label} 获得法术无效。`);
@@ -5000,7 +5569,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       } else if (reward.type === 'extra_class_card_use') {
         const v = Number(reward.value || 1);
         player.buffs.extraClassCardUses = (player.buffs.extraClassCardUses || 0) + v;
-        log(`${player.label} 本回合额外获�?${v} 次职业卡使用次数。`);
+        log(`${player.label} 本回合额外获得 ${v} 次职业卡使用次数。`);
       } else if (reward.type === 'card') {
         grantCardToHand(player, reward.cardKey || reward.value, reward.origin);
       }
@@ -5057,7 +5626,7 @@ async function applyRewardList(player, rewards, labelPrefix){
             player.turn.passiveOnceTriggered = player.turn.passiveOnceTriggered || {};
             player.turn.passiveOnceTriggered[passiveKey] = true;
           }
-          log(`${player.label} 的被�?${passive.name || ''} 在造成伤害后触发多重增益。`);
+          log(`${player.label} 的被动 ${passive.name || ''} 在造成伤害后触发多重增益。`);
         }
       }
     }
@@ -5225,6 +5794,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     hideDeckTooltip();
     startBattleAudio();
     document.body.classList.add('battle-running');
+    state.boardCenterQueued = true;
     relocateLanguageControls();
     syncArenaScreenBackdrop();
     const rulesetId = $('ruleset-select').value;
@@ -5271,13 +5841,20 @@ async function applyRewardList(player, rewards, labelPrefix){
     clearUltimateCutIn();
     $('setup-panel').classList.add('hidden');
     $('game-screen').classList.remove('hidden');
+    window.scrollTo?.(0, 0);
     $('log').innerHTML = '';
     spawnBattleChest();
     state.players.forEach(p=>drawCards(p, state.matchOptions.drawOpening + Number(p.drawOpeningBonus || 0)));
     state.players.forEach(p=>ensureHandLimit(p));
     log(isBlackHoleEnabled() ? '对局开始。黑洞每回合将所有单位向中心牵引 1 格。' : '对局开始。黑洞已关闭。');
+    setTimeout(centerBoardViewport, 120);
+    setTimeout(centerBoardViewport, 420);
+    setTimeout(centerBoardViewport, 820);
     startTurn();
     setTimeout(fitBoardZoom, 0);
+    setTimeout(centerBoardViewport, 120);
+    setTimeout(centerBoardViewport, 420);
+    setTimeout(centerBoardViewport, 820);
   }
 
   function relocateLanguageControls(){
@@ -5300,6 +5877,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.id === 1) state.turnCount = Number(state.turnCount || 0) + 1;
     resetTurnState(p);
     p.block = 0;
+    applyActivatedTokenScalingBlock(p);
     applyRelicTurnStart(p);
     if(!p.alive){
       state.winner = enemyOf(p)?.id || 1;
@@ -5312,7 +5890,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.statuses.burn>0){ takePureDamage(p, 2); p.statuses.burn -= 1; log(`${p.label} 受到点燃 2 伤害。`); }
     if(p.hp<=0){ p.hp=0; p.alive=false; state.winner = enemyOf(p)?.id || 1; render(); setHint('对局结束'); return; }
     const enemy = enemyOf(p);
-    if(p.professionKey==='necro' && enemy){
+    if(hasProfession(p, 'necro') && enemy){
       let bonus = 0;
       const skeletons = p.summons?.skeleton || 0;
       const dragons = p.summons?.bone_dragon || 0;
@@ -5326,11 +5904,13 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.hp<=0){ p.hp=0; p.alive=false; state.winner = enemyOf(p)?.id || 1; render(); setHint('对局结束'); return; }
     if(p.statuses.stun>0){
       p.statuses.stun -= 1;
+      p.statuses.stunRecovery = Math.max(Number(p.statuses.stunRecovery || 0), 1);
       log(`${p.label} 被眩晕，跳过本回合。`);
       render();
       setTimeout(() => nextTurn(p.id), 450);
       return;
     }
+    if(p.statuses.stunRecovery > 0) p.statuses.stunRecovery = 0;
     drawCards(p, state.matchOptions.drawPerTurn + Number(p.drawPerTurnBonus || 0));
     if(ensureHandLimit(p)){ render(); return; }
     setMode('待机');
@@ -5371,6 +5951,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.id === 1) state.turnCount = Number(state.turnCount || 0) + 1;
     resetTurnState(p);
     p.block = 0;
+    applyActivatedTokenScalingBlock(p);
     applyRelicTurnStart(p);
     if(!p.alive){
       state.winner = enemyOf(p)?.id || 1;
@@ -5394,7 +5975,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       return;
     }
     const enemy = enemyOf(p);
-    if(p.professionKey === 'necro' && enemy){
+    if(hasProfession(p, 'necro') && enemy){
       let bonus = 0;
       const skeletons = p.summons?.skeleton || 0;
       const dragons = p.summons?.bone_dragon || 0;
@@ -5424,11 +6005,13 @@ async function applyRewardList(player, rewards, labelPrefix){
     }
     if(p.statuses.stun > 0){
       p.statuses.stun -= 1;
-      log(`${p.label} is stunned and skips the turn.`);
+      p.statuses.stunRecovery = Math.max(Number(p.statuses.stunRecovery || 0), 1);
+      log(`${p.label} 被眩晕，跳过本回合。`);
       render();
       setTimeout(() => nextTurn(p.id), 450);
       return;
     }
+    if(p.statuses.stunRecovery > 0) p.statuses.stunRecovery = 0;
     drawCards(p, state.matchOptions.drawPerTurn + Number(p.drawPerTurnBonus || 0));
     if(ensureHandLimit(p)){
       render();
@@ -5937,10 +6520,10 @@ async function applyRewardList(player, rewards, labelPrefix){
       if(critCheck >= 6){
         const critDamage = await showDice('普攻暴击', '1d8');
         dmg += critDamage;
-        log(`${p.label} 的普攻暴击追�?${critDamage} 伤害。`);
+        log(`${p.label} 的普攻暴击追加 ${critDamage} 伤害。`);
       }
     }
-    if(p.professionKey==='rogue' && isControlled(target)) dmg += await showDice('盗贼被动', '1d4');
+    if(hasProfession(p, 'rogue') && isControlled(target)) dmg += await showDice('盗贼被动', '1d4');
     triggerBasicAttackVisual(p, target);
     const basicAnim = basicAttackAnimForDamage(p, target, dmg);
     const damageResult = dealDamage(p, target, dmg, { sourceName: b.name || '普通攻击', anim: basicAnim, spell: basicAnim === 'cast' || weaponPresentation(p).kind === 'wand' });
@@ -5948,7 +6531,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(!damageResult.dodged) applySourceOnHitEffects(p, target, b, b.name || '普通攻击', { includeBasicPassive: true });
     if(!damageResult.dodged && hasRunReward(p, 'melee_pressure') && target?.alive){
       target.buffs.runMovePenaltyNext = Math.max(Number(target.buffs.runMovePenaltyNext || 0), 1);
-      log(`${p.label} 的近战压制使 ${target.label} 下回合移�?-1。`);
+      log(`${p.label} 的近战压制使 ${target.label} 下回合移动 -1。`);
     }
     p.turn.basicSpent += 1;
     p.buffs.nextBasicFlat = 0; p.buffs.nextBasicDie = null; p.buffs.swordBonusStored = false;
@@ -6080,7 +6663,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         const heal = typeof cardDef.config.heal==='string' && cardDef.config.heal.includes('d') ? await showDice('治疗', cardDef.config.heal) : Number(cardDef.config.heal||0);
         p.hp = Math.min(p.maxHp, p.hp + heal);
         if(heal > 0) playVoiceLine('voiceHealed', 0.68, 900);
-        if(p.professionKey==='priest'){ p.counters.heal_count += 1; if(p.counters.heal_count % 4 === 0){ const bonus = await showDice('牧师被动', '1d6'); p.hp = Math.min(p.maxHp, p.hp + bonus); log(`${p.label} 的牧师被动额外恢复 ${bonus}。`); } }
+        if(hasProfession(p, 'priest')){ p.counters.heal_count += 1; if(p.counters.heal_count % 4 === 0){ const bonus = await showDice('牧师被动', '1d6'); p.hp = Math.min(p.maxHp, p.hp + bonus); log(`${p.label} 的牧师被动额外恢复 ${bonus}。`); } }
       }
       if(cardDef.config.block){ const block = typeof cardDef.config.block==='string' && cardDef.config.block.includes('d') ? await showDice('格挡', cardDef.config.block) : Number(cardDef.config.block||0); p.block += block; }
       if(cardDef.config.buffBasic) p.buffs.nextBasicFlat = (p.buffs.nextBasicFlat||0) + Number(cardDef.config.buffBasic||0);
@@ -6107,7 +6690,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         p.buffs.disarmAttackerCharges = (p.buffs.disarmAttackerCharges||0) + 1;
       }
       if(cardDef.name.includes('法术无效') || cardDef.config.consumeOn==='next_spell_hit') p.buffs.spellImmune = true;
-      log(`${p.label} 使用�?${cardDef.name}，当前生�?${p.hp}，格�?${p.block}。`);
+      log(`${p.label} 使用 ${cardDef.name}，当前生命 ${p.hp}，格挡 ${p.block}。`);
       finishAfterAction();
       return;
     }
@@ -6118,7 +6701,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       triggerSelfCardVisual(handItem.cardKey, cardDef, p);
       await applyRewardList(p, cardDef.config.rewardList || [], cardDef.name);
       if(cardDef.config.consumeOn === 'next_spell_hit') p.buffs.spellImmune = true;
-      log(`${p.label} 使用�?${cardDef.name}，直接获得多个增益。当前生�?${p.hp}，格�?${p.block}。`);
+      log(`${p.label} 使用 ${cardDef.name}，直接获得多个增益。当前生命 ${p.hp}，格挡 ${p.block}。`);
       finishAfterAction();
       return;
     }
@@ -6262,7 +6845,7 @@ async function applyRewardList(player, rewards, labelPrefix){
           await applyRewardList(p, cardDef.config.rewardList || [], cardDef.name);
           log(`${cardDef.name} 达到阈值 ${threshold}，获得后续增益。`);
         } else {
-          log(`${cardDef.name} 未达到阈�?${threshold}，不获得后续增益。`);
+          log(`${cardDef.name} 未达到阈值 ${threshold}，不获得后续增益。`);
         }
       }
       if(cardDef.template==='damage_roll_grant_card'){
@@ -6273,9 +6856,9 @@ async function applyRewardList(player, rewards, labelPrefix){
           if(cardDef.config.refundBucket === 'weapon_or_accessory') p.turn.weaponOrAccessoryUsed = false;
           if(cardDef.config.refundBucket === 'equipment_skill') p.turn.equipmentSkillUsed = false;
           if(cardDef.config.refundBucket === 'basic_attack') p.turn.basicSpent = Math.max(0, (p.turn.basicSpent || 0) - 1);
-          log(`${p.label} �?${cardDef.name} 触发成功，可以再次行动。`);
+          log(`${p.label} 的 ${cardDef.name} 触发成功，可以再次行动。`);
         } else {
-          log(`${p.label} �?${cardDef.name} 未触发追加效果。`);
+          log(`${p.label} 的 ${cardDef.name} 未触发追加效果。`);
         }
       }
       await applyDamageTriggeredPassives(p, damageResult.finalDamage, target, cardDef.name);
@@ -6304,7 +6887,7 @@ async function applyRewardList(player, rewards, labelPrefix){
         const damageResult = dealDamage(p, target, dmg, { sourceName: cardDef.name, anim: cardAnim, spell: !!cardDef.config?.spell });
         applyLifeSteal(p, damageResult.finalDamage, cardDef.config || {}, cardDef.name, { hit: !damageResult.dodged });
         if(!damageResult.dodged) applySourceOnHitEffects(p, target, cardDef.config || {}, cardDef.name);
-        log(`${p.label} �?${cardDef.name} 命中 ${target.label}，原始伤�?${dmg}，实际伤�?${damageResult.finalDamage}，目标当前生�?${target.hp}，格�?${target.block}。`);
+        log(`${p.label} 的 ${cardDef.name} 命中 ${target.label}，原始伤害 ${dmg}，实际伤害 ${damageResult.finalDamage}，目标当前生命 ${target.hp}，格挡 ${target.block}。`);
       }
       log(`${p.label} 使用 ${cardDef.name} 对范围内目标结算完成。`);
       finishAfterAction();
@@ -6451,6 +7034,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.statuses.disarm>0) out.push(`<span class="status-chip">${I18N().t('status_disarm','缴械')}</span>`);
     if(p.statuses.sheep>0) out.push(`<span class="status-chip">${I18N().t('status_sheep','变羊')}</span>`);
     if(p.statuses.stun>0) out.push(`<span class="status-chip">眩晕 ${p.statuses.stun}</span>`);
+    if(p.statuses.stunRecovery>0) out.push(`<span class="status-chip">眩晕恢复</span>`);
     if(p.statuses.root>0) out.push(`<span class="status-chip">定身 ${p.statuses.root}</span>`);
     const dotCount = (p.statuses.dot ? 1 : 0) + (Array.isArray(p.statuses.dots) ? p.statuses.dots.length : 0);
     if(dotCount) out.push(statusChip(`${I18N().t('status_dot','DOT')} x${dotCount}`, dotStatusTooltip(p)));
@@ -6468,7 +7052,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     if(p.buffs.nextBasicFlat) out.push(`<span class="status-chip">下次普攻 +${p.buffs.nextBasicFlat}</span>`);
     if(p.buffs.nextBasicDie) out.push(`<span class="status-chip">下次普攻 +${p.buffs.nextBasicDie}</span>`);
     if(p.buffs.runChestBasicBonusDie) out.push(`<span class="status-chip">宝箱普攻 +${p.buffs.runChestBasicBonusDie}</span>`);
-    if(p.buffs.runShieldHalfCharges) out.push(`<span class="status-chip">开场护�?x${p.buffs.runShieldHalfCharges}</span>`);
+    if(p.buffs.runShieldHalfCharges) out.push(`<span class="status-chip">开场护盾 x${p.buffs.runShieldHalfCharges}</span>`);
     if(p.buffs.runDodgeReductionCharges) out.push(`<span class="status-chip">危险步伐 -3 x${p.buffs.runDodgeReductionCharges}</span>`);
     if(p.buffs.runLowHpRecoveryAvailable) out.push(`<span class="status-chip">绝境回复 x${p.buffs.runLowHpRecoveryAvailable}</span>`);
     if(p.buffs.runMovePenaltyActive) out.push(`<span class="status-chip">移动 -${p.buffs.runMovePenaltyActive}</span>`);
@@ -6731,6 +7315,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     const svg = $('board'); svg.innerHTML = '';
     const blackHoleOn = isBlackHoleEnabled();
     svg.classList.toggle('black-hole-off', !blackHoleOn);
+    syncBoardPanCursor();
     renderArenaBackdrop(svg);
     const hl = tileHighlights(); const active=current();
     state.board.forEach(t=>{
@@ -6794,6 +7379,10 @@ async function applyRewardList(player, rewards, labelPrefix){
       renderPixelUnit(svg, p, x, y);
     });
     renderHazardEffects(svg);
+    if(state.boardCenterQueued){
+      state.boardCenterQueued = false;
+      centerBoardViewport();
+    }
   }
 
   function unitPalette(player){
@@ -7164,6 +7753,7 @@ async function applyRewardList(player, rewards, labelPrefix){
       const b=document.createElement('button');
       b.className='card'+(state.selectedCardIndex===idx?' selected':'');
       b.type = 'button';
+      b.dataset.handIndex = String(idx);
       b.setAttribute('aria-pressed', state.selectedCardIndex===idx ? 'true' : 'false');
       if(mobileTwoRow){
         const perRow = Math.ceil(count / 2);
@@ -7172,24 +7762,124 @@ async function applyRewardList(player, rewards, labelPrefix){
         const rowCount = row === 0 ? perRow : Math.max(0, count - perRow);
         const rowMid = (Math.max(1, rowCount) - 1) / 2;
         b.style.setProperty('--fan-x', '0px');
-        b.style.setProperty('--fan-rotate', `${(rowIndex - rowMid) * 3.1}deg`);
-        b.style.setProperty('--fan-y', `${row * 6 + Math.abs(rowIndex - rowMid) * 2}px`);
+        b.style.setProperty('--fan-rotate', `${(rowIndex - rowMid) * 4.2}deg`);
+        b.style.setProperty('--fan-y', `${row * 8 + Math.abs(rowIndex - rowMid) * 7}px`);
         b.style.zIndex = String((row === 0 ? 20 : 60) + idx);
         if(row === 1) b.classList.add('mobile-row-back');
         if(rowIndex === 0) b.classList.add('mobile-row-start');
       } else {
         b.style.setProperty('--fan-x', '0px');
-        b.style.setProperty('--fan-rotate', `${(idx - mid) * 2.4}deg`);
-        b.style.setProperty('--fan-y', `${Math.abs(idx - mid) * 3}px`);
+        b.style.setProperty('--fan-rotate', `${(idx - mid) * 4.8}deg`);
+        b.style.setProperty('--fan-y', `${Math.abs(idx - mid) * 10}px`);
         b.style.zIndex = String(20 + idx);
       }
-      b.innerHTML=`<div class="card-name">${I18N().entity('card', item.cardKey, def.name)}</div>
-        <div class="card-meta">${I18N().t('source','来源')}：${I18N().entity('origin', item.origin, item.origin)} · ${I18N().t('template','模板')}：${I18N().entity('template', def.template, def.template)}</div>
-        <div class="card-text">${def.text || ''}</div>`;
-      b.onclick = ()=>playCardFromHand(idx);
+      const displayName = I18N().entity('card', item.cardKey, def.name);
+      const displaySource = I18N().entity('origin', item.origin, item.origin);
+      const displayTemplate = I18N().entity('template', def.template, def.template);
+      const faceText = def.cardText || def.text || '';
+      renderFullHandCard(b, p, item, def, displayName, displaySource, displayTemplate, faceText);
+      b.onclick = event => {
+        if(!isPointInsideHandCard(b, event.clientX, event.clientY)) return;
+        playCardFromHand(idx);
+      };
+      b.oncontextmenu = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        if(!isPointInsideHandCard(b, event.clientX, event.clientY)) return;
+        openCardInspect(p, item, def, displayName, displaySource, displayTemplate, faceText);
+      };
       hand.appendChild(b);
     });
+    hand.onmousemove = event => updateHandHoverAt(hand, event.clientX, event.clientY);
+    hand.onmouseleave = () => clearHandHover(hand);
     fitHandCardText();
+  }
+
+  function clearHandHover(hand){
+    const root = hand || $('hand');
+    root?.querySelectorAll('.card.hand-hover').forEach(card => card.classList.remove('hand-hover'));
+    removeHandHoverPreview();
+  }
+
+  function removeHandHoverPreview(){
+    document.querySelector('.hand-hover-preview')?.remove();
+  }
+
+  function renderHandHoverPreview(target){
+    if(!target) return;
+    const rect = target.getBoundingClientRect();
+    const existing = document.querySelector('.hand-hover-preview');
+    const preview = existing || document.createElement('div');
+    preview.className = 'hand-hover-preview';
+    preview.style.left = `${rect.left + rect.width / 2}px`;
+    preview.style.top = `${Math.max(10, rect.top - 8)}px`;
+    if(preview.dataset.sourceIndex === target.dataset.handIndex && existing) return;
+    preview.dataset.sourceIndex = target.dataset.handIndex || '';
+    preview.innerHTML = '';
+    const clone = target.cloneNode(true);
+    clone.classList.remove('hand-hover', 'selected');
+    clone.removeAttribute('aria-pressed');
+    clone.removeAttribute('style');
+    clone.tabIndex = -1;
+    clone.style.width = `${Math.max(1, target.offsetWidth || rect.width)}px`;
+    preview.appendChild(clone);
+    document.body.appendChild(preview);
+  }
+
+  function isPointInsideHandCard(card, clientX, clientY){
+    if(!card) return false;
+    if(!Number.isFinite(clientX) || !Number.isFinite(clientY)) return true;
+    const hadHover = card.classList.contains('hand-hover');
+    if(hadHover) card.classList.remove('hand-hover');
+    const rect = card.getBoundingClientRect();
+    if(hadHover) card.classList.add('hand-hover');
+    const fullArt = card.classList.contains('card-full-art');
+    const insetX = fullArt ? Math.min(rect.width * 0.2, 44) : Math.min(rect.width * 0.08, 16);
+    const insetTop = fullArt ? Math.min(rect.height * 0.08, 22) : Math.min(rect.height * 0.06, 14);
+    const insetBottom = fullArt ? Math.min(rect.height * 0.1, 28) : Math.min(rect.height * 0.06, 14);
+    return clientX >= rect.left + insetX
+      && clientX <= rect.right - insetX
+      && clientY >= rect.top + insetTop
+      && clientY <= rect.bottom - insetBottom;
+  }
+
+  function isPointInsideHandCardHold(card, clientX, clientY){
+    if(!card) return false;
+    if(!Number.isFinite(clientX) || !Number.isFinite(clientY)) return true;
+    const hadHover = card.classList.contains('hand-hover');
+    if(hadHover) card.classList.remove('hand-hover');
+    const rect = card.getBoundingClientRect();
+    if(hadHover) card.classList.add('hand-hover');
+    const padX = Math.min(rect.width * 0.08, 18);
+    const padY = Math.min(rect.height * 0.08, 20);
+    return clientX >= rect.left - padX
+      && clientX <= rect.right + padX
+      && clientY >= rect.top - padY
+      && clientY <= rect.bottom + padY;
+  }
+
+  function updateHandHoverAt(hand, clientX, clientY){
+    const cards = Array.from(hand.querySelectorAll('.card'));
+    const existing = hand.querySelector('.card.hand-hover');
+    const target = cards
+      .slice()
+      .reverse()
+      .find(card => isPointInsideHandCard(card, clientX, clientY));
+    if(target === existing){
+      renderHandHoverPreview(target);
+      return;
+    }
+    if(!target && existing && isPointInsideHandCardHold(existing, clientX, clientY)){
+      renderHandHoverPreview(existing);
+      return;
+    }
+    cards.forEach(card => card.classList.remove('hand-hover'));
+    if(target){
+      target.classList.add('hand-hover');
+      renderHandHoverPreview(target);
+    } else {
+      removeHandHoverPreview();
+    }
   }
 
   function fitHandCardText(){
@@ -7508,6 +8198,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     for(const entry of aiCardEntries(player)){
       const cardDef = entry.cardDef;
       const template = cardDef.template;
+      if(shouldAiAvoidStunLock(player, enemy, cardDef)) continue;
       if(isNegativeCardDef(cardDef)){
         const score = 720 + Math.max(0, 7 - player.hand.length) * 8;
         if(!best || score > best.score) best = { type:'card', entry, score };
@@ -7537,6 +8228,16 @@ async function applyRewardList(player, rewards, labelPrefix){
       }
     }
     return best;
+  }
+
+  function shouldAiAvoidStunLock(player, enemy, cardDef){
+    return player?.type === 'ai'
+      && cardAppliesStun(cardDef)
+      && (Number(enemy?.statuses?.stun || 0) > 0 || Number(enemy?.statuses?.stunRecovery || 0) > 0);
+  }
+
+  function aiActionAppliesStun(action){
+    return action?.type === 'card' && cardAppliesStun(action.entry?.cardDef);
   }
 
   function chooseAiMove(player, enemy){
@@ -7630,8 +8331,14 @@ async function applyRewardList(player, rewards, labelPrefix){
         }
         if(!action) action = chooseAiMove(actor, enemy);
         if(!action) break;
+        const actionWasStun = aiActionAppliesStun(action);
         const acted = await executeAiAction(action);
         if(!acted || state.winner || state.pending?.type === 'discard') return;
+        const enemyAfter = enemyOf(actor);
+        if(actionWasStun && Number(enemyAfter?.statuses?.stun || 0) > 0){
+          pushDebug('ai.turn.stopped_after_stun', { actor: actor.label, target: enemyAfter.label, source: action.entry?.cardDef?.name || action.type });
+          break;
+        }
         await waitForActionResolvingDone();
         await wait(360);
       }
@@ -7646,7 +8353,7 @@ async function applyRewardList(player, rewards, labelPrefix){
     const p=current();
     if(isActionResolving()) return;
     if(state.pending?.type==='discard'){ setHint(`请先弃牌至 ${handLimit()} 张。`); return; }
-    if(p.professionKey==='swordsman' && p.turn.basicSpent===0) p.buffs.nextBasicFlat = Math.max(p.buffs.nextBasicFlat||0, 5);
+    if(hasProfession(p, 'swordsman') && p.turn.basicSpent===0) p.buffs.nextBasicFlat = Math.max(p.buffs.nextBasicFlat||0, 5);
     if(p.buffs.extraBasicCap) p.buffs.extraBasicCap = 0;
     if(p.buffs.extraClassCardUses) p.buffs.extraClassCardUses = 0;
     if(p.statuses.slow>0) p.statuses.slow -= 1;
@@ -7802,10 +8509,68 @@ async function applyRewardList(player, rewards, labelPrefix){
     return Math.max(min, Math.min(max, Number(value || state.boardZoom || 0.7)));
   }
 
-  function setBoardZoom(value, auto = false){
+  function canPanBoardViewport(){
+    return !state.pending && state.selectedCardIndex === null && !isActionResolving();
+  }
+
+  function syncBoardPanCursor(){
+    const wrap = $('board-wrap');
+    if(!wrap) return;
+    wrap.classList.toggle('is-board-pannable', canPanBoardViewport());
+  }
+
+  function boardScrollOffset(board){
+    if(!board) return { x: 0, y: 0 };
+    const style = getComputedStyle(board);
+    const marginLeft = Number.parseFloat(style.marginLeft) || 0;
+    const marginTop = Number.parseFloat(style.marginTop) || 0;
+    return {
+      x: board.offsetLeft + marginLeft,
+      y: board.offsetTop + marginTop
+    };
+  }
+
+  function clampBoardPan(x, y){
+    const wrap = $('board-wrap');
+    const board = $('board');
+    if(!wrap || !board) return { x: 0, y: 0 };
+    const maxX = wrap.clientWidth * 0.75;
+    const minX = wrap.clientWidth * 0.25 - board.clientWidth;
+    const maxY = wrap.clientHeight * 0.65;
+    const minY = wrap.clientHeight * 0.18 - board.clientHeight;
+    return {
+      x: Math.max(minX, Math.min(maxX, Number(x) || 0)),
+      y: Math.max(minY, Math.min(maxY, Number(y) || 0))
+    };
+  }
+
+  function setBoardPan(x, y){
+    const board = $('board');
+    const pan = clampBoardPan(x, y);
+    state.boardPanX = pan.x;
+    state.boardPanY = pan.y;
+    if(board){
+      board.style.setProperty('--board-pan-x-px', `${pan.x}px`);
+      board.style.setProperty('--board-pan-y-px', `${pan.y}px`);
+    }
+  }
+
+  function setBoardZoom(value, auto = false, focus = null){
+    const wrap = $('board-wrap');
+    const board = $('board');
+    let focusAnchor = null;
+    if(wrap && board && focus && board.clientWidth && board.clientHeight){
+      const boardRect = board.getBoundingClientRect();
+      const wrapRect = wrap.getBoundingClientRect();
+      focusAnchor = {
+        xRatio: (focus.clientX - boardRect.left) / Math.max(1, boardRect.width),
+        yRatio: (focus.clientY - boardRect.top) / Math.max(1, boardRect.height),
+        wrapX: focus.clientX - wrapRect.left,
+        wrapY: focus.clientY - wrapRect.top
+      };
+    }
     state.boardZoom = clampBoardZoom(value);
     state.boardZoomAuto = !!auto;
-    const board = $('board');
     if(board){
       board.style.width = `${Math.round(BOARD_VIEW.width * state.boardZoom)}px`;
       board.style.height = `${Math.round(BOARD_VIEW.height * state.boardZoom)}px`;
@@ -7813,60 +8578,147 @@ async function applyRewardList(player, rewards, labelPrefix){
     const label = $('board-zoom-label');
     if(label) label.textContent = `${Math.round(state.boardZoom * 100)}%`;
     if(auto) centerBoardViewport();
+    else if(wrap && board && focusAnchor){
+      requestAnimationFrame(() => {
+        const offset = boardScrollOffset(board);
+        setBoardPan(
+          focusAnchor.wrapX - offset.x - focusAnchor.xRatio * board.clientWidth,
+          focusAnchor.wrapY - offset.y - focusAnchor.yRatio * board.clientHeight
+        );
+      });
+    }
+    syncBoardPanCursor();
   }
 
   function bindBoardTouchGestures(){
     const wrap = $('board-wrap');
     if(!wrap) return;
+    if(wrap.dataset.boardGesturesBound === '1') return;
+    wrap.dataset.boardGesturesBound = '1';
 
-    let initialDist = 0;
-    let initialZoom = 1;
-    let startX = 0, startY = 0;
-    let startScrollX = 0, startScrollY = 0;
+    const dragThreshold = 6;
+    let drag = null;
+    let pinch = null;
+    let suppressClick = false;
+
+    const touchDistance = touches => Math.hypot(
+      touches[0].clientX - touches[1].clientX,
+      touches[0].clientY - touches[1].clientY
+    );
+    const touchCenterPoint = touches => ({
+      clientX: (touches[0].clientX + touches[1].clientX) / 2,
+      clientY: (touches[0].clientY + touches[1].clientY) / 2
+    });
+    const beginDrag = (clientX, clientY, pointerType) => {
+      if(!canPanBoardViewport()) return false;
+      drag = {
+        pointerType,
+        startX: clientX,
+        startY: clientY,
+        scrollX: wrap.scrollLeft,
+        scrollY: wrap.scrollTop,
+        panX: state.boardPanX,
+        panY: state.boardPanY,
+        moved: false
+      };
+      wrap.classList.add('is-board-panning');
+      syncBoardPanCursor();
+      return true;
+    };
+    const updateDrag = (clientX, clientY) => {
+      if(!drag) return false;
+      const dx = clientX - drag.startX;
+      const dy = clientY - drag.startY;
+      if(!drag.moved && Math.hypot(dx, dy) < dragThreshold) return false;
+      drag.moved = true;
+      setBoardPan(drag.panX + dx, drag.panY + dy);
+      return true;
+    };
+    const endDrag = () => {
+      if(drag?.moved) suppressClick = true;
+      drag = null;
+      wrap.classList.remove('is-board-panning');
+      syncBoardPanCursor();
+    };
+
+    wrap.addEventListener('wheel', e => {
+      e.preventDefault();
+      const wheelScale = Math.pow(1.0012, -e.deltaY);
+      setBoardZoom(state.boardZoom * wheelScale, false, { clientX: e.clientX, clientY: e.clientY });
+    }, { passive: false });
+
+    wrap.addEventListener('mousedown', e => {
+      if(e.button !== 0 || !beginDrag(e.clientX, e.clientY, 'mouse')) return;
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if(!drag || drag.pointerType !== 'mouse') return;
+      if(updateDrag(e.clientX, e.clientY)) e.preventDefault();
+    });
+    document.addEventListener('mouseup', () => {
+      if(drag?.pointerType === 'mouse') endDrag();
+    });
+
+    wrap.addEventListener('click', e => {
+      if(!suppressClick) return;
+      suppressClick = false;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }, true);
+
+    wrap.addEventListener('mouseenter', syncBoardPanCursor);
+    wrap.addEventListener('mousemove', syncBoardPanCursor);
 
     wrap.addEventListener('touchstart', e => {
       if(e.touches.length === 2){
-        initialDist = Math.hypot(
-          e.touches[0].pageX - e.touches[1].pageX,
-          e.touches[0].pageY - e.touches[1].pageY
-        );
-        initialZoom = state.boardZoom;
+        pinch = {
+          dist: touchDistance(e.touches),
+          zoom: state.boardZoom
+        };
+        drag = null;
+        e.preventDefault();
       } else if(e.touches.length === 1){
-        startX = e.touches[0].pageX;
-        startY = e.touches[0].pageY;
-        startScrollX = wrap.scrollLeft;
-        startScrollY = wrap.scrollTop;
+        pinch = null;
+        beginDrag(e.touches[0].clientX, e.touches[0].clientY, 'touch');
       }
     }, { passive: false });
 
     wrap.addEventListener('touchmove', e => {
       if(e.touches.length === 2){
         e.preventDefault();
-        const dist = Math.hypot(
-          e.touches[0].pageX - e.touches[1].pageX,
-          e.touches[0].pageY - e.touches[1].pageY
-        );
-        if(initialDist > 0){
-          const zoomDelta = dist / initialDist;
-          setBoardZoom(initialZoom * zoomDelta, false);
+        if(!pinch){
+          pinch = { dist: touchDistance(e.touches), zoom: state.boardZoom };
+          return;
         }
-      } else if(e.touches.length === 1){
-        e.preventDefault();
-        const dx = e.touches[0].pageX - startX;
-        const dy = e.touches[0].pageY - startY;
-        wrap.scrollLeft = startScrollX - dx;
-        wrap.scrollTop = startScrollY - dy;
+        if(pinch.dist > 0){
+          setBoardZoom(pinch.zoom * (touchDistance(e.touches) / pinch.dist), false, touchCenterPoint(e.touches));
+        }
+      } else if(e.touches.length === 1 && drag?.pointerType === 'touch'){
+        if(updateDrag(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault();
       }
     }, { passive: false });
+
+    wrap.addEventListener('touchend', e => {
+      if(e.touches.length < 2) pinch = null;
+      if(e.touches.length === 0 && drag?.pointerType === 'touch') endDrag();
+    });
+    wrap.addEventListener('touchcancel', () => {
+      pinch = null;
+      endDrag();
+    });
   }
 
   function centerBoardViewport(){
     const wrap = $('board-wrap');
     if(!wrap) return;
-    requestAnimationFrame(() => {
-      const overflowX = wrap.scrollWidth - wrap.clientWidth;
-      if(overflowX > 2) wrap.scrollLeft = Math.round(overflowX / 2);
-    });
+    const applyCenter = () => {
+      const board = $('board');
+      if(!board) return;
+      setBoardPan((wrap.clientWidth - board.clientWidth) / 2, 0);
+    };
+    applyCenter();
+    requestAnimationFrame(applyCenter);
+    setTimeout(applyCenter, 60);
   }
 
   function fitBoardZoom(){
