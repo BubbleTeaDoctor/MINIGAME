@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mage New Sprite Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101522;
+      --panel: #171e2e;
+      --panel2: #202a40;
+      --ink: #eef6ff;
+      --muted: #9fb5ca;
+      --line: #31415b;
+      --ice: #8ee9ff;
+      --gold: #d4a75e;
+      --fire: #ff7a3b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 20% 12%, rgba(142, 233, 255, .13), transparent 31%),
+        radial-gradient(circle at 86% 20%, rgba(255, 122, 59, .12), transparent 28%),
+        var(--bg);
+      color: var(--ink);
+    }
+    main {
+      width: min(1240px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0;
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    h1 { margin: 0 0 14px; font-size: 20px; font-weight: 750; letter-spacing: 0; }
+    .stage, .controls, .sheet {
+      border: 1px solid var(--line);
+      background: rgba(23, 30, 46, .9);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, .24);
+    }
+    .stage { padding: 18px; }
+    .viewport {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(45deg, #20293b 25%, transparent 25%),
+        linear-gradient(-45deg, #20293b 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #20293b 75%),
+        linear-gradient(-45deg, transparent 75%, #20293b 75%),
+        #141b2a;
+      background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+      background-size: 24px 24px;
+      border: 1px solid var(--line);
+      image-rendering: pixelated;
+    }
+    canvas {
+      display: block;
+      width: min(94%, 520px);
+      height: auto;
+      image-rendering: pixelated;
+    }
+    #basicProjectilePreview, #projectilePreview, #impactPreview { width: min(96%, 512px); height: auto; }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .controls {
+      margin-top: 14px;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      background: var(--panel2);
+      color: var(--ink);
+      font: inherit;
+      cursor: pointer;
+    }
+    button.active {
+      border-color: var(--ice);
+      color: #07101c;
+      background: linear-gradient(135deg, var(--ice), var(--gold), var(--fire));
+      font-weight: 750;
+    }
+    label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; }
+    input[type="range"] { width: 100%; }
+    .sheet { padding: 14px; overflow: hidden; }
+    .sheet img {
+      display: block;
+      width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+      border: 1px solid var(--line);
+      margin-bottom: 12px;
+    }
+    .note { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0; }
+    @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <div class="stage">
+        <h1>Blue Crystal Mage Preview</h1>
+        <div class="viewport">
+          <canvas id="preview" width="640" height="416" aria-label="mage animation preview"></canvas>
+        </div>
+        <div class="meta">
+          <span id="animName">idle</span>
+          <span id="frameInfo">frame 1 / 6</span>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="actions" id="actions"></div>
+        <label>
+          Speed <span id="fpsValue">8 FPS</span>
+          <input id="fps" type="range" min="2" max="18" value="8">
+        </label>
+        <label>
+          Zoom <span id="zoomValue">1.00x</span>
+          <input id="zoom" type="range" min="70" max="160" value="100">
+        </label>
+      </div>
+      <div class="stage" style="margin-top: 14px;">
+        <h1>Projectile / Impact</h1>
+        <div class="viewport" style="aspect-ratio: 4 / 1;">
+          <canvas id="basicProjectilePreview" width="512" height="128" aria-label="basic attack projectile preview"></canvas>
+        </div>
+        <div class="viewport" style="aspect-ratio: 4 / 1; margin-top: 10px;">
+          <canvas id="projectilePreview" width="512" height="128" aria-label="projectile preview"></canvas>
+        </div>
+        <div class="viewport" style="aspect-ratio: 4 / 1; margin-top: 10px;">
+          <canvas id="impactPreview" width="512" height="128" aria-label="impact preview"></canvas>
+        </div>
+        <div class="meta"><span>basic bolt / spell bolt / impact</span><span>8 / 8 / 6 frames</span></div>
+      </div>
+    </section>
+    <section class="sheet">
+      <img src="assets/sprites/mage-new-preview/mage-new-contact-sheet.png" alt="mage-new sprite contact sheet">
+      <img src="assets/sprites/mage-new/cast.png" alt="mage-new cast strip">
+      <p class="note">Preview only. Assets are generated as fixed 320x208 transparent strips under assets/sprites/mage-new and are not wired into game.js yet.</p>
+    </section>
+  </main>
+  <script>
+    const frameW = 320;
+    const frameH = 208;
+    const animations = [
+      { key: "idle", label: "Idle", frames: 6, duration: 980 },
+      { key: "run", label: "Run", frames: 7, duration: 660 },
+      { key: "attack", label: "Attack", frames: 8, duration: 620 },
+      { key: "attack-heavy", label: "Attack Heavy", frames: 8, duration: 720 },
+      { key: "cast", label: "Cast", frames: 5, duration: 620 },
+      { key: "hurt", label: "Hurt", frames: 2, duration: 320 },
+      { key: "death", label: "Death", frames: 9, duration: 900 }
+    ];
+    const images = {};
+    for (const anim of animations) {
+      const img = new Image();
+      img.src = `assets/sprites/mage-new/${anim.key}.png?v=mageNewPreview2`;
+      images[anim.key] = img;
+    }
+    const basicProjectile = new Image();
+    basicProjectile.src = "assets/sprites/mage-new/basic-projectile.png?v=mageNewPreview2";
+    const projectile = new Image();
+    projectile.src = "assets/sprites/mage-new/projectile.png?v=mageNewPreview2";
+    const impact = new Image();
+    impact.src = "assets/sprites/mage-new/impact.png?v=mageNewPreview2";
+
+    const canvas = document.getElementById("preview");
+    const ctx = canvas.getContext("2d");
+    const basicProjectileCanvas = document.getElementById("basicProjectilePreview");
+    const basicProjectileCtx = basicProjectileCanvas.getContext("2d");
+    const projectileCanvas = document.getElementById("projectilePreview");
+    const projectileCtx = projectileCanvas.getContext("2d");
+    const impactCanvas = document.getElementById("impactPreview");
+    const impactCtx = impactCanvas.getContext("2d");
+    const actionsEl = document.getElementById("actions");
+    const fpsInput = document.getElementById("fps");
+    const zoomInput = document.getElementById("zoom");
+    const fpsValue = document.getElementById("fpsValue");
+    const zoomValue = document.getElementById("zoomValue");
+    const animName = document.getElementById("animName");
+    const frameInfo = document.getElementById("frameInfo");
+    let current = animations[0];
+    let frame = 0;
+    let lastTick = 0;
+
+    function setAnimation(anim) {
+      current = anim;
+      frame = 0;
+      for (const button of actionsEl.querySelectorAll("button")) {
+        button.classList.toggle("active", button.dataset.key === anim.key);
+      }
+      draw();
+    }
+
+    for (const anim of animations) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = anim.label;
+      button.dataset.key = anim.key;
+      button.addEventListener("click", () => setAnimation(anim));
+      actionsEl.appendChild(button);
+    }
+
+    function draw() {
+      const img = images[current.key];
+      if (!img.complete || !img.naturalWidth) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = false;
+      const zoom = Number(zoomInput.value) / 100;
+      const w = frameW * zoom;
+      const h = frameH * zoom;
+      const x = Math.round((canvas.width - w) / 2);
+      const y = Math.round((canvas.height - h) / 2);
+      ctx.drawImage(img, frame * frameW, 0, frameW, frameH, x, y, w, h);
+      animName.textContent = current.key;
+      frameInfo.textContent = `frame ${frame + 1} / ${current.frames}`;
+    }
+
+    function drawStripPreview(ctx, img, frameW, frameH, frames, frameIndex) {
+      if (!img.complete || !img.naturalWidth) return;
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.imageSmoothingEnabled = false;
+      const zoom = 1.45;
+      const w = frameW * zoom;
+      const h = frameH * zoom;
+      const x = Math.round((ctx.canvas.width - w) / 2);
+      const y = Math.round((ctx.canvas.height - h) / 2);
+      ctx.drawImage(img, frameIndex * frameW, 0, frameW, frameH, x, y, w, h);
+    }
+
+    function tick(timestamp) {
+      const fps = Number(fpsInput.value);
+      const interval = 1000 / fps;
+      if (timestamp - lastTick >= interval) {
+        frame = (frame + 1) % current.frames;
+        lastTick = timestamp;
+      }
+      draw();
+      const fxFrame = Math.floor(timestamp / interval) % 8;
+      drawStripPreview(basicProjectileCtx, basicProjectile, 64, 64, 8, fxFrame);
+      drawStripPreview(projectileCtx, projectile, 64, 64, 8, fxFrame);
+      drawStripPreview(impactCtx, impact, 96, 96, 6, fxFrame % 6);
+      requestAnimationFrame(tick);
+    }
+
+    fpsInput.addEventListener("input", () => {
+      fpsValue.textContent = `${fpsInput.value} FPS`;
+    });
+    zoomInput.addEventListener("input", () => {
+      zoomValue.textContent = `${(Number(zoomInput.value) / 100).toFixed(2)}x`;
+      draw();
+    });
+    setAnimation(animations[0]);
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>

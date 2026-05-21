@@ -1,0 +1,75 @@
+{
+  "source": "assets/ui/generated-test/warrior-card-frame-transparent-exact.png",
+  "overlay": "assets/ui/generated-test/warrior-card-frame-overlay-geometric.png",
+  "width": 1085,
+  "height": 1449,
+  "contentBleedRects": {
+    "name": {
+      "x": 226,
+      "y": 189,
+      "w": 618,
+      "h": 81
+    },
+    "art": {
+      "x": 190,
+      "y": 300,
+      "w": 712,
+      "h": 672
+    },
+    "text": {
+      "x": 201,
+      "y": 978,
+      "w": 678,
+      "h": 302
+    }
+  },
+  "overlayHoleRects": {
+    "name": {
+      "x": 226,
+      "y": 189,
+      "w": 618,
+      "h": 81,
+      "radius": 0
+    },
+    "art": {
+      "x": 206,
+      "y": 318,
+      "w": 676,
+      "h": 635,
+      "radius": 24
+    },
+    "text": {
+      "x": 222,
+      "y": 1003,
+      "w": 636,
+      "h": 252,
+      "radius": 22
+    }
+  },
+  "safeTextRects": {
+    "name": {
+      "x": 246,
+      "y": 214,
+      "w": 578,
+      "h": 36
+    },
+    "text": {
+      "x": 240,
+      "y": 1020,
+      "w": 600,
+      "h": 215
+    }
+  },
+  "textPolicy": {
+    "cardFaceMaxLines": 5,
+    "desktopMinFontPxAt178Width": 8,
+    "mobileMode": "show title and art only; full rules in selected card detail",
+    "overflow": "summarize first, then clamp with ellipsis and expose full text in detail view"
+  },
+  "renderOrder": [
+    "baseFrame",
+    "artAndText",
+    "topFrameOverlay"
+  ],
+  "notes": "Title safe rect is lowered to avoid center ornament. Art hole is larger than previous version while preserving frame ornaments. Long rules should be summarized on card face and shown fully in detail/tooltip."
+}

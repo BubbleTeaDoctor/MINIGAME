@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Priest Skill Card Template Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 28px;
+      background: radial-gradient(circle at 50% 8%, rgba(219, 205, 154, .22), transparent 32rem), #15120f;
+      color: #f8edcf;
+      font-family: "Microsoft YaHei", system-ui, sans-serif;
+    }
+    .grid {
+      display: flex;
+      align-items: flex-start;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+    .sample {
+      display: grid;
+      gap: 10px;
+    }
+    h2 {
+      margin: 0;
+      color: #e7d49a;
+      font-size: 14px;
+    }
+    img {
+      display: block;
+      width: var(--w);
+      height: auto;
+    }
+    .large { --w: 360px; }
+    .hand { --w: 178px; }
+    .mobile { --w: 86px; }
+  </style>
+</head>
+<body>
+  <main class="grid">
+    <section class="sample">
+      <h2>Large Preview</h2>
+      <img class="large" src="priest-heal-card.png" alt="牧师治疗技能卡大图预览">
+    </section>
+    <section class="sample">
+      <h2>Desktop Hand Size</h2>
+      <img class="hand" src="priest-heal-card.png" alt="牧师治疗技能卡手牌尺寸预览">
+    </section>
+    <section class="sample">
+      <h2>Mobile Hand Size</h2>
+      <img class="mobile" src="priest-heal-card.png" alt="牧师治疗技能卡移动端尺寸预览">
+    </section>
+  </main>
+</body>
+</html>

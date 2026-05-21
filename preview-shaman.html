@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shaman Sprite Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101716;
+      --panel: #182321;
+      --panel-2: #22332f;
+      --ink: #f0fff9;
+      --muted: #9fc7bd;
+      --line: #35514a;
+      --cyan: #3ee9df;
+      --ember: #ff8a35;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 18% 14%, rgba(62,233,223,.13), transparent 28%),
+        radial-gradient(circle at 82% 18%, rgba(255,138,53,.12), transparent 30%),
+        var(--bg);
+      color: var(--ink);
+    }
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0;
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    h1 {
+      margin: 0 0 14px;
+      font-size: 20px;
+      font-weight: 750;
+      letter-spacing: 0;
+    }
+    .stage, .controls, .sheet {
+      border: 1px solid var(--line);
+      background: rgba(24,35,33,.9);
+      box-shadow: 0 18px 44px rgba(0,0,0,.26);
+    }
+    .stage { padding: 18px; }
+    .viewport {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(45deg, #1b2825 25%, transparent 25%),
+        linear-gradient(-45deg, #1b2825 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #1b2825 75%),
+        linear-gradient(-45deg, transparent 75%, #1b2825 75%),
+        #121d1b;
+      background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+      background-size: 24px 24px;
+      border: 1px solid var(--line);
+      image-rendering: pixelated;
+    }
+    canvas {
+      width: min(88%, 350px);
+      height: min(88%, 350px);
+      image-rendering: pixelated;
+    }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .controls {
+      margin-top: 14px;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--ink);
+      font: inherit;
+      cursor: pointer;
+    }
+    button.active {
+      border-color: var(--cyan);
+      color: #081413;
+      background: linear-gradient(135deg, var(--cyan), var(--ember));
+      font-weight: 750;
+    }
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    input[type="range"] { width: 100%; }
+    .sheet {
+      padding: 14px;
+      overflow: hidden;
+    }
+    .sheet img {
+      display: block;
+      width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+      border: 1px solid var(--line);
+      margin-bottom: 12px;
+    }
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0;
+    }
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <div class="stage">
+        <h1>Elf Shaman Sprite Preview</h1>
+        <div class="viewport">
+          <canvas id="preview" width="512" height="512" aria-label="shaman animation preview"></canvas>
+        </div>
+        <div class="meta">
+          <span id="animName">idle</span>
+          <span id="frameInfo">frame 1 / 6</span>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="actions" id="actions"></div>
+        <label>
+          Speed <span id="fpsValue">8 FPS</span>
+          <input id="fps" type="range" min="2" max="18" value="8">
+        </label>
+        <label>
+          Zoom <span id="zoomValue">1.55x</span>
+          <input id="zoom" type="range" min="100" max="240" value="155">
+        </label>
+      </div>
+    </section>
+    <section class="sheet">
+      <img src="assets/sprites/shaman-preview/shaman-contact.png?v=shamanCut4" alt="shaman normalized contact sheet">
+      <img src="assets/sprites/shaman-preview/shaman-sheet-preview.png?v=shamanCut4" alt="shaman generated concept sheet">
+      <p class="note">Preview only. Runtime strips are normalized into fixed 320x208 transparent frames under assets/sprites/shaman-new, matching the elf-warlock model size. The game profession mapping has not been changed.</p>
+    </section>
+  </main>
+  <script>
+    const frameW = 320;
+    const frameH = 208;
+    const assetVersion = "shamanCut4";
+    const animations = [
+      { key: "idle", label: "Idle", frames: 6, duration: 980 },
+      { key: "run", label: "Run", frames: 7, duration: 660 },
+      { key: "attack", label: "Attack", frames: 8, duration: 620 },
+      { key: "attack-heavy", label: "Heavy", frames: 8, duration: 700 },
+      { key: "cast", label: "Cast", frames: 5, duration: 620 },
+      { key: "hurt", label: "Hurt", frames: 2, duration: 320 },
+      { key: "death", label: "Death", frames: 5, duration: 720 }
+    ];
+    const images = {};
+    for (const anim of animations) {
+      const img = new Image();
+      img.src = `assets/sprites/shaman-new/${anim.key}.png?v=${assetVersion}`;
+      images[anim.key] = img;
+    }
+    const canvas = document.getElementById("preview");
+    const ctx = canvas.getContext("2d");
+    const actionsEl = document.getElementById("actions");
+    const fpsInput = document.getElementById("fps");
+    const zoomInput = document.getElementById("zoom");
+    const fpsValue = document.getElementById("fpsValue");
+    const zoomValue = document.getElementById("zoomValue");
+    const animName = document.getElementById("animName");
+    const frameInfo = document.getElementById("frameInfo");
+    let current = animations[0];
+    let frame = 0;
+    let lastTick = 0;
+
+    function setAnimation(anim) {
+      current = anim;
+      frame = 0;
+      for (const button of actionsEl.querySelectorAll("button")) {
+        button.classList.toggle("active", button.dataset.key === anim.key);
+      }
+      draw();
+    }
+
+    for (const anim of animations) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = anim.label;
+      button.dataset.key = anim.key;
+      button.addEventListener("click", () => setAnimation(anim));
+      actionsEl.appendChild(button);
+    }
+
+    function draw() {
+      const img = images[current.key];
+      if (!img.complete || !img.naturalWidth) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = false;
+      const zoom = Number(zoomInput.value) / 100;
+      const drawW = frameW * zoom;
+      const drawH = frameH * zoom;
+      const dx = canvas.width / 2 - drawW / 2;
+      const dy = canvas.height * 0.72 - drawH;
+      ctx.drawImage(img, frame * frameW, 0, frameW, frameH, dx, dy, drawW, drawH);
+      animName.textContent = current.key;
+      frameInfo.textContent = `frame ${frame + 1} / ${current.frames}`;
+      fpsValue.textContent = `${fpsInput.value} FPS`;
+      zoomValue.textContent = `${zoom.toFixed(2)}x`;
+    }
+
+    function loop(now) {
+      const interval = 1000 / Number(fpsInput.value);
+      if (now - lastTick >= interval) {
+        frame = (frame + 1) % current.frames;
+        lastTick = now;
+        draw();
+      }
+      requestAnimationFrame(loop);
+    }
+
+    fpsInput.addEventListener("input", draw);
+    zoomInput.addEventListener("input", draw);
+    Promise.all(Object.values(images).map(img => img.complete ? Promise.resolve() : new Promise(resolve => img.addEventListener("load", resolve, { once: true })))).then(() => {
+      setAnimation(current);
+      requestAnimationFrame(loop);
+    });
+  </script>
+</body>
+</html>

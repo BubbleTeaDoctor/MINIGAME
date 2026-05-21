@@ -26,6 +26,34 @@ function Get-ContentType([string]$Path) {
   }
 }
 
+function Get-CardArtManifestBytes([string]$RootPath) {
+  $artRoot = Join-Path $RootPath "assets\card_art"
+  $images = @()
+  if (Test-Path -LiteralPath $artRoot) {
+    $images = Get-ChildItem -LiteralPath $artRoot -File |
+      Where-Object {
+        $_.Name -ne "manifest.json" -and
+        @(".png", ".jpg", ".jpeg", ".webp", ".gif") -contains $_.Extension.ToLowerInvariant()
+      } |
+      Sort-Object Name |
+      ForEach-Object {
+        [pscustomobject]@{
+          name = [IO.Path]::GetFileNameWithoutExtension($_.Name)
+          label = [IO.Path]::GetFileNameWithoutExtension($_.Name)
+          file = $_.Name
+          path = "assets/card_art/$($_.Name)"
+        }
+      }
+  }
+  $manifest = [pscustomobject]@{
+    images = @($images)
+    count = @($images).Count
+    generatedAt = (Get-Date).ToString("o")
+  }
+  $json = $manifest | ConvertTo-Json -Depth 5
+  return [Text.Encoding]::UTF8.GetBytes($json)
+}
+
 $rootPath = [IO.Path]::GetFullPath($Root)
 $listener = [Net.HttpListener]::new()
 $listener.Prefixes.Add("http://127.0.0.1:$Port/")
@@ -40,6 +68,18 @@ try {
         $requestPath = "index.html"
       }
 
+      if ($requestPath -ieq "assets/card_art/manifest.json") {
+        $bytes = Get-CardArtManifestBytes $rootPath
+        $context.Response.StatusCode = 200
+        $context.Response.ContentType = "application/json; charset=utf-8"
+        $context.Response.ContentLength64 = $bytes.Length
+        $context.Response.AddHeader("Cache-Control", "no-store, no-cache, must-revalidate")
+        $context.Response.AddHeader("Access-Control-Allow-Origin", "*")
+        $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+        $context.Response.Close()
+        continue
+      }
+
       $candidate = [IO.Path]::GetFullPath((Join-Path $rootPath $requestPath))
       if (-not $candidate.StartsWith($rootPath, [StringComparison]::OrdinalIgnoreCase)) {
         $context.Response.StatusCode = 403
@@ -47,11 +87,11 @@ try {
         continue
       }
 
-      if ((Test-Path $candidate) -and (Get-Item $candidate).PSIsContainer) {
+      if ((Test-Path -LiteralPath $candidate) -and (Get-Item -LiteralPath $candidate).PSIsContainer) {
         $candidate = Join-Path $candidate "index.html"
       }
 
-      if (-not (Test-Path $candidate)) {
+      if (-not (Test-Path -LiteralPath $candidate)) {
         $context.Response.StatusCode = 404
         $bytes = [Text.Encoding]::UTF8.GetBytes("Not Found")
         $context.Response.ContentType = "text/plain; charset=utf-8"

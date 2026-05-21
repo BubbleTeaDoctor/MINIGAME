@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Elf Warlock Sprite Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #15171d;
+      --panel: #20242d;
+      --panel-2: #292e39;
+      --ink: #f4f7fb;
+      --muted: #aab2c0;
+      --line: #3a4150;
+      --cyan: #63e6f2;
+      --violet: #9b6dff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 22% 12%, rgba(99, 230, 242, 0.12), transparent 32%),
+        radial-gradient(circle at 82% 18%, rgba(155, 109, 255, 0.14), transparent 30%),
+        var(--bg);
+      color: var(--ink);
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0;
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: 20px;
+      font-weight: 750;
+      letter-spacing: 0;
+    }
+
+    .stage,
+    .controls,
+    .sheet {
+      border: 1px solid var(--line);
+      background: rgba(32, 36, 45, 0.88);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.24);
+    }
+
+    .stage { padding: 18px; }
+
+    .viewport {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(45deg, #242936 25%, transparent 25%),
+        linear-gradient(-45deg, #242936 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #242936 75%),
+        linear-gradient(-45deg, transparent 75%, #242936 75%),
+        #1b1f28;
+      background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+      background-size: 24px 24px;
+      border: 1px solid var(--line);
+      image-rendering: pixelated;
+    }
+
+    canvas {
+      width: min(88%, 350px);
+      height: min(88%, 350px);
+      image-rendering: pixelated;
+    }
+
+    #projectilePreview {
+      width: 100%;
+      height: 90px;
+      image-rendering: pixelated;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .controls {
+      margin-top: 14px;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--ink);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button.active {
+      border-color: var(--cyan);
+      color: #061015;
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      font-weight: 750;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input[type="range"] { width: 100%; }
+
+    .toggles {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 0 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--line);
+    }
+
+    .sheet {
+      padding: 14px;
+      overflow: hidden;
+    }
+
+    .sheet img {
+      display: block;
+      width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+      border: 1px solid var(--line);
+    }
+
+    .note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <div class="stage">
+        <h1>White-Haired Elf Warlock Preview</h1>
+        <div class="viewport">
+          <canvas id="preview" width="512" height="512" aria-label="sprite animation preview"></canvas>
+        </div>
+        <div class="meta">
+          <span id="animName">idle</span>
+          <span id="frameInfo">frame 1 / 6</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="actions" id="actions"></div>
+        <label>
+          Speed <span id="fpsValue">8 FPS</span>
+          <input id="fps" type="range" min="2" max="18" value="8">
+        </label>
+        <label>
+          Zoom <span id="zoomValue">2.00x</span>
+          <input id="zoom" type="range" min="130" max="300" value="200">
+        </label>
+        <div class="toggles">
+          <label class="toggle"><input id="removeChecker" type="checkbox" checked> Hide baked checker</label>
+          <label class="toggle"><input id="pause" type="checkbox"> Pause</label>
+        </div>
+      </div>
+
+      <div class="stage" style="margin-top: 14px;">
+        <h1>Projectile Preview</h1>
+        <div class="viewport" style="aspect-ratio: 4 / 1;">
+          <canvas id="projectilePreview" width="512" height="128" aria-label="projectile animation preview"></canvas>
+        </div>
+        <div class="meta">
+          <span>shadow bolt</span>
+          <span>8 frames / 64x64</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="sheet">
+      <img src="assets/sprites/elf-warlock-preview/elf-warlock-sheet-preview.png" alt="elf warlock sprite sheet">
+      <p class="note">
+        This preview is isolated from the game. It uses hand-measured frame windows from the generated concept sheet and anchors each frame to a fixed bottom-center point so the preview does not drift because of crop size.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const imagePath = "assets/sprites/elf-warlock-preview/elf-warlock-sheet-preview.png";
+    const projectilePath = "assets/sprites/elf-warlock-preview/elf-warlock-projectile.png";
+    const animations = [
+      { key: "idle", label: "Idle" },
+      { key: "run", label: "Run" },
+      { key: "attack", label: "Attack" },
+      { key: "cast", label: "Cast" },
+      { key: "hurt", label: "Hurt" },
+      { key: "death", label: "Death" }
+    ];
+
+    const sourceFrames = {
+      idle: [
+        [34, 20, 174, 186], [210, 20, 350, 186], [396, 20, 538, 186],
+        [581, 20, 730, 186], [762, 20, 904, 186], [938, 20, 1064, 186]
+      ],
+      run: [
+        [20, 186, 180, 350], [214, 186, 378, 350], [390, 186, 555, 350],
+        [575, 186, 738, 350], [754, 186, 918, 350], [938, 186, 1104, 350],
+        [1114, 186, 1268, 350]
+      ],
+      attack: [
+        [30, 350, 184, 514], [216, 350, 386, 514], [400, 350, 580, 514],
+        [596, 350, 794, 514], [790, 350, 986, 514], [980, 350, 1154, 514],
+        [1148, 350, 1338, 514], [1332, 350, 1535, 514]
+      ],
+      cast: [
+        [30, 510, 184, 676], [220, 510, 360, 676], [402, 510, 540, 676],
+        [574, 510, 710, 676], [738, 510, 884, 676]
+      ],
+      hurt: [
+        [40, 676, 184, 836], [246, 676, 396, 836]
+      ],
+      death: [
+        [24, 836, 190, 1002], [204, 836, 374, 1002], [394, 836, 560, 1002],
+        [570, 836, 744, 1002], [756, 836, 928, 1002], [928, 836, 1090, 1002],
+        [1098, 836, 1256, 1002], [1264, 836, 1418, 1002], [1424, 836, 1550, 1002]
+      ]
+    };
+
+    const sourceBaselines = {
+      idle: 146,
+      run: 139,
+      attack: 132,
+      cast: 136,
+      hurt: 112,
+      death: 116
+    };
+
+    const sourceAnchorX = {
+      attack: [78, 65, 64, 57, 55, 57, 62, 54]
+    };
+
+    const canvas = document.getElementById("preview");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const projectileCanvas = document.getElementById("projectilePreview");
+    const projectileCtx = projectileCanvas.getContext("2d");
+    const actionsEl = document.getElementById("actions");
+    const frameInfo = document.getElementById("frameInfo");
+    const animName = document.getElementById("animName");
+    const fpsInput = document.getElementById("fps");
+    const zoomInput = document.getElementById("zoom");
+    const fpsValue = document.getElementById("fpsValue");
+    const zoomValue = document.getElementById("zoomValue");
+    const removeCheckerInput = document.getElementById("removeChecker");
+    const pauseInput = document.getElementById("pause");
+
+    const sheet = new Image();
+    sheet.src = imagePath;
+    const projectileSheet = new Image();
+    projectileSheet.src = projectilePath;
+    let current = animations[0];
+    let frame = 0;
+    let lastTick = 0;
+    let frameRects = {};
+
+    function setAnimation(anim) {
+      current = anim;
+      frame = 0;
+      for (const button of actionsEl.querySelectorAll("button")) {
+        button.classList.toggle("active", button.dataset.key === anim.key);
+      }
+      draw();
+    }
+
+    for (const anim of animations) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = anim.label;
+      button.dataset.key = anim.key;
+      button.addEventListener("click", () => setAnimation(anim));
+      actionsEl.appendChild(button);
+    }
+
+    function isCheckerPixel(r, g, b) {
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      return max <= 75 && min >= 28 && max - min <= 18;
+    }
+
+    function eraseChecker() {
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = pixels.data;
+      for (let i = 0; i < data.length; i += 4) {
+        if (isCheckerPixel(data[i], data[i + 1], data[i + 2])) data[i + 3] = 0;
+      }
+      ctx.putImageData(pixels, 0, 0);
+    }
+
+    function buildFrameRects() {
+      frameRects = {};
+      for (const anim of animations) {
+        const rects = [];
+        for (const frameBox of sourceFrames[anim.key]) {
+          const sx0 = frameBox[0];
+          const sy0 = frameBox[1];
+          const sx1 = frameBox[2];
+          const sy1 = frameBox[3];
+
+          rects.push({
+            sx: sx0,
+            sy: sy0,
+            sw: sx1 - sx0 + 1,
+            sh: sy1 - sy0 + 1,
+            anchorX: Array.isArray(sourceAnchorX[anim.key])
+              ? sourceAnchorX[anim.key][rects.length]
+              : sourceAnchorX[anim.key] || (sx1 - sx0 + 1) / 2,
+            anchorY: sourceBaselines[anim.key]
+          });
+        }
+        frameRects[anim.key] = rects;
+      }
+    }
+
+    function draw() {
+      if (!sheet.complete || !sheet.naturalWidth) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = false;
+
+      const rect = frameRects[current.key]?.[frame];
+      if (!rect) return;
+      const zoom = Number(zoomInput.value) / 100;
+      const drawW = rect.sw * zoom;
+      const drawH = rect.sh * zoom;
+      const dx = canvas.width / 2 - rect.anchorX * zoom;
+      const dy = canvas.height * 0.72 - rect.anchorY * zoom;
+
+      ctx.drawImage(
+        sheet,
+        rect.sx,
+        rect.sy,
+        rect.sw,
+        rect.sh,
+        dx,
+        dy,
+        drawW,
+        drawH
+      );
+
+      if (removeCheckerInput.checked) eraseChecker();
+
+      animName.textContent = current.key;
+      frameInfo.textContent = `frame ${frame + 1} / ${sourceFrames[current.key].length}`;
+      fpsValue.textContent = `${fpsInput.value} FPS`;
+      zoomValue.textContent = `${zoom.toFixed(2)}x`;
+    }
+
+    function loop(now) {
+      const interval = 1000 / Number(fpsInput.value);
+      if (!pauseInput.checked && now - lastTick >= interval) {
+        frame = (frame + 1) % sourceFrames[current.key].length;
+        lastTick = now;
+        draw();
+      }
+      drawProjectile(now);
+      requestAnimationFrame(loop);
+    }
+
+    function drawProjectile(now) {
+      if (!projectileSheet.complete || !projectileSheet.naturalWidth) return;
+      const frameW = 64;
+      const frameH = 64;
+      const projectileFrames = 8;
+      const localFrame = Math.floor(now / 80) % projectileFrames;
+      const travel = (now % 1400) / 1400;
+      const x = 34 + travel * (projectileCanvas.width - 112);
+      const y = projectileCanvas.height / 2 - 32;
+
+      projectileCtx.clearRect(0, 0, projectileCanvas.width, projectileCanvas.height);
+      projectileCtx.imageSmoothingEnabled = false;
+
+      projectileCtx.globalAlpha = 0.24;
+      projectileCtx.fillStyle = "#63e6f2";
+      projectileCtx.fillRect(28, projectileCanvas.height / 2 + 35, projectileCanvas.width - 56, 2);
+      projectileCtx.globalAlpha = 1;
+
+      projectileCtx.drawImage(
+        projectileSheet,
+        localFrame * frameW,
+        0,
+        frameW,
+        frameH,
+        x,
+        y,
+        frameW,
+        frameH
+      );
+    }
+
+    fpsInput.addEventListener("input", draw);
+    zoomInput.addEventListener("input", draw);
+    removeCheckerInput.addEventListener("change", draw);
+    pauseInput.addEventListener("change", draw);
+    sheet.addEventListener("load", () => {
+      buildFrameRects();
+      setAnimation(current);
+      requestAnimationFrame(loop);
+    });
+  </script>
+</body>
+</html>

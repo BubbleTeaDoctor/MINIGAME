@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warrior New Sprite Preview</title>
+  <style>
+    :root { color-scheme: dark; --bg:#100d0d; --panel:#1b1415; --line:#55352f; --ink:#f7ead6; --muted:#b89e8b; --gold:#ffc76b; --red:#ff442c; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; font-family:"Segoe UI",Arial,sans-serif; background:radial-gradient(circle at 18% 14%,rgba(255,70,36,.12),transparent 30%),linear-gradient(180deg,#130e0e,#090708); color:var(--ink); }
+    main { width:min(1240px,calc(100vw - 32px)); margin:0 auto; padding:28px 0; display:grid; grid-template-columns:minmax(320px,430px) minmax(0,1fr); gap:18px; align-items:start; }
+    h1 { margin:0 0 14px; font-size:20px; font-weight:750; letter-spacing:0; }
+    .stage,.controls,.sheet { border:1px solid var(--line); background:rgba(27,20,21,.92); box-shadow:0 18px 44px rgba(0,0,0,.28); }
+    .stage,.sheet { padding:14px; }
+    .viewport { width:100%; aspect-ratio:1/1; display:grid; place-items:center; background:linear-gradient(45deg,#211719 25%,transparent 25%),linear-gradient(-45deg,#211719 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#211719 75%),linear-gradient(-45deg,transparent 75%,#211719 75%),#120d0f; background-position:0 0,0 12px,12px -12px,-12px 0; background-size:24px 24px; border:1px solid var(--line); image-rendering:pixelated; }
+    canvas { display:block; width:min(94%,520px); height:auto; image-rendering:pixelated; }
+    .meta { display:flex; justify-content:space-between; gap:12px; margin-top:12px; color:var(--muted); font-size:13px; }
+    .controls { margin-top:14px; padding:14px; display:grid; gap:12px; }
+    .actions { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+    button { min-height:38px; border:1px solid var(--line); background:#2a1d1d; color:var(--ink); font:inherit; cursor:pointer; }
+    button.active { border-color:var(--gold); color:#150807; background:linear-gradient(135deg,var(--gold),var(--red)); font-weight:750; }
+    label { display:grid; gap:6px; color:var(--muted); font-size:13px; }
+    input[type="range"] { width:100%; }
+    .sheet { overflow:hidden; }
+    .sheet img { display:block; width:100%; height:auto; image-rendering:pixelated; border:1px solid var(--line); margin-bottom:12px; }
+    .note { color:var(--muted); font-size:13px; line-height:1.5; margin:0; }
+    @media (max-width:860px) { main { grid-template-columns:1fr; } .actions { grid-template-columns:repeat(2,1fr); } }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <div class="stage">
+        <h1>Model Generated Warrior Preview</h1>
+        <div class="viewport"><canvas id="preview" width="640" height="416"></canvas></div>
+        <div class="meta"><span id="animName">idle</span><span id="frameInfo">frame 1 / 6</span></div>
+      </div>
+      <div class="controls">
+        <div class="actions" id="actions"></div>
+        <label>Speed <span id="fpsValue">8 FPS</span><input id="fps" type="range" min="2" max="18" value="8"></label>
+        <label>Zoom <span id="zoomValue">1.00x</span><input id="zoom" type="range" min="70" max="160" value="100"></label>
+      </div>
+    </section>
+    <section class="sheet">
+      <img src="assets/sprites/warrior-new-preview/warrior-new-contact-sheet.png?v=warriorModel1" alt="warrior model generated contact sheet">
+      <img src="assets/sprites/warrior-new/raw/warrior-new-model-sheet.png?v=warriorModel1" alt="raw model generated sheet">
+      <p class="note">Preview only. These runtime strips are normalized from the model-generated image sheet into fixed 320x208 transparent frames. The game profession mapping has not been changed.</p>
+    </section>
+  </main>
+  <script>
+    const frameW=320, frameH=208, assetVersion="warriorModel1";
+    const animations=[
+      { key: "idle", label: "Idle", frames: 6 },
+      { key: "run", label: "Run", frames: 7 },
+      { key: "attack", label: "Attack", frames: 8 },
+      { key: "attack-heavy", label: "Attack Heavy", frames: 8 },
+      { key: "cast", label: "Cast", frames: 5 },
+      { key: "hurt", label: "Hurt", frames: 2 },
+      { key: "death", label: "Death", frames: 9 }
+    ];
+    const images={};
+    for (const anim of animations) { const img=new Image(); img.src=`assets/sprites/warrior-new/${anim.key}.png?v=${assetVersion}`; images[anim.key]=img; }
+    const canvas=document.getElementById("preview"), ctx=canvas.getContext("2d"), actionsEl=document.getElementById("actions");
+    const fpsInput=document.getElementById("fps"), zoomInput=document.getElementById("zoom"), fpsValue=document.getElementById("fpsValue"), zoomValue=document.getElementById("zoomValue");
+    const animName=document.getElementById("animName"), frameInfo=document.getElementById("frameInfo");
+    let current=animations[0], frame=0, lastTick=0;
+    function setAnimation(anim) { current=anim; frame=0; for (const b of actionsEl.querySelectorAll("button")) b.classList.toggle("active", b.dataset.key===anim.key); draw(); }
+    for (const anim of animations) { const b=document.createElement("button"); b.type="button"; b.textContent=anim.label; b.dataset.key=anim.key; b.addEventListener("click",()=>setAnimation(anim)); actionsEl.appendChild(b); }
+    function draw() { const img=images[current.key]; if(!img.complete||!img.naturalWidth) return; ctx.clearRect(0,0,canvas.width,canvas.height); ctx.imageSmoothingEnabled=false; const zoom=Number(zoomInput.value)/100; const w=frameW*zoom,h=frameH*zoom; const x=Math.round((canvas.width-w)/2), y=Math.round((canvas.height-h)/2); ctx.drawImage(img,frame*frameW,0,frameW,frameH,x,y,w,h); animName.textContent=current.key; frameInfo.textContent=`frame ${frame+1} / ${current.frames}`; }
+    function tick(ts) { const interval=1000/Number(fpsInput.value); if(ts-lastTick>=interval) { frame=(frame+1)%current.frames; lastTick=ts; } draw(); requestAnimationFrame(tick); }
+    fpsInput.addEventListener("input",()=>fpsValue.textContent=`${fpsInput.value} FPS`);
+    zoomInput.addEventListener("input",()=>{ zoomValue.textContent=`${(Number(zoomInput.value)/100).toFixed(2)}x`; draw(); });
+    setAnimation(animations[0]); requestAnimationFrame(tick);
+  </script>
+</body>
+</html>

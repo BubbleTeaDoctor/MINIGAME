@@ -10,8 +10,16 @@
     .deck-table{display:grid;gap:8px}
     .deck-row{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(130px,.8fr) 90px;gap:10px;align-items:center;padding:10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
     .deck-row.header{font-weight:700;background:rgba(255,255,255,.06)}
-    .deck-name{display:grid;gap:4px}
+    .deck-name{display:grid;gap:4px;cursor:help}
     .deck-meta{font-size:12px;color:var(--muted)}
+    .card-tooltip{position:fixed;z-index:1000;max-width:360px;display:grid;gap:8px;padding:12px 14px;border-radius:10px;background:rgba(18,20,26,.97);border:1px solid rgba(255,255,255,.14);box-shadow:0 16px 40px rgba(0,0,0,.42);pointer-events:none;color:var(--text);font-size:13px;line-height:1.45}
+    .card-tooltip.hidden{display:none}
+    .card-tooltip-title{font-weight:800;font-size:15px;color:#fff}
+    .card-tooltip-meta{font-size:12px;color:var(--muted)}
+    .card-tooltip-text{white-space:pre-wrap}
+    .card-tooltip-config{display:grid;gap:4px;margin:0;padding:0;list-style:none}
+    .card-tooltip-config li{display:grid;grid-template-columns:96px 1fr;gap:8px;border-top:1px solid rgba(255,255,255,.08);padding-top:4px}
+    .card-tooltip-config span:first-child{color:var(--muted)}
     .stat-grid{display:grid;grid-template-columns:repeat(2,minmax(160px,1fr));gap:12px}
     .top-actions{display:flex;gap:10px;flex-wrap:wrap}
     .qty-input{max-width:90px}
@@ -58,6 +66,9 @@
             <option value="profession">职业</option>
             <option value="weapon">武器</option>
             <option value="accessory">饰品</option>
+            <option value="armor">护甲</option>
+            <option value="boots">靴子</option>
+            <option value="relic">咒物</option>
           </select>
         </label>
         <label><span>当前对象</span>
@@ -108,6 +119,63 @@
         </div>
       </div>
 
+      <div id="armor-panel" class="hidden" style="margin-top:16px">
+        <div class="panel-head"><h3>护甲信息</h3></div>
+        <div class="stat-grid">
+          <label><span>显示名称</span><input id="armor-name" /></label>
+          <label><span>护甲 key</span><input id="armor-key" disabled /></label>
+          <label><span>生命值</span><input id="armor-max-hp" type="number" min="1" /></label>
+          <label><span>固定减伤</span><input id="armor-reduction-flat" type="number" min="0" /></label>
+          <label><span>骰子减伤</span><input id="armor-reduction-roll" placeholder="1d4 / 留空" /></label>
+          <label><span>额外受伤</span><input id="armor-incoming-bonus" type="number" min="0" /></label>
+          <label><span>攻击失误率 %</span><input id="armor-attack-fail" type="number" min="0" max="95" /></label>
+        </div>
+      </div>
+
+      <div id="boots-panel" class="hidden" style="margin-top:16px">
+        <div class="panel-head"><h3>靴子信息</h3></div>
+        <div class="stat-grid">
+          <label><span>显示名称</span><input id="boots-name" /></label>
+          <label><span>靴子 key</span><input id="boots-key" disabled /></label>
+          <label><span>移动距离</span><input id="boots-move" type="number" min="1" /></label>
+          <label><span>地形/陷阱伤害减少</span><input id="boots-hazard-reduction" type="number" min="0" /></label>
+          <label><span>强制位移抗性</span><input id="boots-force-resist" type="number" min="0" /></label>
+          <label><span>额外受伤</span><input id="boots-incoming-bonus" type="number" min="0" /></label>
+          <label><span>攻击失误率 %</span><input id="boots-attack-fail" type="number" min="0" max="95" /></label>
+        </div>
+      </div>
+
+      <div id="relic-panel" class="hidden" style="margin-top:16px">
+        <div class="panel-head"><h3>咒物信息</h3></div>
+        <div class="stat-grid">
+          <label><span>显示名称</span><input id="relic-name" /></label>
+          <label><span>咒物 key</span><input id="relic-key" disabled /></label>
+          <label><span>每次造成伤害回血</span><input id="relic-heal-flat" type="number" min="0" /></label>
+          <label><span>造成伤害暴击率 %</span><input id="relic-crit-chance" type="number" min="0" max="100" /></label>
+          <label><span>暴击追加骰</span><input id="relic-crit-die" placeholder="1d6 / 留空" /></label>
+          <label><span>暴击倍率</span><input id="relic-crit-multiplier" type="number" min="0" step="0.1" /></label>
+          <label><span>无视目标减伤</span><input id="relic-pierce" type="number" min="0" /></label>
+          <label><span>移动距离加成</span><input id="relic-move-bonus" type="number" min="0" /></label>
+          <label><span>每回合开始失去生命（固定代价）</span><input id="relic-turn-damage" type="number" min="0" /></label>
+          <label><span>永久额外受到伤害</span><input id="relic-incoming-bonus" type="number" min="0" /></label>
+          <label><span>永久额外受到地形伤害</span><input id="relic-hazard-bonus" type="number" min="0" /></label>
+          <label><span>永久攻击/技能失败率 %</span><input id="relic-attack-fail" type="number" min="0" max="95" /></label>
+          <label><span>回合开始负面效果</span>
+            <select id="relic-turn-negative">
+              <option value="">无</option>
+              <option value="fumble">Fumble / 手忙脚乱</option>
+              <option value="vulnerable">Vulnerable / 破绽</option>
+              <option value="clumsy">Clumsy / 笨拙</option>
+              <option value="panic">Panic / 惊慌</option>
+              <option value="chaos">Chaos / 混乱</option>
+              <option value="blood">Blood / 生命代价</option>
+            </select>
+          </label>
+          <label><span>触发率 %</span><input id="relic-turn-negative-chance" type="number" min="0" max="100" /></label>
+          <label><span>负面数值</span><input id="relic-turn-negative-power" type="number" min="1" /></label>
+        </div>
+      </div>
+
       <div style="margin-top:18px">
         <div class="panel-head"><h3>卡组数量</h3><span class="muted">0 表示不加入卡组</span></div>
         <div class="deck-table" id="deck-table"></div>
@@ -120,6 +188,7 @@
     </section>
   </div>
 </main>
+<div id="card-tooltip" class="card-tooltip hidden"></div>
 
 <script src="studio_data.js"></script>
 <script src="studio_patch_v080.js"></script>

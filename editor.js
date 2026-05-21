@@ -1,4 +1,4 @@
-
+﻿
 (() => {
   const $ = id => document.getElementById(id);
   const deep = o => JSON.parse(JSON.stringify(o));
@@ -21,8 +21,8 @@
     tickTiming: [['turn_start','turn_start'],['turn_end','turn_end'],['on_draw','on_draw']],
     rounding: [['floor','floor'],['ceil','ceil'],['round','round']],
     durationTurns: [['1','1'],['2','2'],['3','3'],['4','4'],['5','5'],['6','6'],['7','7'],['8','8'],['9','9'],['10','10']],
-    origin: [['','(空)'],['职业技能','职业技能'],['武器技能','武器技能'],['饰品技能','饰品技能'],['职业被动','职业被动']],
-    refundBucket: [['','不返还'],['class_or_guardian','返还职业卡次数'],['weapon_or_accessory','返还武器/饰品卡次数'],['basic_attack','返还普通攻击次数']],
+    origin: [['','(空)'],['职业技能','职业技能'],['武器技能','武器技能'],['饰品技能','饰品技能'],['护甲技能','护甲技能'],['靴子技能','靴子技能'],['咒物技能','咒物技能'],['职业被动','职业被动']],
+    refundBucket: [['','不返还'],['class_or_guardian','返还职业卡次数'],['weapon_or_accessory','返还武器卡次数'],['equipment_skill','返还装备卡次数'],['basic_attack','返还普通攻击次数']],
     controlType: [['stun','stun'],['root','root'],['disarm','disarm'],['sheep','sheep'],['silence','silence']],
     stackRule: [['refresh','refresh'],['stack','stack'],['replace','replace'],['refresh_duration','refresh_duration']],
     triggerCondition: [['on_hit','on_hit'],['on_draw','on_draw'],['on_enter','on_enter'],['turn_start','turn_start'],['turn_end','turn_end']],
@@ -34,14 +34,36 @@
     attackType: [['basic','basic'],['spell','spell'],['any','any']],
     onDrawEffect: [['damage','damage'],['discard','discard'],['status','status']],
     bonusType: [['buffBasic','buffBasic'],['bonusDie','bonusDie'],['draw','draw'],['block','block']],
-    affectedBuckets: [['class','class'],['weapon','weapon'],['accessory','accessory']],
-    exceptionBuckets: [['class','class'],['weapon','weapon'],['accessory','accessory']],
+    affectedBuckets: [['class','class'],['weapon','weapon'],['accessory','accessory'],['equipment','equipment']],
+    exceptionBuckets: [['class','class'],['weapon','weapon'],['accessory','accessory'],['equipment','equipment']],
+    negativeEffectType: [['fumble','Fumble / 手忙脚乱'],['vulnerable','Vulnerable / 破绽'],['clumsy','Clumsy / 笨拙'],['panic','Panic / 惊慌'],['chaos','Chaos / 混乱'],['blood','Blood / 生命代价']],
+    fumbleBucket: [['random','随机行动机会'],['basic_attack','普通攻击机会'],['weapon_or_accessory','武器技能机会'],['class_or_guardian','职业技能机会'],['equipment_skill','装备技能机会']],
+    vulnerableScope: [['any','任意伤害'],['attack','攻击伤害'],['basic','普通攻击'],['spell','法术伤害'],['hazard','地形/黑洞/尖刺'],['trap','陷阱'],['negative','负面牌']],
+    vulnerableDuration: [['next','下次'],['permanent','永久']],
+    clumsyScope: [['any','下一次攻击或技能'],['attack','下一次攻击'],['skill','下一次技能']],
+    clumsyDuration: [['next','下次'],['permanent','永久']],
+    panicMode: [['random_attack','随机弃一张攻击牌'],['highest_damage','弃掉最高伤害牌']],
+    turnStartNegativeEffect: [['','无'],['fumble','Fumble / 手忙脚乱'],['vulnerable','Vulnerable / 破绽'],['clumsy','Clumsy / 笨拙'],['panic','Panic / 惊慌'],['chaos','Chaos / 混乱'],['blood','Blood / 生命代价']],
   };
 
   function currentRuleset(){ return state.rulesetCache; }
+  function equipmentScopeInfo(scope = state.scope){
+    if(scope === 'weapon_cards') return { label: '武器', library: 'weaponLibrary', source: '武器技能', entity: 'weapon' };
+    if(scope === 'accessory_cards') return { label: '饰品', library: 'accessoryLibrary', source: '饰品技能', entity: 'accessory' };
+    if(scope === 'armor_cards') return { label: '护甲', library: 'armorLibrary', source: '护甲技能', entity: 'armor' };
+    if(scope === 'boots_cards') return { label: '靴子', library: 'bootsLibrary', source: '靴子技能', entity: 'boots' };
+    if(scope === 'relic_cards') return { label: '咒物', library: 'relicLibrary', source: '咒物技能', entity: 'relic' };
+    return null;
+  }
+  function isEquipmentCardScope(scope = state.scope){
+    return !!equipmentScopeInfo(scope);
+  }
   function currentEntityCollection(){
     if (state.scope === 'weapon_cards') return currentRuleset().data.weaponLibrary || {};
     if (state.scope === 'accessory_cards') return currentRuleset().data.accessoryLibrary || {};
+    if (state.scope === 'armor_cards') return currentRuleset().data.armorLibrary || {};
+    if (state.scope === 'boots_cards') return currentRuleset().data.bootsLibrary || {};
+    if (state.scope === 'relic_cards') return currentRuleset().data.relicLibrary || {};
     if (state.scope === 'negative_cards') return { negative_cards: { name: '负面牌库', cards: [] } };
     return currentRuleset().data.professions || {};
   }
@@ -52,7 +74,7 @@
     if (!entity) return {};
     if (state.scope === 'cards') return entity.cards || {};
     if (state.scope === 'passives') return entity.passives || {};
-    if (state.scope === 'weapon_cards' || state.scope === 'accessory_cards') {
+    if (isEquipmentCardScope()) {
       const out = {};
       (entity.cards || []).forEach(cardKey => {
         if (currentRuleset().data.cardLibrary?.[cardKey]) out[cardKey] = currentRuleset().data.cardLibrary[cardKey];
@@ -69,13 +91,680 @@
     return {};
   }
   function currentEntityLabel(){
-    if (state.scope === 'weapon_cards') return '武器';
-    if (state.scope === 'accessory_cards') return '饰品';
+    const equipment = equipmentScopeInfo();
+    if (equipment) return equipment.label;
     if (state.scope === 'negative_cards') return '负面牌';
     return '职业';
   }
   function currentEntityName(){
     return state.scope === 'negative_cards' ? '负面牌库' : (currentEntity()?.name || state.profession);
+  }
+
+  function defaultCardArtForCurrent() {
+    if (state.scope === 'cards' || state.scope === 'passives') {
+      const portraitKey = {
+        warrior: 'warrior',
+        mage: 'mage',
+        rogue: 'rogue',
+        priest: 'priest',
+        shaman: 'shaman',
+        necro: 'necro',
+        necromancer: 'necro',
+        warlock: 'warlock',
+        hunter: 'hunter',
+        monk: 'monk',
+        samurai: 'swordsman',
+        swordsman: 'swordsman',
+        assassin: 'rogue'
+      }[String(state.profession || '').toLowerCase()] || String(state.profession || 'warrior').toLowerCase();
+      return `assets/portraits/${portraitKey}-select.png`;
+    }
+    return 'assets/portraits/warrior-select.png';
+  }
+
+  function normalizeArtName(value) {
+    return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+  }
+
+  function findMatchingCardArt(card = state.current, artManifest = null) {
+    const images = artManifest?.images || [];
+    if (!card || !images.length) return '';
+    const candidates = [
+      card.name,
+      state.entryKey,
+      String(state.entryKey || '').replace(/^[a-z]+_/, '')
+    ].map(normalizeArtName).filter(Boolean);
+    const exact = images.find(img => candidates.includes(normalizeArtName(img.name)) || candidates.includes(normalizeArtName(img.label)));
+    return exact?.path || '';
+  }
+
+  function cardArtPath(card = state.current, artManifest = null) {
+    return (card && String(card.art || '').trim()) || findMatchingCardArt(card, artManifest) || defaultCardArtForCurrent();
+  }
+
+  function assetUrl(path) {
+    const value = String(path || '').trim();
+    if (!value || /^(data:|blob:|https?:)/i.test(value)) return value;
+    return value.split('/').map(part => encodeURIComponent(part)).join('/');
+  }
+
+  function ensureCardArtTransform(card = state.current) {
+    if (!card) return { x: 0, y: 0, scale: 1 };
+    card.artTransform = card.artTransform || {};
+    const t = card.artTransform;
+    t.x = Number(t.x || 0);
+    t.y = Number(t.y || 0);
+    t.scale = Number(t.scale || 1) || 1;
+    return t;
+  }
+
+  function ensureCardTextTransform(card = state.current) {
+    if (!card) return { title: {}, desc: {} };
+    card.textTransform = card.textTransform || {};
+    card.textTransform.title = card.textTransform.title || {};
+    card.textTransform.desc = card.textTransform.desc || {};
+    return card.textTransform;
+  }
+
+  function cardTextTransformFor(role, card = state.current) {
+    return card?.textTransform?.[role] || {};
+  }
+
+  function setCardTextTransformValue(role, key, value) {
+    const textTransform = ensureCardTextTransform();
+    if (value === '' || value == null) delete textTransform[role][key];
+    else textTransform[role][key] = value;
+    const normalize = obj => Object.entries(obj).filter(([, v]) => {
+      if (typeof v === 'string') return v.trim() !== '';
+      return Number(v || 0) !== 0;
+    });
+    if (!normalize(textTransform.title).length) delete textTransform.title;
+    if (!normalize(textTransform.desc).length) delete textTransform.desc;
+    if (!Object.keys(textTransform).length) delete state.current.textTransform;
+  }
+
+  const CARD_FONT_OPTIONS = [
+    ['', '默认'],
+    ['SimHei', '黑体 / SimHei'],
+    ['Microsoft YaHei', '微软雅黑'],
+    ['KaiTi', '楷体 / KaiTi'],
+    ['SimSun', '宋体 / SimSun'],
+    ['FangSong', '仿宋 / FangSong'],
+    ['serif', 'Serif'],
+    ['sans-serif', 'Sans-serif']
+  ];
+
+  function cardFontFamily(role, fontKey) {
+    const fonts = {
+      SimHei: `"SimHei", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif`,
+      'Microsoft YaHei': `"Microsoft YaHei UI", "Microsoft YaHei", sans-serif`,
+      KaiTi: `"KaiTi", "STKaiti", "Microsoft YaHei", serif`,
+      SimSun: `"SimSun", "Songti SC", serif`,
+      FangSong: `"FangSong", "STFangsong", serif`,
+      serif: `serif`,
+      'sans-serif': `sans-serif`
+    };
+    if (fontKey && fonts[fontKey]) return fonts[fontKey];
+    return role === 'title'
+      ? `"Microsoft YaHei UI", "Microsoft YaHei", "SimHei", sans-serif`
+      : `serif`;
+  }
+
+  const CARD_TEMPLATE_MANIFEST_URL = 'assets/card-templates/manifest.json';
+  const CARD_ART_MANIFEST_URL = 'assets/card_art/manifest.json';
+  let cardTemplateManifestPromise = null;
+  const cardTemplateConfigCache = {};
+
+  function loadCardTemplateManifest() {
+    if (!cardTemplateManifestPromise) {
+      cardTemplateManifestPromise = fetch(CARD_TEMPLATE_MANIFEST_URL)
+        .then(res => {
+          if (!res.ok) throw new Error(`card template manifest ${res.status}`);
+          return res.json();
+        })
+        .catch(() => ({ templates: {}, defaultTemplate: 'warrior' }));
+    }
+    return cardTemplateManifestPromise;
+  }
+
+  function loadCardArtManifest() {
+    return fetch(`${CARD_ART_MANIFEST_URL}?v=${Date.now()}`, { cache: 'no-store' })
+      .then(res => {
+        if (!res.ok) throw new Error(`card art manifest ${res.status}`);
+        return res.json();
+      })
+      .catch(() => ({ images: [] }));
+  }
+
+  function loadCardTemplateConfig(entry) {
+    if (!entry?.config) return Promise.resolve(null);
+    if (!cardTemplateConfigCache[entry.key]) {
+      cardTemplateConfigCache[entry.key] = fetch(entry.config)
+        .then(res => {
+          if (!res.ok) throw new Error(`card template config ${res.status}`);
+          return res.json();
+        })
+        .catch(() => null);
+    }
+    return cardTemplateConfigCache[entry.key];
+  }
+
+  function inferCardTemplateKey() {
+    if (state.scope === 'weapon_cards') return 'weapon';
+    if (state.scope === 'accessory_cards') return 'accessory';
+    if (state.scope === 'armor_cards' || state.scope === 'boots_cards') return 'gear';
+    if (state.scope === 'relic_cards') return 'relic';
+    if (state.scope === 'negative_cards') return 'warlock';
+    const professionKey = String(state.profession || '').toLowerCase();
+    return {
+      warrior: 'warrior',
+      mage: 'mage',
+      rogue: 'assassin',
+      assassin: 'assassin',
+      priest: 'priest',
+      shaman: 'shaman',
+      necro: 'necro',
+      necromancer: 'necro',
+      warlock: 'warlock',
+      hunter: 'hunter',
+      monk: 'monk',
+      samurai: 'samurai',
+      swordsman: 'samurai'
+    }[professionKey] || 'warrior';
+  }
+
+  function resolveCardTemplateKey(manifest) {
+    const templates = manifest?.templates || {};
+    const requested = String(state.current?.cardTemplate || '').trim();
+    const inferred = inferCardTemplateKey();
+    return templates[requested] ? requested : templates[inferred] ? inferred : manifest?.defaultTemplate || Object.keys(templates)[0] || '';
+  }
+
+  function cardTemplateLabel(entry) {
+    return entry?.label || entry?.key || 'template';
+  }
+
+  function applyTemplateBox(el, box, dim) {
+    el.style.position = 'absolute';
+    el.style.left = `${(Number(box.x || 0) / dim.width) * 100}%`;
+    el.style.top = `${(Number(box.y || 0) / dim.height) * 100}%`;
+    el.style.width = `${(Number(box.w || 0) / dim.width) * 100}%`;
+    el.style.height = `${(Number(box.h || 0) / dim.height) * 100}%`;
+  }
+
+  function scaledCardFontSize(baseSize, dim, text, role) {
+    const size = Number(baseSize || (role === 'title' ? 48 : 30));
+    return `${(size / dim.width) * 100}cqw`;
+  }
+
+  function renderFullCardPreview(host, entry, cfg, artManifest = null) {
+    host.innerHTML = '';
+    if (!entry || !cfg) {
+      const empty = document.createElement('div');
+      empty.className = 'muted';
+      empty.textContent = '未找到卡牌模板配置。';
+      host.appendChild(empty);
+      return;
+    }
+    const dim = cfg.imageDimensions || { width: 1086, height: 1448 };
+    const card = state.current || {};
+    const artTransform = ensureCardArtTransform(card);
+    const titleText = card.name || state.entryKey || '';
+    const faceText = card.cardText || card.text || '';
+
+    const preview = document.createElement('div');
+    preview.style.width = 'min(100%, 300px)';
+    preview.style.aspectRatio = `${dim.width} / ${dim.height}`;
+    preview.style.position = 'relative';
+    preview.style.containerType = 'inline-size';
+    preview.style.overflow = 'visible';
+    preview.style.background = 'transparent';
+    preview.style.margin = '6px auto 0';
+
+    if (cfg.artBox) {
+      const artSlot = document.createElement('div');
+      applyTemplateBox(artSlot, cfg.artBox, dim);
+      artSlot.style.overflow = 'hidden';
+      artSlot.style.zIndex = '1';
+      artSlot.style.background = '#111';
+      const art = document.createElement('img');
+      art.src = assetUrl(cardArtPath(card, artManifest));
+      art.alt = '';
+      art.style.position = 'absolute';
+      art.style.left = `calc(50% + ${(artTransform.x / Number(cfg.artBox.w || 1)) * 100}%)`;
+      art.style.top = `calc(50% + ${(artTransform.y / Number(cfg.artBox.h || 1)) * 100}%)`;
+      art.style.width = '100%';
+      art.style.height = 'auto';
+      art.style.minHeight = '100%';
+      art.style.objectFit = 'cover';
+      art.style.transform = `translate(-50%, -50%) scale(${artTransform.scale})`;
+      art.style.transformOrigin = 'center';
+      artSlot.appendChild(art);
+      preview.appendChild(artSlot);
+    }
+
+    function addBackground(box, conf, role) {
+      if (!box || !conf?.bgImage) return;
+      const bgSlot = document.createElement('div');
+      applyTemplateBox(bgSlot, box, dim);
+      bgSlot.style.overflow = 'hidden';
+      bgSlot.style.zIndex = '2';
+      const bg = document.createElement('img');
+      bg.src = conf.bgImage;
+      bg.alt = '';
+      bg.style.position = 'absolute';
+      bg.style.left = '50%';
+      bg.style.top = '50%';
+      const fillScale = Math.max(role === 'desc' ? 1.5 : 1, Number(conf.bgTransform?.scale || 1));
+      bg.style.width = `${fillScale * 100}%`;
+      bg.style.height = `${fillScale * 100}%`;
+      bg.style.objectFit = 'fill';
+      bg.style.transform = `translate(calc(-50% + ${Number(conf.bgTransform?.x || 0) / Number(box.w || 1) * 100}%), calc(-50% + ${Number(conf.bgTransform?.y || 0) / Number(box.h || 1) * 100}%))`;
+      bg.style.transformOrigin = 'center';
+      bgSlot.appendChild(bg);
+      preview.appendChild(bgSlot);
+    }
+
+    addBackground(cfg.titleBox, cfg.textConfigs?.title, 'title');
+    addBackground(cfg.textBox, cfg.textConfigs?.desc, 'desc');
+
+    function addText(box, conf, text, role) {
+      if (!box) return;
+      const override = cardTextTransformFor(role, card);
+      const baseOffsetX = Number(conf?.offset?.x || 0);
+      const baseOffsetY = Number(conf?.offset?.y || 0);
+      const offsetX = baseOffsetX + Number(override.x || 0);
+      const offsetY = baseOffsetY + Number(override.y || 0);
+      const sizeOverride = Number(override.size || 0);
+      const baseSize = sizeOverride > 0 ? sizeOverride : role === 'desc' ? 60 : role === 'title' ? 55 : conf?.size;
+      const layer = document.createElement('div');
+      applyTemplateBox(layer, box, dim);
+      layer.style.zIndex = '3';
+      layer.style.overflow = 'hidden';
+      layer.style.display = 'flex';
+      layer.style.alignItems = role === 'title' ? 'center' : 'flex-start';
+      layer.style.justifyContent = 'center';
+      layer.style.textAlign = 'center';
+      layer.style.pointerEvents = 'none';
+      const inner = document.createElement('div');
+      if (role === 'title') {
+        Array.from(String(text || '')).forEach(char => {
+          const span = document.createElement('span');
+          span.textContent = char;
+          inner.appendChild(span);
+        });
+      } else {
+        inner.textContent = text;
+      }
+      inner.style.position = 'relative';
+      inner.style.left = `${(offsetX / Number(box.w || 1)) * 100}%`;
+      inner.style.top = `${(offsetY / Number(box.h || 1)) * 100}%`;
+      inner.style.width = role === 'title' ? '48%' : '92%';
+      inner.style.whiteSpace = 'pre-wrap';
+      inner.style.overflowWrap = 'break-word';
+      inner.style.lineHeight = role === 'title' ? '1' : '1.18';
+      inner.style.fontFamily = cardFontFamily(role, override.font);
+      inner.style.fontSize = scaledCardFontSize(baseSize, dim, text, role);
+      inner.style.color = conf?.color || '#fff';
+      inner.style.fontWeight = role === 'title' ? '900' : '500';
+      if (role === 'title') {
+        inner.style.display = 'flex';
+        inner.style.alignItems = 'center';
+        inner.style.justifyContent = 'space-between';
+      }
+      inner.style.textShadow = role === 'title'
+        ? '0 1px 1px #000, 0 0 2px #000'
+        : '0 1px 2px #000, 0 0 3px #000';
+      if (role === 'title' || conf?.strokeWidth) {
+        const stroke = role === 'title' ? Number(conf?.strokeWidth || 1.2) * 0.45 : Number(conf?.strokeWidth || 0.9);
+        inner.style.webkitTextStroke = `${(stroke / dim.width) * 100}cqw rgba(30, 12, 2, .72)`;
+      }
+      layer.appendChild(inner);
+      preview.appendChild(layer);
+    }
+
+    addText(cfg.titleBox, cfg.textConfigs?.title, titleText, 'title');
+    addText(cfg.textBox, cfg.textConfigs?.desc, faceText, 'desc');
+
+    const frame = document.createElement('img');
+    frame.src = entry.frame;
+    frame.alt = '';
+    frame.style.position = 'absolute';
+    frame.style.inset = '0';
+    frame.style.width = '100%';
+    frame.style.height = '100%';
+    frame.style.zIndex = '4';
+    frame.style.pointerEvents = 'none';
+    preview.appendChild(frame);
+    host.appendChild(preview);
+  }
+
+  function renderCardVisualFields(host) {
+    if (!state.current || state.scope === 'passives') return;
+    ensureCardArtTransform();
+
+    const section = document.createElement('div');
+    section.className = 'field';
+    const title = document.createElement('label');
+    title.textContent = '卡面显示设置';
+    section.appendChild(title);
+
+    const templateField = document.createElement('div');
+    templateField.className = 'field';
+    const templateLabel = document.createElement('label');
+    templateLabel.textContent = '卡牌模板';
+    templateField.appendChild(templateLabel);
+    const templateSelect = document.createElement('select');
+    const autoOption = document.createElement('option');
+    autoOption.value = '';
+    autoOption.textContent = `自动（${inferCardTemplateKey()}）`;
+    templateSelect.appendChild(autoOption);
+    templateSelect.value = state.current.cardTemplate || '';
+    templateField.appendChild(templateSelect);
+    section.appendChild(templateField);
+
+    const cardTextField = document.createElement('div');
+    cardTextField.className = 'field';
+    const cardTextLabel = document.createElement('label');
+    cardTextLabel.textContent = '卡面短文本（留空则使用上方完整描述）';
+    cardTextField.appendChild(cardTextLabel);
+    const cardTextArea = document.createElement('textarea');
+    cardTextArea.rows = 3;
+    cardTextArea.value = state.current.cardText || '';
+    cardTextArea.placeholder = '例：恢复 1D8。\n被动：每第 4 次治疗，额外恢复 1D6。';
+    cardTextArea.oninput = () => {
+      ensureEditableRuleset();
+      state.current.cardText = cardTextArea.value;
+      if (!state.current.cardText) delete state.current.cardText;
+      syncCurrentEntryToCache();
+      renderFriendlyPreview();
+      refreshPreview();
+    };
+    cardTextField.appendChild(cardTextArea);
+
+    const artGrid = document.createElement('div');
+    artGrid.className = 'field-grid';
+    const artPathField = document.createElement('div');
+    artPathField.className = 'field';
+    const artPathLabel = document.createElement('label');
+    artPathLabel.textContent = '插图路径（留空则使用默认职业立绘）';
+    artPathField.appendChild(artPathLabel);
+    const artInput = document.createElement('input');
+    artInput.type = 'text';
+    artInput.value = state.current.art || '';
+    artInput.placeholder = defaultCardArtForCurrent();
+    artPathField.appendChild(artInput);
+    const artSelect = document.createElement('select');
+    const artAuto = document.createElement('option');
+    artAuto.value = '';
+    artAuto.textContent = '自动匹配同名插图';
+    artSelect.appendChild(artAuto);
+    artPathField.appendChild(artSelect);
+    const artFile = document.createElement('input');
+    artFile.type = 'file';
+    artFile.accept = 'image/*';
+    artFile.onchange = () => {
+      const file = artFile.files && artFile.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        ensureEditableRuleset();
+        state.current.art = String(reader.result || '');
+        artInput.value = state.current.art;
+        syncCurrentEntryToCache();
+        renderFriendlyPreview();
+        refreshPreview();
+      };
+      reader.readAsDataURL(file);
+    };
+    artPathField.appendChild(artFile);
+    const artHint = document.createElement('div');
+    artHint.className = 'muted';
+    artHint.textContent = '可填写项目内路径；也可临时选择图片并以内嵌 data URL 保存。后续正式图建议放入 assets/card_art 后改为路径。';
+    artPathField.appendChild(artHint);
+    artGrid.appendChild(artPathField);
+
+    [
+      ['scale', '插图缩放', 'number', '0.05'],
+      ['x', '插图 X 偏移', 'number', '1'],
+      ['y', '插图 Y 偏移', 'number', '1']
+    ].forEach(([key, label, type, step]) => {
+      const field = document.createElement('div');
+      field.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      field.appendChild(lab);
+      const input = document.createElement('input');
+      input.type = type;
+      input.step = step;
+      input.value = state.current.artTransform?.[key] ?? (key === 'scale' ? 1 : 0);
+      input.oninput = () => {
+        ensureEditableRuleset();
+        const t = ensureCardArtTransform();
+        t[key] = key === 'scale' ? Math.max(0.1, Number(input.value || 1)) : Number(input.value || 0);
+        syncCurrentEntryToCache();
+        renderFriendlyPreview();
+        refreshPreview();
+      };
+      field.appendChild(input);
+      artGrid.appendChild(field);
+    });
+    section.appendChild(artGrid);
+
+    const textGrid = document.createElement('div');
+    textGrid.className = 'field-grid';
+    textGrid.appendChild(cardTextField);
+    cardTextField.style.gridColumn = '1 / -1';
+    const textAdjustHint = document.createElement('div');
+    textAdjustHint.className = 'muted';
+    textAdjustHint.style.gridColumn = '1 / -1';
+    textAdjustHint.textContent = '文字位置默认读取模板坐标；下面的数值是在模板基础上的每卡微调。标题字号填 0 使用默认 55，描述字号填 0 使用默认 60。';
+    textGrid.appendChild(textAdjustHint);
+    const textControlInputs = [];
+    [
+      ['title', '标题字体'],
+      ['desc', '描述字体']
+    ].forEach(([role, label]) => {
+      const field = document.createElement('div');
+      field.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      field.appendChild(lab);
+      const select = document.createElement('select');
+      CARD_FONT_OPTIONS.forEach(([value, text]) => {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = text;
+        select.appendChild(opt);
+      });
+      select.value = cardTextTransformFor(role).font || (role === 'title' ? 'Microsoft YaHei' : 'serif');
+      select.onchange = () => {
+        ensureEditableRuleset();
+        setCardTextTransformValue(role, 'font', select.value);
+        syncCurrentEntryToCache();
+        renderFriendlyPreview();
+        refreshPreview();
+      };
+      field.appendChild(select);
+      textGrid.appendChild(field);
+    });
+    [
+      ['title', '标题文字 X 偏移', 'x', '1'],
+      ['title', '标题文字 Y 偏移', 'y', '1'],
+      ['title', '标题字号覆盖', 'size', '1'],
+      ['desc', '描述文字 X 偏移', 'x', '1'],
+      ['desc', '描述文字 Y 偏移', 'y', '1'],
+      ['desc', '描述字号覆盖', 'size', '1']
+    ].forEach(([role, label, key, step]) => {
+      const field = document.createElement('div');
+      field.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      field.appendChild(lab);
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.step = step;
+      input.value = cardTextTransformFor(role)[key] ?? (key === 'size' ? (role === 'desc' ? 60 : role === 'title' ? 55 : 0) : 0);
+      input.placeholder = '模板值';
+      input.oninput = () => {
+        ensureEditableRuleset();
+        const value = key === 'size' ? Math.max(0, Number(input.value || 0)) : Number(input.value || 0);
+        setCardTextTransformValue(role, key, value);
+        syncCurrentEntryToCache();
+        renderFriendlyPreview();
+        refreshPreview();
+      };
+      field.appendChild(input);
+      textControlInputs.push({ role, key, input });
+      textGrid.appendChild(field);
+    });
+    const preview = document.createElement('div');
+    preview.className = 'summary-box';
+    preview.style.minHeight = '160px';
+    preview.style.display = 'flex';
+    preview.style.alignItems = 'center';
+    preview.style.gap = '12px';
+    preview.style.overflow = 'hidden';
+    const imgWrap = document.createElement('div');
+    imgWrap.style.width = '96px';
+    imgWrap.style.height = '132px';
+    imgWrap.style.flex = '0 0 auto';
+    imgWrap.style.overflow = 'hidden';
+    imgWrap.style.border = '1px solid rgba(255,255,255,.16)';
+    imgWrap.style.background = 'rgba(0,0,0,.28)';
+    const img = document.createElement('img');
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+    imgWrap.appendChild(img);
+    const meta = document.createElement('div');
+    meta.className = 'muted';
+    meta.style.whiteSpace = 'pre-wrap';
+    preview.appendChild(imgWrap);
+    preview.appendChild(meta);
+    section.appendChild(preview);
+
+    const fullPreviewField = document.createElement('div');
+    fullPreviewField.className = 'field';
+    const fullPreviewLabel = document.createElement('label');
+    fullPreviewLabel.textContent = '完整卡牌预览';
+    fullPreviewField.appendChild(fullPreviewLabel);
+    const fullPreviewLayout = document.createElement('div');
+    fullPreviewLayout.style.display = 'flex';
+    fullPreviewLayout.style.gap = '14px';
+    fullPreviewLayout.style.alignItems = 'flex-start';
+    fullPreviewLayout.style.flexWrap = 'wrap';
+    const fullPreview = document.createElement('div');
+    fullPreview.className = 'summary-box';
+    fullPreview.style.minHeight = '360px';
+    fullPreview.style.display = 'flex';
+    fullPreview.style.alignItems = 'center';
+    fullPreview.style.justifyContent = 'center';
+    fullPreview.style.overflow = 'visible';
+    fullPreview.style.flex = '1 1 360px';
+    fullPreviewLayout.appendChild(fullPreview);
+    textGrid.style.flex = '1 1 280px';
+    textGrid.style.margin = '0';
+    fullPreviewLayout.appendChild(textGrid);
+    fullPreviewField.appendChild(fullPreviewLayout);
+    section.appendChild(fullPreviewField);
+
+    function populateTemplateSelect(manifest) {
+      if (templateSelect.dataset.loaded) return;
+      const templates = manifest?.templates || {};
+      const inferred = inferCardTemplateKey();
+      autoOption.textContent = `自动（${cardTemplateLabel(templates[inferred])}）`;
+      Object.values(templates).forEach(entry => {
+        const opt = document.createElement('option');
+        opt.value = entry.key;
+        opt.textContent = cardTemplateLabel(entry);
+        templateSelect.appendChild(opt);
+      });
+      templateSelect.value = state.current.cardTemplate || '';
+      templateSelect.dataset.loaded = '1';
+    }
+
+    function populateArtSelect(artManifest) {
+      const previousValue = state.current.art || artSelect.value || '';
+      artSelect.innerHTML = '';
+      const artAuto = document.createElement('option');
+      artAuto.value = '';
+      artAuto.textContent = '自动匹配同名插图';
+      artSelect.appendChild(artAuto);
+      const images = artManifest?.images || [];
+      images.forEach(imgEntry => {
+        const opt = document.createElement('option');
+        opt.value = imgEntry.path;
+        opt.textContent = imgEntry.label || imgEntry.name || imgEntry.file;
+        artSelect.appendChild(opt);
+      });
+      artSelect.value = images.some(imgEntry => imgEntry.path === previousValue) ? previousValue : '';
+    }
+
+    function refreshPreview() {
+      const t = ensureCardArtTransform();
+      const artManifestPromise = loadCardArtManifest();
+      artManifestPromise.then(artManifest => {
+        if (!section.isConnected) return;
+        populateArtSelect(artManifest);
+        const currentArt = cardArtPath(state.current, artManifest);
+        img.src = assetUrl(currentArt);
+        artInput.placeholder = findMatchingCardArt(state.current, artManifest) || defaultCardArtForCurrent();
+        artSelect.value = state.current.art || '';
+        meta.textContent = `实际插图：${currentArt}\n卡面文本：${state.current.cardText || state.current.text || '（空）'}`;
+      });
+      img.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
+      fullPreview.textContent = '加载卡牌模板...';
+      Promise.all([loadCardTemplateManifest(), artManifestPromise]).then(([manifest, artManifest]) => {
+        if (!section.isConnected) return;
+        populateTemplateSelect(manifest);
+        populateArtSelect(artManifest);
+        const key = resolveCardTemplateKey(manifest);
+        const entry = manifest.templates?.[key];
+        return loadCardTemplateConfig(entry).then(cfg => {
+          if (!section.isConnected) return;
+          textControlInputs.forEach(({ role, key, input }) => {
+            const conf = cfg?.textConfigs?.[role] || {};
+            const templateValue = key === 'size' ? (role === 'desc' ? 60 : role === 'title' ? 55 : Number(conf.size || 0)) : Number(conf.offset?.[key] || 0);
+            input.placeholder = `模板 ${templateValue}`;
+            input.title = `${cardTemplateLabel(entry)} 模板基础值：${templateValue}`;
+          });
+          renderFullCardPreview(fullPreview, entry, cfg, artManifest);
+        });
+      });
+    }
+
+    artInput.oninput = () => {
+      ensureEditableRuleset();
+      state.current.art = artInput.value.trim();
+      if (!state.current.art) delete state.current.art;
+      syncCurrentEntryToCache();
+      renderFriendlyPreview();
+      refreshPreview();
+    };
+
+    artSelect.onchange = () => {
+      ensureEditableRuleset();
+      state.current.art = artSelect.value;
+      if (!state.current.art) delete state.current.art;
+      artInput.value = state.current.art || '';
+      syncCurrentEntryToCache();
+      renderFriendlyPreview();
+      refreshPreview();
+    };
+
+    templateSelect.onchange = () => {
+      ensureEditableRuleset();
+      if (templateSelect.value) state.current.cardTemplate = templateSelect.value;
+      else delete state.current.cardTemplate;
+      syncCurrentEntryToCache();
+      renderFriendlyPreview();
+      refreshPreview();
+    };
+
+    state.refreshCardVisualPreview = refreshPreview;
+    host.appendChild(section);
+    refreshPreview();
   }
 
 
@@ -129,6 +818,32 @@
       { range: 3, tokenName: '陷阱', tokenKind: 'trap_once_negative', durationTurns: 2, damage: '2d6', insertCardKey: '', insertCount: 1, attackRange: 4, controlType: '', controlDuration: 1, blocking: false },
       rs.data.templateDefaults.create_map_token || {}
     );
+
+    rs.data.templates.negative_effect = Object.assign(
+      {},
+      rs.data.templates.negative_effect || {},
+      {
+        label: '负面牌：通用负面效果',
+        desc: '使用后触发一个可配置的负面效果，如失去行动机会、破绽、笨拙、惊慌、混乱或生命代价。',
+        fields: [
+          ['negativeEffectType','负面效果','negativeEffectType'],
+          ['fumbleBucket','Fumble：失去机会','fumbleBucket'],
+          ['vulnerableBonus','Vulnerable：额外受伤','number'],
+          ['vulnerableScope','Vulnerable：伤害类型','vulnerableScope'],
+          ['vulnerableDuration','Vulnerable：持续','vulnerableDuration'],
+          ['clumsyChance','Clumsy：失败率 %','number'],
+          ['clumsyScope','Clumsy：影响范围','clumsyScope'],
+          ['clumsyDuration','Clumsy：持续','clumsyDuration'],
+          ['panicMode','Panic：弃牌方式','panicMode'],
+          ['chaosCharges','Chaos：次数','number'],
+          ['bloodDamage','Blood：失去生命','text']
+        ]
+      }
+    );
+    rs.data.templateDefaults.negative_effect = Object.assign(
+      { negativeEffectType: 'fumble', fumbleBucket: 'random', vulnerableBonus: 2, vulnerableScope: 'any', vulnerableDuration: 'next', clumsyChance: 25, clumsyScope: 'any', clumsyDuration: 'next', panicMode: 'random_attack', chaosCharges: 1, bloodDamage: 1 },
+      rs.data.templateDefaults.negative_effect || {}
+    );
     return rs;
   }
 
@@ -150,8 +865,9 @@
     state.rulesetId = id;
     STUDIO_RUNTIME.setActiveRulesetId(id);
     state.rulesetCache = mergeLatestSchemasIntoRuleset(deep(STUDIO_RUNTIME.findRuleset(id)));
-    if (!state.rulesetCache.data.professions[state.profession]) {
-      state.profession = Object.keys(state.rulesetCache.data.professions)[0];
+    const collection = currentEntityCollection();
+    if (!collection[state.profession]) {
+      state.profession = Object.keys(collection)[0];
     }
   }
 
@@ -192,7 +908,7 @@
     } else if (state.scope === 'passives') {
       entity.passives[state.entryKey] = deep(normalized);
       currentRuleset().data.cardLibrary[state.entryKey] = deep(normalized);
-    } else if (state.scope === 'weapon_cards' || state.scope === 'accessory_cards') {
+    } else if (isEquipmentCardScope()) {
       currentRuleset().data.cardLibrary[state.entryKey] = deep(normalized);
       entity.cards = entity.cards || [];
       if (!entity.cards.includes(state.entryKey)) entity.cards.push(state.entryKey);
@@ -320,7 +1036,7 @@
     Object.entries(collection).forEach(([key, val]) => {
       const o = document.createElement('option');
       o.value = key;
-      const kind = state.scope === 'weapon_cards' ? 'weapon' : state.scope === 'accessory_cards' ? 'accessory' : state.scope === 'negative_cards' ? 'card' : 'profession';
+      const kind = equipmentScopeInfo()?.entity || (state.scope === 'negative_cards' ? 'card' : 'profession');
       o.textContent = I18N().entity(kind, key, val.name);
       sel.appendChild(o);
     });
@@ -631,6 +1347,71 @@
     return wrap;
   }
 
+  function negativeEffectsEditor(effects, onChange) {
+    const wrap = document.createElement('div');
+    wrap.className = 'form-host';
+    const list = Array.isArray(effects) ? effects : [];
+    const fields = [
+      ['negativeEffectType','负面效果','negativeEffectType'],
+      ['fumbleBucket','Fumble：失去机会','fumbleBucket'],
+      ['vulnerableBonus','Vulnerable：额外受伤','number'],
+      ['vulnerableScope','Vulnerable：伤害类型','vulnerableScope'],
+      ['vulnerableDuration','Vulnerable：持续','vulnerableDuration'],
+      ['clumsyChance','Clumsy：失败率 %','number'],
+      ['clumsyScope','Clumsy：影响范围','clumsyScope'],
+      ['clumsyDuration','Clumsy：持续','clumsyDuration'],
+      ['panicMode','Panic：弃牌方式','panicMode'],
+      ['chaosCharges','Chaos：次数','number'],
+      ['bloodDamage','Blood：失去生命','text']
+    ];
+
+    function renderRow(effect, idx) {
+      const box = document.createElement('div');
+      box.className = 'panel';
+      box.style.padding = '12px';
+      box.innerHTML = `<div class="chip">负面效果 ${idx + 1}</div>`;
+      const grid = document.createElement('div');
+      grid.className = 'field-grid';
+      fields.forEach(([key, label, type]) => {
+        const field = document.createElement('div');
+        field.className = 'field';
+        const lab = document.createElement('label');
+        lab.textContent = label;
+        field.appendChild(lab);
+        field.appendChild(makeInput(key, type, effect[key], v => {
+          effect[key] = v;
+          onChange(list);
+        }));
+        grid.appendChild(field);
+      });
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'danger';
+      del.textContent = '删除这个负面效果';
+      del.onclick = () => {
+        list.splice(idx, 1);
+        onChange(list);
+        renderForm();
+      };
+      box.appendChild(grid);
+      box.appendChild(del);
+      return box;
+    }
+
+    list.forEach((effect, idx) => wrap.appendChild(renderRow(effect, idx)));
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'secondary';
+    add.textContent = '添加负面效果';
+    add.onclick = () => {
+      list.push({ negativeEffectType: 'fumble', fumbleBucket: 'random', vulnerableBonus: 2, vulnerableScope: 'any', vulnerableDuration: 'next', clumsyChance: 25, clumsyScope: 'any', clumsyDuration: 'next', panicMode: 'random_attack', chaosCharges: 1, bloodDamage: 1 });
+      onChange(list);
+      renderForm();
+    };
+    wrap.appendChild(add);
+    return wrap;
+  }
+
   function initTemplateConfig(templateKey) {
     ensureEditableRuleset();
     state.current.template = templateKey;
@@ -662,13 +1443,15 @@
     const lines = [];
     lines.push(`Name: ${I18N().entity('card', state.entryKey, c.name)}`);
     lines.push(`Key: ${state.entryKey}`);
-    lines.push(`Source: ${I18N().entity('origin', c.source || (state.scope === 'cards' ? '职业技能' : state.scope === 'passives' ? '职业被动' : state.scope === 'weapon_cards' ? '武器技能' : '饰品技能'), c.source || (state.scope === 'cards' ? '职业技能' : state.scope === 'passives' ? '职业被动' : state.scope === 'weapon_cards' ? '武器技能' : '饰品技能'))}`);
+    const fallbackSource = state.scope === 'cards' ? '职业技能' : state.scope === 'passives' ? '职业被动' : equipmentScopeInfo()?.source || '饰品技能';
+    lines.push(`Source: ${I18N().entity('origin', c.source || fallbackSource, c.source || fallbackSource)}`);
     lines.push(`Template: ${I18N().entity('template', c.template, tpl?.label || c.template)}`);
     if (c.config.damage) lines.push(`Damage: ${c.config.damage}`);
     if (c.config.range != null) lines.push(`Range: ${c.config.range}`);
     if (c.config.radius != null) lines.push(`Radius: ${c.config.radius}`);
     if (c.config.buffBasic != null) lines.push(`Bonus: ${c.config.buffBasic}`);
     if (c.config.consumeOn) lines.push(`Consume On: ${c.config.consumeOn}`);
+    if (c.config.quick) lines.push('Quick: yes');
     if (c.config.dodgeNext) lines.push('Dodge: next damage');
     if (c.config.counterDamage) lines.push(`Counter Fixed: ${c.config.counterDamage}`);
     if (c.config.counterUseTakenDamage) lines.push('Counter: taken damage');
@@ -676,9 +1459,20 @@
     if (c.config.reactiveMoveTrigger) lines.push(`Reactive Move: ${c.config.reactiveMoveTrigger} / ${c.config.reactiveMoveMaxDistance || 0}`);
     if (c.config.healOnDamaged) lines.push(`Heal On Damaged: ${c.config.healOnDamaged}`);
     if (c.config.disarmAttackerOnHit) lines.push(`Disarm Attacker: ${c.config.disarmAttackerOnHit}`);
+    if (c.config.lifestealPercent) lines.push(`Lifesteal: ${c.config.lifestealPercent}%`);
+    if (c.config.lifestealFlat) lines.push(`Lifesteal Flat: ${c.config.lifestealFlat}`);
     if (c.config.applyTemplate) lines.push(`Status Template: ${c.config.applyTemplate}`);
+    if (Array.isArray(c.config.negativeEffects) && c.config.negativeEffects.length) lines.push(`Negative Effects: ${c.config.negativeEffects.map(x => x.negativeEffectType || x.effectType).join(', ')}`);
     if (c.config.modes) lines.push(`Modes: ${c.config.modes.length}`);
     if (c.text) lines.push(`Description: ${c.text}`);
+    if (c.cardText) lines.push(`Card Face Text: ${c.cardText}`);
+    if (state.scope !== 'passives') {
+      const t = c.artTransform || {};
+      lines.push(`Card Template: ${c.cardTemplate || `auto:${inferCardTemplateKey()}`}`);
+      lines.push(`Card Art: ${cardArtPath(c)}`);
+      lines.push(`Art Transform: scale ${t.scale || 1}, x ${t.x || 0}, y ${t.y || 0}`);
+      if (c.textTransform) lines.push(`Text Transform: ${JSON.stringify(c.textTransform)}`);
+    }
     $('friendly-preview').textContent = lines.join('\n');
     $('json-preview').value = JSON.stringify(state.current, null, 2);
   }
@@ -713,10 +1507,161 @@
     renderFriendlyPreview();
   }
 
+  function relicNegativeValueMeta(effectType) {
+    const map = {
+      vulnerable: { label: '破绽数值：下次额外受伤', placeholder: '例如 2' },
+      clumsy: { label: '笨拙数值：失败率 %', placeholder: '例如 25' },
+      chaos: { label: '混乱数值：触发次数', placeholder: '例如 1' },
+      blood: { label: 'Blood 数值：失去生命', placeholder: '例如 3' },
+    };
+    return map[effectType] || null;
+  }
+
+  function renderEntityField(grid, entity, key, label, type, onAfterChange = null) {
+    const field = document.createElement('div');
+    field.className = 'field';
+    const lab = document.createElement('label');
+    lab.textContent = label;
+    field.appendChild(lab);
+    field.appendChild(makeInput(key, type, entity[key], v => {
+      ensureEditableRuleset();
+      const target = currentEntity();
+      if (type === 'number') target[key] = Number(v || 0);
+      else target[key] = v;
+      if (onAfterChange) onAfterChange(target);
+      renderSummary();
+      renderFriendlyPreview();
+    }));
+    grid.appendChild(field);
+    return field;
+  }
+
+  function renderRelicEntityFields(host, entity, info) {
+    const box = document.createElement('div');
+    box.className = 'panel';
+    box.style.padding = '12px';
+    const title = document.createElement('div');
+    title.className = 'chip';
+    title.textContent = `${info.label}固定效果`;
+    box.appendChild(title);
+
+    const positiveTitle = document.createElement('div');
+    positiveTitle.className = 'muted';
+    positiveTitle.style.marginTop = '8px';
+    positiveTitle.textContent = '正面效果：常驻生效。';
+    box.appendChild(positiveTitle);
+    const positiveGrid = document.createElement('div');
+    positiveGrid.className = 'field-grid';
+    [
+      ['outgoingDamageHealFlat','每次造成伤害回血','number'],
+      ['outgoingDamageCritChance','造成伤害暴击率 %','number'],
+      ['outgoingDamageCritBonusDie','暴击追加骰','text'],
+      ['outgoingDamageCritMultiplier','暴击倍率','number'],
+      ['ignoreTargetReductionFlat','造成伤害无视减伤','number'],
+      ['moveBonus','每回合移动距离加成','number'],
+    ].forEach(([key, label, type]) => renderEntityField(positiveGrid, entity, key, label, type));
+    box.appendChild(positiveGrid);
+
+    const costTitle = document.createElement('div');
+    costTitle.className = 'muted';
+    costTitle.style.marginTop = '12px';
+    costTitle.textContent = '常驻代价：永久生效，不需要触发检定。';
+    box.appendChild(costTitle);
+    const costGrid = document.createElement('div');
+    costGrid.className = 'field-grid';
+    [
+      ['turnStartSelfDamage','每回合开始失去生命（固定代价）','number'],
+      ['incomingDamageBonus','永久额外受到伤害','number'],
+      ['hazardDamageBonus','永久额外受到地形伤害','number'],
+      ['outgoingAttackFailChance','永久攻击/技能失败率 %','number'],
+    ].forEach(([key, label, type]) => renderEntityField(costGrid, entity, key, label, type));
+    box.appendChild(costGrid);
+
+    const negativeTitle = document.createElement('div');
+    negativeTitle.className = 'muted';
+    negativeTitle.style.marginTop = '12px';
+    negativeTitle.textContent = '回合开始负面：先选择负面效果，再配置触发率和该效果需要的数值。';
+    box.appendChild(negativeTitle);
+    const negativeGrid = document.createElement('div');
+    negativeGrid.className = 'field-grid';
+    renderEntityField(negativeGrid, entity, 'turnStartNegativeEffect', '回合开始负面效果', 'turnStartNegativeEffect', () => {
+      renderForm();
+    });
+    const effectType = String(entity.turnStartNegativeEffect || '');
+    if(effectType){
+      renderEntityField(negativeGrid, entity, 'turnStartNegativeChance', '触发率 %', 'number');
+      const meta = relicNegativeValueMeta(effectType);
+      if(meta){
+        const field = renderEntityField(negativeGrid, entity, 'turnStartNegativePower', meta.label, 'number');
+        field.querySelector('input')?.setAttribute('placeholder', meta.placeholder);
+      }
+    }
+    box.appendChild(negativeGrid);
+    host.appendChild(box);
+  }
+
+  function renderEquipmentEntityFields(host) {
+    const info = equipmentScopeInfo();
+    const entity = currentEntity();
+    if (!info || !entity) return;
+    if (info.entity === 'relic') {
+      renderRelicEntityFields(host, entity, info);
+      return;
+    }
+    const fieldsByType = {
+      armor: [
+        ['maxHp','生命值','number'],
+        ['damageReductionFlat','固定减伤','number'],
+        ['damageReductionRoll','骰子减伤','text'],
+        ['incomingDamageBonus','额外受到伤害','number'],
+        ['outgoingAttackFailChance','攻击/技能失败率 %','number'],
+      ],
+      boots: [
+        ['moveBase','移动距离','number'],
+        ['hazardDamageReduction','地形/陷阱伤害减少','number'],
+        ['forcedMoveResistance','强制位移抗性','number'],
+        ['incomingDamageBonus','额外受到伤害','number'],
+        ['hazardDamageBonus','额外受到地形伤害','number'],
+        ['outgoingAttackFailChance','攻击/技能失败率 %','number'],
+      ],
+    };
+    const fields = fieldsByType[info.entity];
+    if (!fields) return;
+    const box = document.createElement('div');
+    box.className = 'panel';
+    box.style.padding = '12px';
+    const title = document.createElement('div');
+    title.className = 'chip';
+    title.textContent = `${info.label}固定效果`;
+    box.appendChild(title);
+    const grid = document.createElement('div');
+    grid.className = 'field-grid';
+    fields.forEach(([key, label, type]) => {
+      const field = document.createElement('div');
+      field.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      field.appendChild(lab);
+      field.appendChild(makeInput(key, type, entity[key], v => {
+        ensureEditableRuleset();
+        const target = currentEntity();
+        if (type === 'number') target[key] = Number(v || 0);
+        else target[key] = v;
+        renderSummary();
+        renderFriendlyPreview();
+      }));
+      grid.appendChild(field);
+    });
+    box.appendChild(grid);
+    host.appendChild(box);
+  }
+
   function renderForm() {
     if (!state.current) {
       $('form-title').textContent = '没有可编辑条目';
-      $('form-host').innerHTML = '';
+      const host = $('form-host');
+      host.innerHTML = '';
+      renderEquipmentEntityFields(host);
       $('friendly-preview').textContent = '';
       $('json-preview').value = '';
       renderStorageInfo();
@@ -732,8 +1677,9 @@
 
     const host = $('form-host');
     host.innerHTML = '';
-    const kind = state.scope === 'weapon_cards' ? 'weapon' : state.scope === 'accessory_cards' ? 'accessory' : 'profession';
+    const kind = equipmentScopeInfo()?.entity || 'profession';
     $('form-title').textContent = `${I18N().entity(kind, state.profession, currentEntityName())} / ${I18N().entity('card', state.entryKey, state.current.name)}`;
+    renderEquipmentEntityFields(host);
     const tpl = currentRuleset().data.templates[state.current.template];
     const note = document.createElement('div');
     note.className = 'muted';
@@ -742,7 +1688,13 @@
     const descField = document.createElement('div');
     descField.className = 'field';
     const descLab = document.createElement('label');
-    descLab.textContent = state.scope === 'cards' ? '卡牌描述' : state.scope === 'passives' ? '被动描述' : state.scope === 'weapon_cards' ? '武器卡描述' : '饰品卡描述';
+    descLab.textContent = state.scope === 'cards'
+      ? '卡牌描述'
+      : state.scope === 'passives'
+        ? '被动描述'
+        : state.scope === 'negative_cards'
+          ? '负面牌描述'
+          : `${equipmentScopeInfo()?.label || '饰品'}卡描述`;
     descField.appendChild(descLab);
     const descArea = document.createElement('textarea');
     descArea.rows = 3;
@@ -752,9 +1704,11 @@
       state.current.text = descArea.value;
       syncCurrentEntryToCache();
       renderFriendlyPreview();
+      if (state.refreshCardVisualPreview) state.refreshCardVisualPreview();
     };
     descField.appendChild(descArea);
     host.appendChild(descField);
+    renderCardVisualFields(host);
     const grid = document.createElement('div');
     grid.className = 'field-grid';
     (tpl?.fields || []).forEach(([k, label, type]) => {
@@ -781,6 +1735,63 @@
       grid.appendChild(field);
     });
     host.appendChild(grid);
+
+    const quickField = document.createElement('div');
+    quickField.className = 'field';
+    const quickLabel = document.createElement('label');
+    quickLabel.textContent = '快速 / Quick（不占用行动桶）';
+    quickField.appendChild(quickLabel);
+    quickField.appendChild(makeInput('quick', 'boolean', !!state.current.config.quick, v => {
+      ensureEditableRuleset();
+      if(v) state.current.config.quick = true;
+      else delete state.current.config.quick;
+      syncCurrentEntryToCache();
+      renderFriendlyPreview();
+    }));
+    host.appendChild(quickField);
+
+    const negativeField = document.createElement('div');
+    negativeField.className = 'field';
+    const negativeLabel = document.createElement('label');
+    negativeLabel.textContent = '附加负面效果（可选，给任意技能添加代价）';
+    negativeField.appendChild(negativeLabel);
+    negativeField.appendChild(negativeEffectsEditor(state.current.config.negativeEffects || [], v => {
+      ensureEditableRuleset();
+      if(v.length) state.current.config.negativeEffects = v;
+      else delete state.current.config.negativeEffects;
+      syncCurrentEntryToCache();
+      renderFriendlyPreview();
+    }));
+    host.appendChild(negativeField);
+
+    const lifestealField = document.createElement('div');
+    lifestealField.className = 'field';
+    const lifestealLabel = document.createElement('label');
+    lifestealLabel.textContent = '附加吸血效果（可选，按实际伤害回血）';
+    lifestealField.appendChild(lifestealLabel);
+    const lifestealGrid = document.createElement('div');
+    lifestealGrid.className = 'field-grid';
+    [
+      ['lifestealPercent','吸血比例 %','number'],
+      ['lifestealFlat','固定吸血','number']
+    ].forEach(([key, label, type]) => {
+      const field = document.createElement('div');
+      field.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      field.appendChild(lab);
+      field.appendChild(makeInput(key, type, state.current.config[key] || 0, v => {
+        ensureEditableRuleset();
+        const n = Number(v || 0);
+        if(n > 0) state.current.config[key] = n;
+        else delete state.current.config[key];
+        syncCurrentEntryToCache();
+        renderFriendlyPreview();
+      }));
+      lifestealGrid.appendChild(field);
+    });
+    lifestealField.appendChild(lifestealGrid);
+    host.appendChild(lifestealField);
     renderStatusFields();
     renderStorageInfo();
     renderRulesetMeta();
@@ -840,6 +1851,66 @@
     persistRuleset(true, '新饰品已创建。');
   }
 
+  function createArmor() {
+    ensureEditableRuleset();
+    const key = (window.prompt('请输入新护甲 key，例如 light_armor / medium_armor / heavy_armor') || '').trim();
+    if (!key) return;
+    const rs = currentRuleset();
+    rs.data.armorLibrary = rs.data.armorLibrary || {};
+    if (rs.data.armorLibrary[key]) return alert('护甲 key 已存在。');
+    const displayName = (window.prompt('请输入护甲显示名称') || key).trim() || key;
+    rs.data.armorLibrary[key] = { key, name: displayName, maxHp: 55, damageReductionFlat: 2, damageReductionRoll: '', incomingDamageBonus: 0, outgoingAttackFailChance: 0, cards: [] };
+    state.scope = 'armor_cards';
+    state.profession = key;
+    state.entryKey = null;
+    persistRuleset(true, '新护甲已创建。');
+  }
+
+  function createBoots() {
+    ensureEditableRuleset();
+    const key = (window.prompt('请输入新靴子 key，例如 swift_boots / trail_boots / anchor_boots') || '').trim();
+    if (!key) return;
+    const rs = currentRuleset();
+    rs.data.bootsLibrary = rs.data.bootsLibrary || {};
+    if (rs.data.bootsLibrary[key]) return alert('靴子 key 已存在。');
+    const displayName = (window.prompt('请输入靴子显示名称') || key).trim() || key;
+    rs.data.bootsLibrary[key] = { key, name: displayName, moveBase: 4, hazardDamageReduction: 1, forcedMoveResistance: 0, incomingDamageBonus: 0, outgoingAttackFailChance: 0, cards: [] };
+    state.scope = 'boots_cards';
+    state.profession = key;
+    state.entryKey = null;
+    persistRuleset(true, '新靴子已创建。');
+  }
+
+  function createRelic() {
+    ensureEditableRuleset();
+    const key = (window.prompt('请输入新咒物 key，例如 blood_pact_relic / chaos_relic') || '').trim();
+    if (!key) return;
+    const rs = currentRuleset();
+    rs.data.relicLibrary = rs.data.relicLibrary || {};
+    if (rs.data.relicLibrary[key]) return alert('咒物 key 已存在。');
+    const displayName = (window.prompt('请输入咒物显示名称') || key).trim() || key;
+    rs.data.relicLibrary[key] = {
+      key,
+      name: displayName,
+      outgoingDamageHealFlat: 0,
+      outgoingDamageCritChance: 0,
+      outgoingDamageCritBonusDie: '',
+      ignoreTargetReductionFlat: 0,
+      moveBonus: 0,
+      turnStartSelfDamage: 0,
+      incomingDamageBonus: 0,
+      hazardDamageBonus: 0,
+      outgoingAttackFailChance: 0,
+      turnStartNegativeEffect: '',
+      turnStartNegativeChance: 0,
+      turnStartNegativePower: 1,
+      cards: []
+    };
+    state.scope = 'relic_cards';
+    state.profession = key;
+    state.entryKey = null;
+    persistRuleset(true, '新咒物已创建。');
+  }
   function createProfession() {
     ensureEditableRuleset();
     const key = (window.prompt('请输入新职业 key，例如 monk / engineer / druid2') || '').trim();
@@ -890,10 +1961,10 @@
     const collection = entries();
     if (collection[newKey]) return alert('key 已存在。');
     const templateKey = 'direct_damage';
-    const source = state.scope === 'cards' ? '职业技能' : state.scope === 'passives' ? '职业被动' : state.scope === 'weapon_cards' ? '武器技能' : state.scope === 'accessory_cards' ? '饰品技能' : '负面牌';
+    const source = state.scope === 'cards' ? '职业技能' : state.scope === 'passives' ? '职业被动' : equipmentScopeInfo()?.source || '负面牌';
     const chosenTemplate = state.scope === 'negative_cards' ? 'negative_direct_damage' : templateKey;
     const entry = { name: newKey, source, template: chosenTemplate, config: deep(currentRuleset().data.templateDefaults[chosenTemplate]), text: '', negativeOnDraw: state.scope === 'negative_cards' };
-    if (state.scope === 'weapon_cards' || state.scope === 'accessory_cards' || state.scope === 'negative_cards') {
+    if (isEquipmentCardScope() || state.scope === 'negative_cards') {
       currentRuleset().data.cardLibrary[newKey] = deep(entry);
       currentEntity().cards = currentEntity().cards || [];
       currentEntity().cards.push(newKey);
@@ -914,7 +1985,7 @@
     const newKey = (typed && typed !== state.entryKey) ? typed : `${state.entryKey}_copy`;
     const collection = entries();
     if (collection[newKey]) return alert('key 已存在。');
-    if (state.scope === 'weapon_cards' || state.scope === 'accessory_cards' || state.scope === 'negative_cards') {
+    if (isEquipmentCardScope() || state.scope === 'negative_cards') {
       currentRuleset().data.cardLibrary[newKey] = deep(state.current);
       currentRuleset().data.cardLibrary[newKey].name = `${state.current.name} Copy`;
       if (state.scope !== 'negative_cards') { currentEntity().cards = currentEntity().cards || []; currentEntity().cards.push(newKey); }
@@ -937,7 +2008,7 @@
     if (newKey === state.entryKey) return alert('请输入不同的 key。');
     const collection = entries();
     if (collection[newKey]) return alert('key 已存在。');
-    if (state.scope === 'weapon_cards' || state.scope === 'accessory_cards' || state.scope === 'negative_cards') {
+    if (isEquipmentCardScope() || state.scope === 'negative_cards') {
       currentRuleset().data.cardLibrary[newKey] = deep(currentRuleset().data.cardLibrary[state.entryKey]);
       delete currentRuleset().data.cardLibrary[state.entryKey];
       if (state.scope !== 'negative_cards') currentEntity().cards = (currentEntity().cards || []).map(k => k === state.entryKey ? newKey : k);
@@ -959,7 +2030,7 @@
     const collection = entries();
     const keys = Object.keys(collection);
     if (keys.length <= 1) return alert('至少保留一个条目。');
-    if (state.scope === 'weapon_cards' || state.scope === 'accessory_cards' || state.scope === 'negative_cards') {
+    if (isEquipmentCardScope() || state.scope === 'negative_cards') {
       delete currentRuleset().data.cardLibrary[state.entryKey];
       if (state.scope !== 'negative_cards') {
         currentEntity().cards = (currentEntity().cards || []).filter(k => k !== state.entryKey);
@@ -1044,7 +2115,7 @@
 
     $('ruleset-select').onchange = () => {
       loadRulesetIntoState($('ruleset-select').value);
-      state.profession = Object.keys(state.rulesetCache.data.professions)[0];
+      state.profession = Object.keys(currentEntityCollection())[0];
       renderProfessions();
       renderEntries();
       renderForm();
@@ -1072,6 +2143,7 @@
       syncCurrentEntryToCache();
       renderFriendlyPreview();
       renderSummary();
+      if (state.refreshCardVisualPreview) state.refreshCardVisualPreview();
     };
     $('template-select').onchange = () => initTemplateConfig($('template-select').value);
     $('status-template-select').onchange = renderStatusFields;
@@ -1083,6 +2155,9 @@
     if ($('btn-new-profession')) $('btn-new-profession').onclick = createProfession;
     if ($('btn-new-weapon')) $('btn-new-weapon').onclick = createWeapon;
     if ($('btn-new-accessory')) $('btn-new-accessory').onclick = createAccessory;
+    if ($('btn-new-armor')) $('btn-new-armor').onclick = createArmor;
+    if ($('btn-new-boots')) $('btn-new-boots').onclick = createBoots;
+    if ($('btn-new-relic')) $('btn-new-relic').onclick = createRelic;
     $('btn-new').onclick = createEntry;
     $('btn-rename-entry').onclick = renameEntry;
     $('btn-duplicate').onclick = duplicateEntry;

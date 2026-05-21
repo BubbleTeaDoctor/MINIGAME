@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Elf Hunter Sprite Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101410;
+      --panel: #171c17;
+      --line: #344131;
+      --text: #edf5df;
+      --muted: #9eaa95;
+      --accent: #d4ae58;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(180deg, rgba(32, 45, 32, 0.6), rgba(8, 10, 8, 0.95)),
+        #0d100d;
+      color: var(--text);
+      font: 14px/1.4 system-ui, "Microsoft YaHei", sans-serif;
+    }
+    main {
+      width: min(980px, calc(100vw - 32px));
+      display: grid;
+      gap: 14px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+    .meta { color: var(--muted); font-size: 12px; }
+    .stage {
+      display: grid;
+      place-items: center;
+      min-height: 560px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+        radial-gradient(circle at 50% 72%, rgba(96, 129, 62, 0.28), transparent 42%),
+        #111510;
+      background-size: 32px 32px, 32px 32px, auto, auto;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    canvas {
+      width: 920px;
+      max-width: 100%;
+      image-rendering: pixelated;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+    button {
+      min-width: 74px;
+      height: 34px;
+      border: 1px solid #3c4a37;
+      border-radius: 6px;
+      background: #20281e;
+      color: var(--text);
+      cursor: pointer;
+    }
+    button.active {
+      border-color: var(--accent);
+      color: #ffe3a1;
+      box-shadow: inset 0 0 0 1px rgba(212, 174, 88, 0.22);
+    }
+    label {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    input[type="range"] { accent-color: var(--accent); width: 132px; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Elf Hunter</h1>
+      <div class="meta">320x208 / warlock size family / preview only</div>
+    </header>
+    <section class="stage">
+      <canvas id="canvas" width="920" height="520"></canvas>
+    </section>
+    <section class="controls" id="controls"></section>
+  </main>
+  <script>
+    const frameWidth = 320;
+    const frameHeight = 208;
+    const baselineY = 180;
+    const drawBaseline = 390;
+    const animations = [
+      { key: 'idle', label: 'Idle', frames: 6, duration: 980, file: 'assets/sprites/elf-hunter/idle.png' },
+      { key: 'run', label: 'Run', frames: 7, duration: 660, file: 'assets/sprites/elf-hunter/run.png' },
+      { key: 'attack', label: 'Attack', frames: 8, duration: 620, file: 'assets/sprites/elf-hunter/attack.png' },
+      { key: 'cast', label: 'Cast', frames: 5, duration: 620, file: 'assets/sprites/elf-hunter/cast.png' },
+      { key: 'hurt', label: 'Hurt', frames: 2, duration: 320, file: 'assets/sprites/elf-hunter/hurt.png' },
+      { key: 'death', label: 'Death', frames: 9, duration: 900, file: 'assets/sprites/elf-hunter/death.png' },
+      { key: 'projectile', label: 'Arrow', frames: 8, duration: 420, file: 'assets/sprites/elf-hunter/projectile.png', fw: 64, fh: 64, projectile: true }
+    ];
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const controls = document.getElementById('controls');
+    const state = { anim: animations[0], zoom: 2.15, speed: 1, started: performance.now() };
+    const images = new Map();
+
+    function loadImage(src) {
+      if (images.has(src)) return images.get(src);
+      const img = new Image();
+      img.src = src;
+      images.set(src, img);
+      return img;
+    }
+
+    function setAnim(anim) {
+      state.anim = anim;
+      state.started = performance.now();
+      for (const button of controls.querySelectorAll('button')) {
+        button.classList.toggle('active', button.dataset.key === anim.key);
+      }
+    }
+
+    for (const anim of animations) {
+      loadImage(anim.file);
+      const button = document.createElement('button');
+      button.textContent = anim.label;
+      button.dataset.key = anim.key;
+      button.onclick = () => setAnim(anim);
+      controls.appendChild(button);
+    }
+
+    const zoomLabel = document.createElement('label');
+    zoomLabel.textContent = 'Zoom';
+    const zoom = document.createElement('input');
+    zoom.type = 'range';
+    zoom.min = '1';
+    zoom.max = '3.2';
+    zoom.step = '0.05';
+    zoom.value = state.zoom;
+    zoom.oninput = () => state.zoom = Number(zoom.value);
+    zoomLabel.appendChild(zoom);
+    controls.appendChild(zoomLabel);
+
+    const speedLabel = document.createElement('label');
+    speedLabel.textContent = 'Speed';
+    const speed = document.createElement('input');
+    speed.type = 'range';
+    speed.min = '0.35';
+    speed.max = '1.8';
+    speed.step = '0.05';
+    speed.value = state.speed;
+    speed.oninput = () => state.speed = Number(speed.value);
+    speedLabel.appendChild(speed);
+    controls.appendChild(speedLabel);
+
+    function drawGrid() {
+      ctx.fillStyle = '#111510';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = 'rgba(210, 174, 88, 0.34)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(80, drawBaseline);
+      ctx.lineTo(canvas.width - 80, drawBaseline);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(24, 30, 22, 0.9)';
+      ctx.beginPath();
+      ctx.ellipse(canvas.width / 2, drawBaseline + 8, 128, 24, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function render(now) {
+      drawGrid();
+      const anim = state.anim;
+      const img = loadImage(anim.file);
+      const fw = anim.fw || frameWidth;
+      const fh = anim.fh || frameHeight;
+      const elapsed = (now - state.started) * state.speed;
+      const frame = Math.floor((elapsed % anim.duration) / (anim.duration / anim.frames));
+      ctx.imageSmoothingEnabled = false;
+      if (anim.projectile) {
+        const scale = state.zoom * 1.15;
+        const x = canvas.width / 2 - 220 + (elapsed % 920) * 0.52;
+        const y = drawBaseline - 94;
+        ctx.drawImage(img, frame * fw, 0, fw, fh, x, y, fw * scale, fh * scale);
+      } else {
+        const scale = state.zoom;
+        const dx = canvas.width / 2 - (frameWidth / 2) * scale;
+        const dy = drawBaseline - baselineY * scale;
+        ctx.drawImage(img, frame * frameWidth, 0, frameWidth, frameHeight, dx, dy, frameWidth * scale, frameHeight * scale);
+      }
+      requestAnimationFrame(render);
+    }
+
+    setAnim(animations[0]);
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
