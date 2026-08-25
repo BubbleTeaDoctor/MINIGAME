@@ -1,0 +1,20 @@
+name: Temporary Alpaca Public Test
+on:
+  push:
+    branches: [tmp-alpaca-public-test-20260826]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test unauthenticated historical endpoint
+        run: |
+          python - <<'PY'
+          import urllib.request, urllib.error
+          url='https://data.alpaca.markets/v2/stocks/QQQ/bars?timeframe=1Min&start=2026-08-24T13:30:00Z&end=2026-08-24T13:35:00Z&feed=sip&limit=10'
+          req=urllib.request.Request(url)
+          try:
+              with urllib.request.urlopen(req, timeout=20) as r:
+                  print('STATUS',r.status); print(r.read().decode()[:2000])
+          except urllib.error.HTTPError as e:
+              print('STATUS',e.code); print(e.read().decode()[:2000])
+          PY
