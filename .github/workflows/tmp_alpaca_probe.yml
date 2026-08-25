@@ -1,0 +1,19 @@
+name: Temporary Alpaca Probe
+on:
+  push:
+    branches: [tmp-vwap-backtest-20260826]
+    paths: ['.github/workflows/tmp_alpaca_probe.yml']
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe Alpaca historical endpoint without credentials
+        run: |
+          python - <<'PY'
+          import requests
+          u='https://data.alpaca.markets/v2/stocks/QQQ/bars'
+          p={'timeframe':'1Min','start':'2026-08-06T13:30:00Z','end':'2026-08-06T13:35:00Z','feed':'sip','limit':10}
+          r=requests.get(u,params=p,timeout=20)
+          print('STATUS',r.status_code)
+          print(r.text[:1000])
+          PY
