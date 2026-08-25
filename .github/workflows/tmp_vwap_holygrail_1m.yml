@@ -8,9 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-        with: {ref: tmp-alpaca-public-test-20260826}
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - run: pip install --disable-pip-version-check pandas numpy requests
+      - name: Fetch temporary script
+        run: curl -L --fail 'https://raw.githubusercontent.com/BubbleTeaDoctor/MINIGAME/tmp-alpaca-public-test-20260826/tmp_vwap_holygrail_1m.py' -o tmp_vwap_holygrail_1m.py
       - run: python tmp_vwap_holygrail_1m.py
