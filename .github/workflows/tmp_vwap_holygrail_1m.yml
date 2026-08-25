@@ -1,0 +1,16 @@
+name: Temporary VWAP Holy Grail 1m
+on:
+  push:
+    branches: [tmp-alpaca-public-test-20260826]
+    paths: ['tmp_vwap_holygrail_1m.py','.github/workflows/tmp_vwap_holygrail_1m.yml']
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: tmp-alpaca-public-test-20260826}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install --disable-pip-version-check pandas numpy requests
+      - run: python tmp_vwap_holygrail_1m.py
